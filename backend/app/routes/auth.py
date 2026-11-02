@@ -7,7 +7,6 @@ from app.clients import log_client
 from app.clients.auth_client import forward_request
 from app.core.api_responses import (
     AUTH_SERVICE_INDISPONIVEL,
-    CADASTRO_ADMIN_PROIBIDO,
     CREDENCIAIS_INVALIDAS,
     EMAIL_JA_CADASTRADO,
     NOT_FOUND_USER,
@@ -46,7 +45,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
     "/cadastro",
     response_model=UsuarioOut,
     status_code=status.HTTP_201_CREATED,
-    responses={**EMAIL_JA_CADASTRADO, **CADASTRO_ADMIN_PROIBIDO, **AUTH_SERVICE_INDISPONIVEL},
+    responses={**EMAIL_JA_CADASTRADO, **AUTH_SERVICE_INDISPONIVEL},
 )
 async def cadastro(payload: UsuarioCreate):
     return await forward_request("POST", "/cadastro", json_data=payload.model_dump())

@@ -65,17 +65,6 @@ EMAIL_JA_CADASTRADO = {
     }
 }
 
-CADASTRO_ADMIN_PROIBIDO = {
-    403: {
-        "description": "Tentativa de se autocadastrar como admin",
-        "content": {
-            "application/json": {
-                "example": {"detail": "O papel de administrador não pode ser escolhido no cadastro público"}
-            }
-        },
-    }
-}
-
 NOT_FOUND_USER = {
     404: {
         "description": "Usuário não encontrado",

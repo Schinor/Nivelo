@@ -35,10 +35,12 @@ class PapelCreate(BaseModel):
 
 
 class UsuarioCreate(BaseModel):
+    """Cadastro público. Sem campo de papel de propósito: quem se cadastra é sempre `dono`
+    (campos extras como `role` ou `papel` são ignorados)."""
+
     nome: str
     email: EmailStr
     senha: str
-    role: Optional[str] = None
 
 
 class UsuarioOut(BaseModel):

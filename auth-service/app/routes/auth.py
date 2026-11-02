@@ -9,7 +9,6 @@ from app.core.database import get_db
 from app.core.security import verify_password, create_access_token, get_current_user
 from app.core.email import send_password_reset_email
 from app.core.api_responses import (
-    CADASTRO_ADMIN_PROIBIDO,
     CREDENCIAIS_INVALIDAS,
     EMAIL_JA_CADASTRADO,
     RESET_TOKEN_INVALIDO,
@@ -40,26 +39,14 @@ FORGOT_PASSWORD_MESSAGE = (
     "/cadastro",
     response_model=UsuarioOut,
     status_code=status.HTTP_201_CREATED,
-    responses={**EMAIL_JA_CADASTRADO, **CADASTRO_ADMIN_PROIBIDO},
+    responses={**EMAIL_JA_CADASTRADO},
 )
 def cadastro(payload: UsuarioCreate, db: Session = Depends(get_db)):
     if usuario_repo.get_by_email(db, payload.email):
         raise HTTPException(status_code=400, detail="E-mail já cadastrado")
 
-    requested_role = (payload.role or "cliente").strip().lower()
-    if requested_role == "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="O papel de administrador não pode ser escolhido no cadastro público",
-        )
-
-    return usuario_repo.create(
-        db,
-        nome=payload.nome,
-        email=payload.email,
-        senha=payload.senha,
-        role=requested_role,
-    )
+    # O papel nunca vem do corpo: o cadastro público sempre cria o dono da conta
+    return usuario_repo.create(db, nome=payload.nome, email=payload.email, senha=payload.senha, role="dono")
 
 
 @router.post("/login", response_model=Token, responses={**CREDENCIAIS_INVALIDAS})

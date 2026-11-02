@@ -92,7 +92,7 @@ def test_cadastro_e_login_usuario():
     cad_data = cad_resp.json()
     assert cad_data["nome"] == "Allan Schinor"
     assert cad_data["email"] == "allan@exemplo.com"
-    assert cad_data["role"] == "cliente"
+    assert cad_data["role"] == "dono"
     assert cad_data["permissions"] == []
     user_id = cad_data["id"]
 
@@ -123,7 +123,7 @@ def test_cadastro_e_login_usuario():
     # 4. /users/{id}/role
     role_resp = client.get(f"/users/{user_id}/role")
     assert role_resp.status_code == 200
-    assert role_resp.json()["role"] == "cliente"
+    assert role_resp.json()["role"] == "dono"
 
 
 def test_matriz_de_papeis_do_nivelo():
@@ -166,21 +166,21 @@ def test_seed_converte_papeis_antigos_e_remove_os_que_sairam_da_matriz():
     db.close()
 
 
-def test_cadastro_publico_nao_permite_admin():
+@pytest.mark.parametrize(
+    "extras",
+    [{"papel": "admin"}, {"role": "admin"}, {"role": "encarregado", "papel": "cliente"}],
+)
+def test_cadastro_publico_ignora_papel_do_corpo_e_cria_dono(extras):
+    email = f"cadastro-{abs(hash(str(extras)))}@exemplo.com"
     response = client.post(
         "/cadastro",
-        json={
-            "nome": "Admin Indevido",
-            "email": "admin-indevido@exemplo.com",
-            "senha": "password123",
-            "role": "admin",
-        },
+        json={"nome": "Quem Tenta", "email": email, "senha": "password123", **extras},
     )
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == (
-        "O papel de administrador não pode ser escolhido no cadastro público"
-    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["role"] == "dono"
+    assert "administrar:sistema" not in data["permissions"]
 
 
 def test_permissao_exclusiva_admin():
