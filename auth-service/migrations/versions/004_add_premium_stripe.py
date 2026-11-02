@@ -5,15 +5,17 @@ Revises: 003_user_permissions
 Create Date: 2026-10-11 10:00:00.000000
 
 """
-from typing import Sequence, Union
-from alembic import op
+
+from collections.abc import Sequence
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
 revision: str = "004_premium_stripe"
-down_revision: Union[str, None] = "003_user_permissions"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "003_user_permissions"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 COLUNAS = [
     sa.Column("premium", sa.Boolean(), nullable=False, server_default=sa.false()),

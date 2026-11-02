@@ -1,14 +1,15 @@
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy.orm import Session
-from app.models.reset_token import ResetToken
+
 from app.core.config import settings
+from app.models.reset_token import ResetToken
 
 
 def create_reset_token(db: Session, usuario_id: int) -> ResetToken:
     token_str = secrets.token_urlsafe(32)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expira_em = now + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
 
     reset_token = ResetToken(
@@ -26,15 +27,11 @@ def create_reset_token(db: Session, usuario_id: int) -> ResetToken:
 
 def count_recent(db: Session, usuario_id: int, window_minutes: int) -> int:
     # criado_em é gravado como UTC sem fuso no banco
-    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=window_minutes)
-    return (
-        db.query(ResetToken)
-        .filter(ResetToken.usuario_id == usuario_id, ResetToken.criado_em >= since)
-        .count()
-    )
+    since = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=window_minutes)
+    return db.query(ResetToken).filter(ResetToken.usuario_id == usuario_id, ResetToken.criado_em >= since).count()
 
 
-def get_by_token(db: Session, token: str) -> Optional[ResetToken]:
+def get_by_token(db: Session, token: str) -> ResetToken | None:
     return db.query(ResetToken).filter(ResetToken.token == token.strip()).first()
 
 

@@ -1,8 +1,8 @@
 """Fundação da API (Fase 1): Request ID e erros no formato Problem Details (RFC 9457)."""
+
 import uuid
 
 import pytest
-
 from test_backend_proxy import setup_api_app
 
 PROBLEM = "application/problem+json"

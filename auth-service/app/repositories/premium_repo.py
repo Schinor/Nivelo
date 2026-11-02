@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
+
 from app.models.stripe_evento import StripeEventoProcessado
 from app.models.usuario import Usuario
 
@@ -14,18 +15,18 @@ def registrar_evento(db: Session, event_id: str, tipo: str) -> None:
     db.add(StripeEventoProcessado(event_id=event_id, tipo=tipo))
 
 
-def ativar(db: Session, usuario_id: int, customer_id: Optional[str], subscription_id: Optional[str]) -> Optional[Usuario]:
+def ativar(db: Session, usuario_id: int, customer_id: str | None, subscription_id: str | None) -> Usuario | None:
     usuario = db.get(Usuario, usuario_id)
     if usuario is None:
         return None
     usuario.premium = True
     usuario.stripe_customer_id = customer_id or usuario.stripe_customer_id
     usuario.stripe_subscription_id = subscription_id
-    usuario.premium_desde = datetime.now(timezone.utc)
+    usuario.premium_desde = datetime.now(UTC)
     return usuario
 
 
-def cancelar_por_assinatura(db: Session, subscription_id: str) -> Optional[Usuario]:
+def cancelar_por_assinatura(db: Session, subscription_id: str) -> Usuario | None:
     """Assinatura antiga (o usuário já assinou de novo) não casa com nenhum usuário: nada muda."""
     usuario = db.query(Usuario).filter(Usuario.stripe_subscription_id == subscription_id).first()
     if usuario is None:

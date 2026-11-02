@@ -5,12 +5,14 @@ do webhook e repassa aqui só os IDs do evento. Este serviço é o dono da tabel
 `usuarios`, então é aqui que `premium` muda — junto com o registro do evento, na
 mesma transação (idempotência).
 """
+
 import hmac
 import logging
-from typing import Optional
+
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
 from app.core.config import settings
 from app.core.database import get_db
 from app.repositories import premium_repo
@@ -21,7 +23,7 @@ logger = logging.getLogger("auth-service.premium")
 router = APIRouter(prefix="/internal/premium", tags=["premium (interno)"])
 
 
-def exigir_token_interno(x_internal_token: Optional[str] = Header(default=None)) -> None:
+def exigir_token_interno(x_internal_token: str | None = Header(default=None)) -> None:
     if not settings.AUTH_INTERNAL_TOKEN:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Rotas internas desabilitadas")
     if not x_internal_token or not hmac.compare_digest(x_internal_token, settings.AUTH_INTERNAL_TOKEN):
@@ -33,8 +35,14 @@ def exigir_token_interno(x_internal_token: Optional[str] = Header(default=None))
     response_model=PremiumEventoOut,
     dependencies=[Depends(exigir_token_interno)],
     responses={
-        401: {"description": "Token interno ausente ou inválido", "content": {"application/json": {"example": {"detail": "Token interno inválido"}}}},
-        503: {"description": "AUTH_INTERNAL_TOKEN não configurado", "content": {"application/json": {"example": {"detail": "Rotas internas desabilitadas"}}}},
+        401: {
+            "description": "Token interno ausente ou inválido",
+            "content": {"application/json": {"example": {"detail": "Token interno inválido"}}},
+        },
+        503: {
+            "description": "AUTH_INTERNAL_TOKEN não configurado",
+            "content": {"application/json": {"example": {"detail": "Rotas internas desabilitadas"}}},
+        },
     },
 )
 def processar_evento(payload: PremiumEventoIn, db: Session = Depends(get_db)):

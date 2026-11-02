@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 # Garante que o diretório raiz do backend esteja no sys.path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,22 +11,22 @@ import logging
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from prometheus_client import CollectorRegistry
 from prometheus_fastapi_instrumentator import Instrumentator
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.dependencies import auditar_acesso_negado
 import app.models  # noqa: F401 — força o registro dos models no metadata
-from app.shared.api.health import router as health_router
-from app.shared.api.problem_details import registrar_handlers
-from app.shared.api.request_id import RequestIdMiddleware
-
+from app.dependencies import auditar_acesso_negado
 from app.routes.auth import router as auth_router
 from app.routes.logs import router as logs_router
 from app.routes.observability_proxy import router as observability_router
 from app.routes.perfis import router as perfis_router
-from app.routes.premium import router as premium_router, webhook_router as stripe_webhook_router
+from app.routes.premium import router as premium_router
+from app.routes.premium import webhook_router as stripe_webhook_router
 from app.routes.storage_proxy import router as storage_router
+from app.shared.api.health import router as health_router
+from app.shared.api.problem_details import registrar_handlers
+from app.shared.api.request_id import RequestIdMiddleware
 
 # Loggers "nivelo.api.*" em INFO no stdout (ex.: event.id/tipo/usuario_id do webhook do Stripe).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.
@@ -67,7 +67,6 @@ app.include_router(observability_router)
 app.include_router(storage_router)
 
 
-
 async def auditar_403(request: Request, exc: StarletteHTTPException) -> None:
     """Ponto central da auditoria de negação: TODA resposta 403 gera 'acesso_negado'."""
     if exc.status_code == status.HTTP_403_FORBIDDEN:
@@ -79,9 +78,9 @@ registrar_handlers(app, antes_de_http=auditar_403)
 
 # Registry próprio evita colisão de métricas quando mais de um app é importado no mesmo processo.
 # Registrado antes do fallback da SPA para que /metrics não caia no index.html.
-Instrumentator(registry=CollectorRegistry(), excluded_handlers=["/metrics", "/health", "/health/live", "/health/ready"]).instrument(app).expose(
-    app, include_in_schema=False
-)
+Instrumentator(
+    registry=CollectorRegistry(), excluded_handlers=["/metrics", "/health", "/health/live", "/health/ready"]
+).instrument(app).expose(app, include_in_schema=False)
 
 # Serve o frontend Angular (SPA fallback para suporte a HTML5 pushState routing)
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -89,6 +88,7 @@ if not os.path.isdir(STATIC_DIR):
     STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 if os.path.isdir(STATIC_DIR):
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         # Se for um arquivo estático existente (JS, CSS, PNG, ICO, etc.)

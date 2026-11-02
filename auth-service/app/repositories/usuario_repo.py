@@ -1,23 +1,22 @@
-from typing import Optional, List
 from sqlalchemy.orm import Session
-from app.models.usuario import Usuario
-from app.models.papel import Papel
-from app.models.permissao import Permissao
-from app.models.usuario_permissao import UsuarioPermissao
-from app.core.security import hash_password
 
 from app.core.rbac_seed import LEGACY_ROLE_MAP, PAPEL_PADRAO
+from app.core.security import hash_password
+from app.models.papel import Papel
+from app.models.permissao import Permissao
+from app.models.usuario import Usuario
+from app.models.usuario_permissao import UsuarioPermissao
 
 
-def get_by_id(db: Session, user_id: int) -> Optional[Usuario]:
+def get_by_id(db: Session, user_id: int) -> Usuario | None:
     return db.query(Usuario).filter(Usuario.id == user_id).first()
 
 
-def get_by_email(db: Session, email: str) -> Optional[Usuario]:
+def get_by_email(db: Session, email: str) -> Usuario | None:
     return db.query(Usuario).filter(Usuario.email == email.strip().lower()).first()
 
 
-def list_all(db: Session) -> List[Usuario]:
+def list_all(db: Session) -> list[Usuario]:
     return db.query(Usuario).order_by(Usuario.id.asc()).all()
 
 
@@ -45,7 +44,7 @@ def create(db: Session, nome: str, email: str, senha: str, role: str = PAPEL_PAD
     return user
 
 
-def get_role(db: Session, role_slug: str) -> Optional[Papel]:
+def get_role(db: Session, role_slug: str) -> Papel | None:
     slug = LEGACY_ROLE_MAP.get(role_slug.strip().lower(), role_slug.strip().lower())
     return db.query(Papel).filter(Papel.slug == slug).first()
 
@@ -60,7 +59,7 @@ def update_role(db: Session, user: Usuario, papel: Papel) -> Usuario:
     return user
 
 
-def set_permissions(db: Session, user: Usuario, permissoes: List[Permissao]) -> Usuario:
+def set_permissions(db: Session, user: Usuario, permissoes: list[Permissao]) -> Usuario:
     """Define as permissões efetivas do usuário, gravando só a diferença em relação ao papel."""
     do_papel = {p.id for p in user.papel.permissoes} if user.papel else set()
     desejadas = {p.id for p in permissoes}

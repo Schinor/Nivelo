@@ -4,13 +4,13 @@ A assinatura do webhook é gerada de verdade (HMAC-SHA256, mesmo esquema do Stri
 então a validação real de stripe.Webhook.construct_event é exercitada. O auth-service
 é trocado por um fake em memória que imita a rota interna e sua idempotência.
 """
+
 import hashlib
 import hmac
 import json
 import time
 
 import pytest
-
 from test_backend_proxy import _capturar_eventos, _usuario, setup_api_app
 
 WHSEC = "whsec_teste_123"
@@ -94,9 +94,11 @@ def ctx(monkeypatch):
 
 # ── Configuração ──────────────────────────────────────────────────────────────
 
+
 def test_chave_live_e_recusada_na_inicializacao():
     setup_api_app()
     from pydantic import ValidationError
+
     from app.core.config import Settings
 
     with pytest.raises(ValidationError, match="LIVE"):
@@ -111,6 +113,7 @@ def test_sem_stripe_configurado_checkout_e_webhook_respondem_503(ctx, monkeypatc
 
 
 # ── Checkout ──────────────────────────────────────────────────────────────────
+
 
 def test_checkout_cria_sessao_com_usuario_e_devolve_url(ctx, monkeypatch):
     import stripe
@@ -164,13 +167,16 @@ def test_checkout_exige_login():
 
 # ── Webhook ───────────────────────────────────────────────────────────────────
 
+
 def test_webhook_sem_assinatura_ou_com_assinatura_invalida_retorna_400(ctx):
     resp = ctx.client.post("/webhooks/stripe", json={"fake": True})
     assert resp.status_code == 400
 
     evento = _evento_checkout("evt_forjado", 1)
     assert ctx.webhook(evento, assinatura=_assinar(b"outro corpo")).status_code == 400
-    assert ctx.webhook(evento, assinatura=_assinar(json.dumps(evento).encode(), segredo="whsec_errado")).status_code == 400
+    assert (
+        ctx.webhook(evento, assinatura=_assinar(json.dumps(evento).encode(), segredo="whsec_errado")).status_code == 400
+    )
     # Assinatura antiga (fora da tolerância de 5 min do Stripe): replay recusado
     velha = _assinar(json.dumps(evento).encode(), t=int(time.time()) - 3600)
     assert ctx.webhook(evento, assinatura=velha).status_code == 400
@@ -229,9 +235,6 @@ def test_webhook_com_auth_service_fora_retorna_500_para_o_stripe_reenviar(ctx, m
 
 
 # ── Status do plano ───────────────────────────────────────────────────────────
-
-
-
 
 
 def test_status_vem_do_banco_e_nao_do_jwt(ctx):

@@ -3,6 +3,7 @@
 A suíte mistura os pacotes `app` da API e do auth-service no mesmo processo; a fixture
 `api` garante que `app` seja o da API antes de importar o módulo pedido.
 """
+
 import importlib
 import os
 import sys

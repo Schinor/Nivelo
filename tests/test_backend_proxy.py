@@ -1,5 +1,6 @@
 import os
 import sys
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -20,9 +21,10 @@ def setup_api_app():
     sys.path.insert(0, os.path.abspath("backend"))
 
     from fastapi.testclient import TestClient
-    from app.main import app
+
     from app.core.database import Base, get_db
     from app.dependencies import current_user
+    from app.main import app
 
     engine_test = create_engine(
         "sqlite:///:memory:",
@@ -52,6 +54,7 @@ def test_api_sobe_com_docs_e_titulo_nivelo():
 
 
 # ── Auditoria (log-service), /api/logs, logout, health e métricas ─────────────
+
 
 def _usuario(uid, role, permissions):
     return {"id": uid, "nome": f"User {uid}", "email": f"u{uid}@teste.com", "role": role, "permissions": permissions}
@@ -172,9 +175,7 @@ def test_403_repassado_do_auth_service_tambem_gera_acesso_negado(monkeypatch):
 
     resp = TestClient(app).get("/api/auth/users", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 403
-    assert eventos == [
-        {"acao": "acesso_negado", "usuario_id": 5, "recurso": None, "detalhes": "GET /api/auth/users"}
-    ]
+    assert eventos == [{"acao": "acesso_negado", "usuario_id": 5, "recurso": None, "detalhes": "GET /api/auth/users"}]
 
 
 def test_api_logs_usuario_comum_recebe_403_e_gera_acesso_negado(monkeypatch):
@@ -228,10 +229,6 @@ def test_api_logs_retorna_503_se_log_service_estiver_fora(monkeypatch):
     assert resp.status_code == 503
 
 
-
-
-
-
 def test_login_e_login_falhou_geram_eventos(monkeypatch):
     from fastapi import HTTPException
 
@@ -269,8 +266,6 @@ def test_logout_exige_jwt_e_registra_evento(monkeypatch):
     resp = client.post("/api/auth/logout")
     assert resp.status_code == 204
     assert eventos == [{"acao": "logout", "usuario_id": 5, "recurso": None, "detalhes": None}]
-
-
 
 
 def test_cliente_de_log_nunca_levanta_excecao_com_log_service_fora():

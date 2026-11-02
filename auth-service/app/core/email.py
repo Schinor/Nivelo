@@ -1,8 +1,9 @@
 import html
-import smtplib
 import logging
-from email.mime.text import MIMEText
+import smtplib
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from app.core.config import settings
 
 logger = logging.getLogger("auth-service.email")
@@ -18,21 +19,21 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
     O link aponta sempre para a rota pública da API (porta pública),
     garantindo que o auth-service permaneça isolado na rede interna Docker.
     """
-    catalogo_url = (settings.CATALOGO_URL or "http://localhost:8000").strip(' "\'').rstrip('/')
+    catalogo_url = (settings.CATALOGO_URL or "http://localhost:8000").strip(" \"'").rstrip("/")
     reset_url = f"{catalogo_url}/reset-password?token={token}"
     safe_name = html.escape(user_name)
     subject = "Redefinição de senha — Nivelo"
 
-    smtp_host = (settings.MAILTRAP_HOST or "sandbox.smtp.mailtrap.io").strip(' "\'')
+    smtp_host = (settings.MAILTRAP_HOST or "sandbox.smtp.mailtrap.io").strip(" \"'")
     try:
-        smtp_port = int(str(settings.MAILTRAP_PORT).strip(' "\''))
+        smtp_port = int(str(settings.MAILTRAP_PORT).strip(" \"'"))
     except Exception:
         smtp_port = 2525
 
-    smtp_user = (settings.MAILTRAP_USERNAME or "").strip(' "\'')
-    smtp_pass = (settings.MAILTRAP_PASSWORD or "").strip(' "\'')
-    from_email = (settings.MAILTRAP_FROM_EMAIL or "nao-responda@nivelo.app").strip(' "\'')
-    from_name = (settings.MAILTRAP_FROM_NAME or "Nivelo").strip(' "\'')
+    smtp_user = (settings.MAILTRAP_USERNAME or "").strip(" \"'")
+    smtp_pass = (settings.MAILTRAP_PASSWORD or "").strip(" \"'")
+    from_email = (settings.MAILTRAP_FROM_EMAIL or "nao-responda@nivelo.app").strip(" \"'")
+    from_name = (settings.MAILTRAP_FROM_NAME or "Nivelo").strip(" \"'")
 
     html_content = f"""
     <!DOCTYPE html>
@@ -113,7 +114,7 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
         <h2>Olá, {safe_name}!</h2>
         <p>Recebemos uma solicitação para redefinir a sua senha de acesso ao <strong>Nivelo</strong>.</p>
         <p>Clique no botão abaixo para escolher uma nova senha. <strong>Atenção: este link expira em {settings.RESET_TOKEN_EXPIRE_MINUTES} minutos</strong> e só pode ser utilizado uma única vez.</p>
-        
+
         <div class="btn-container">
           <a href="{reset_url}" target="_blank" class="btn">Redefinir Minha Senha</a>
         </div>

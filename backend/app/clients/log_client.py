@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import httpx
 from fastapi import Request
@@ -13,10 +12,10 @@ logger = logging.getLogger("nivelo.api.log_client")
 
 async def registrar(
     acao: str,
-    request: Optional[Request] = None,
-    usuario_id: Optional[int] = None,
-    recurso: Optional[str] = None,
-    detalhes: Optional[str] = None,
+    request: Request | None = None,
+    usuario_id: int | None = None,
+    recurso: str | None = None,
+    detalhes: str | None = None,
 ) -> None:
     """Envia um evento de auditoria ao log-service.
 
@@ -26,7 +25,7 @@ async def registrar(
         "usuario_id": usuario_id,
         "acao": acao,
         "origem": "api",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "recurso": recurso,
         "detalhes": detalhes,
         "ip": request.client.host if request and request.client else None,

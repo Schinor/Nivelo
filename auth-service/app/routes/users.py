@@ -1,21 +1,21 @@
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from app.core.api_responses import NOT_FOUND_USER, UNAUTHORIZED, forbidden, gestao_usuario_invalida
 from app.core.database import get_db
-from app.core.security import get_current_user, require_permission
-from app.models.permissao import Permissao
+from app.core.security import require_permission
 from app.models.papel import Papel
+from app.models.permissao import Permissao
 from app.models.usuario import Usuario
 from app.repositories import usuario_repo
 from app.schemas.usuario import (
-    UsuarioOut,
+    PapelCreate,
+    PapelOut,
+    PermissaoOut,
+    UserPermissionsUpdate,
     UserRoleOut,
     UserRoleUpdate,
-    UserPermissionsUpdate,
-    PapelOut,
-    PapelCreate,
-    PermissaoOut,
+    UsuarioOut,
 )
 
 router = APIRouter(prefix="", tags=["users & rbac"])
@@ -23,7 +23,7 @@ router = APIRouter(prefix="", tags=["users & rbac"])
 
 @router.get(
     "/users",
-    response_model=List[UsuarioOut],
+    response_model=list[UsuarioOut],
     responses={**UNAUTHORIZED, **forbidden("gerenciar:usuarios")},
 )
 def list_users(
@@ -137,7 +137,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return usuario
 
 
-@router.get("/roles", response_model=List[PapelOut])
+@router.get("/roles", response_model=list[PapelOut])
 def list_roles(db: Session = Depends(get_db)):
     return db.query(Papel).all()
 
@@ -172,7 +172,7 @@ def create_or_update_role(
 
 @router.get(
     "/permissions",
-    response_model=List[PermissaoOut],
+    response_model=list[PermissaoOut],
     responses={**UNAUTHORIZED, **forbidden("gerenciar:permissoes")},
 )
 def list_permissions(

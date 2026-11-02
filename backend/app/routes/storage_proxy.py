@@ -7,6 +7,7 @@ assinada com o mesmo host que o httpx envia aqui (garage:3900).
 Sem JWT de propósito: <img src> não manda Authorization.
 A autenticação do arquivo é a própria assinatura da URL.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -31,7 +32,7 @@ async def proxy_storage(caminho: str, request: Request):
     # raw_path = caminho ainda codificado, idêntico ao que entrou na assinatura
     # (pela spec ASGI vem sem query, mas alguns servidores/test clients a incluem)
     caminho_bruto = request.scope["raw_path"].decode("latin-1").split("?", 1)[0]
-    caminho_upstream = caminho_bruto[len(storage.STORAGE_PUBLIC_PREFIX):]
+    caminho_upstream = caminho_bruto[len(storage.STORAGE_PUBLIC_PREFIX) :]
 
     if not caminho_upstream.startswith(f"/{storage.STORAGE_BUCKET}/"):
         raise HTTPException(status_code=404)

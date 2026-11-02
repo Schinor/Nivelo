@@ -4,6 +4,7 @@ UUID v7 começa pelo instante de criação em milissegundos: fica ordenável (bo
 e não é sequencial como um autoincremento (não facilita enumerar recursos pela URL).
 O Python 3.12 ainda não tem `uuid.uuid7`, então a geração segue a RFC 9562 aqui.
 """
+
 from __future__ import annotations
 
 import os

@@ -5,6 +5,7 @@
   que checa o Redis) e object storage responderem; senão 503 com o que caiu.
 - `/health`: mesmo que o ready, mantido para o healthcheck do compose e o CI.
 """
+
 from __future__ import annotations
 
 import asyncio

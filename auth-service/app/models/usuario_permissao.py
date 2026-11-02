@@ -1,5 +1,6 @@
 from sqlalchemy import Boolean, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.core.database import Base
 
 
@@ -8,9 +9,7 @@ class UsuarioPermissao(Base):
 
     __tablename__ = "user_permissions"
 
-    usuario_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True
-    )
+    usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
     permission_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
     )

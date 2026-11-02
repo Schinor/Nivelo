@@ -1,4 +1,5 @@
 """Quem está agindo e em nome de qual empresa. Montado a partir do JWT, nunca do corpo."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

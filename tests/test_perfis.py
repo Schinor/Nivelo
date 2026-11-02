@@ -3,12 +3,12 @@
 O S3 é simulado com moto (mock_aws); o auth-service (nome do usuário) e o
 log-service são trocados por fakes em memória, no mesmo padrão de test_backend_proxy.
 """
+
 from io import BytesIO
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from moto import mock_aws
-
 from test_backend_proxy import _capturar_eventos, _usuario, setup_api_app
 
 BUCKET = "catalogo-avatares"
@@ -30,9 +30,9 @@ def ctx(monkeypatch):
         from fastapi import HTTPException
 
         app, SessionLocal, current_user, TestClient = setup_api_app()
-        from app.services import storage
-
         from botocore.config import Config
+
+        from app.services import storage
 
         # Mesma configuração do cliente real (SigV4 + path-style), sem endpoint custom: o moto intercepta
         s3 = boto3.client(
@@ -81,7 +81,11 @@ def _perfil_no_banco(ctx, uid):
     db = ctx.SessionLocal()
     try:
         perfil = db.get(Perfil, uid)
-        return None if perfil is None else {"bio": perfil.bio, "foto_key": perfil.foto_key, "foto_bytes": perfil.foto_bytes}
+        return (
+            None
+            if perfil is None
+            else {"bio": perfil.bio, "foto_key": perfil.foto_key, "foto_bytes": perfil.foto_bytes}
+        )
     finally:
         db.close()
 
@@ -91,6 +95,7 @@ def _enviar(ctx, uid, dados, nome="foto.png", tipo="image/png"):
 
 
 # ── storage.py ────────────────────────────────────────────────────────────────
+
 
 def test_calcular_expiracao_tempo_mais_margem_com_teto_e_piso(monkeypatch):
     setup_api_app()
@@ -116,6 +121,7 @@ def test_url_assinada_aponta_para_a_ponte_storage(ctx):
 
 
 # ── GET ───────────────────────────────────────────────────────────────────────
+
 
 def test_get_perfil_exige_token(ctx):
     assert ctx.client.get("/api/perfis/1").status_code == 401
@@ -148,6 +154,7 @@ def test_get_perfil_sem_linha_e_pode_editar_so_para_o_dono(ctx):
 
 
 # ── PUT bio ───────────────────────────────────────────────────────────────────
+
 
 def test_dono_atualiza_bio(ctx):
     ctx.logar(1)
@@ -198,6 +205,7 @@ def test_usuario_id_no_corpo_e_ignorado(ctx):
 
 
 # ── Upload ────────────────────────────────────────────────────────────────────
+
 
 def test_upload_png_valido_grava_webp_e_so_a_chave_no_banco(ctx):
     ctx.logar(1)
@@ -346,6 +354,7 @@ def test_log_service_fora_nao_quebra_o_upload(ctx, monkeypatch):
 
 # ── DELETE foto ───────────────────────────────────────────────────────────────
 
+
 def test_remover_foto_apaga_banco_e_bucket_e_e_idempotente(ctx):
     ctx.logar(1)
     _enviar(ctx, 1, _imagem())
@@ -376,6 +385,7 @@ def test_admin_remove_usuario_apaga_perfil_e_foto(ctx, monkeypatch):
 
 
 # ── Ponte /storage ────────────────────────────────────────────────────────────
+
 
 def _corpo_em_stream(dados):
     """Corpo ainda não lido, como o de uma resposta real (httpx.Response(content=...) já nasce consumido)."""
@@ -434,13 +444,15 @@ def test_ponte_storage_repassa_caminho_e_query_intactos(ctx, monkeypatch):
     enviado = recebidos[0].url
     assert f"{enviado.scheme}://{enviado.netloc.decode()}" == ctx.storage.STORAGE_ENDPOINT
     # Byte a byte igual ao que foi assinado (sem decodificar/recodificar)
-    assert enviado.raw_path.decode() == url[len("/storage"):]
+    assert enviado.raw_path.decode() == url[len("/storage") :]
 
 
 def test_ponte_storage_repassa_403_do_upstream(ctx, monkeypatch):
     import httpx
 
-    _mock_garage(monkeypatch, lambda request: httpx.Response(403, stream=_corpo_em_stream(b"<Error>AccessDenied</Error>")))
+    _mock_garage(
+        monkeypatch, lambda request: httpx.Response(403, stream=_corpo_em_stream(b"<Error>AccessDenied</Error>"))
+    )
     resp = ctx.client.get(f"/storage/{BUCKET}/x.webp?X-Amz-Signature=adulterada")
     assert resp.status_code == 403
     assert "cache-control" not in resp.headers

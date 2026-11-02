@@ -1,8 +1,6 @@
 import os
 import sys
 
-import pytest
-
 TOKEN = "token-interno-de-teste"
 
 
@@ -18,6 +16,7 @@ def setup_log_service():
 
     import fakeredis
     from fastapi.testclient import TestClient
+
     import app.main as main_mod
 
     servidor = fakeredis.FakeServer()
@@ -45,7 +44,9 @@ def test_post_sem_token_retorna_401_ou_422():
 def test_post_com_token_retorna_202_e_grava_no_stream():
     main_mod, client = setup_log_service()
     resp = client.post(
-        "/eventos", json=_evento("diario_publicado", recurso="diario:13", ip="10.0.0.1"), headers={"X-Internal-Token": TOKEN}
+        "/eventos",
+        json=_evento("diario_publicado", recurso="diario:13", ip="10.0.0.1"),
+        headers={"X-Internal-Token": TOKEN},
     )
     assert resp.status_code == 202
 

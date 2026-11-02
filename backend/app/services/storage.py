@@ -7,6 +7,7 @@ Assinamos com o host INTERNO (garage:3900) e devolvemos a URL com o prefixo
 /storage da API. A rota /storage (app.routes.storage_proxy) repassa a
 requisição intacta ao Garage, que é quem valida assinatura e expiração.
 """
+
 from __future__ import annotations
 
 import math

@@ -1,11 +1,13 @@
-from typing import Callable, Optional
-from fastapi import Header, Depends, HTTPException, Request, status
+from collections.abc import Callable
+
+from fastapi import Depends, Header, HTTPException, Request, status
+
 from .clients import log_client
 from .clients.auth_client import get_authenticated_user
 from .core.security import decode_token
 
 
-async def current_user(authorization: Optional[str] = Header(default=None)) -> dict:
+async def current_user(authorization: str | None = Header(default=None)) -> dict:
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,7 +35,7 @@ async def current_user(authorization: Optional[str] = Header(default=None)) -> d
     return await get_authenticated_user(authorization)
 
 
-def negar_acesso(request: Request, usuario_id: Optional[int], recurso: str, detail: str) -> HTTPException:
+def negar_acesso(request: Request, usuario_id: int | None, recurso: str, detail: str) -> HTTPException:
     """Monta o 403 e anota quem/o quê para a auditoria.
 
     Quem registra o evento 'acesso_negado' é o handler global de 403 (app.main),
@@ -43,7 +45,7 @@ def negar_acesso(request: Request, usuario_id: Optional[int], recurso: str, deta
     return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
-def _usuario_id_do_token(request: Request) -> Optional[int]:
+def _usuario_id_do_token(request: Request) -> int | None:
     authorization = request.headers.get("authorization") or ""
     try:
         sub = decode_token(authorization.replace("Bearer ", "").replace("bearer ", "").strip()).get("sub")
@@ -71,10 +73,7 @@ def require_permission(permission: str) -> Callable:
     async def dependency(request: Request, user: dict = Depends(current_user)) -> dict:
         user_permissions = user.get("permissions", [])
         # Acesso permitido se possuir a permissão requerida ou a permissão suprema de admin
-        if (
-            permission not in user_permissions
-            and "administrar:sistema" not in user_permissions
-        ):
+        if permission not in user_permissions and "administrar:sistema" not in user_permissions:
             raise negar_acesso(
                 request,
                 user.get("id"),
@@ -82,4 +81,5 @@ def require_permission(permission: str) -> Callable:
                 f"Acesso negado: permissão '{permission}' necessária",
             )
         return user
+
     return dependency

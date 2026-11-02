@@ -8,15 +8,16 @@ Até aqui a API criava as tabelas com `create_all` no boot. Esta revisão cria `
 só se ela ainda não existir, para o banco de produção (que já a tem) e um banco vazio
 chegarem ao mesmo ponto.
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import context, op
 
 revision: str = "api_001_perfis"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _existe(tabela: str) -> bool:

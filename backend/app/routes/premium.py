@@ -4,9 +4,9 @@ Regra de ouro: `premium` só muda pelo webhook com assinatura validada. A succes
 do checkout não altera nada — ela só leva o usuário de volta para a SPA, que espera
 o webhook chegar consultando /api/premium/status.
 """
+
 import logging
 from datetime import datetime
-from typing import Optional
 
 import stripe
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
@@ -32,7 +32,7 @@ EVENTOS_TRATADOS = {"checkout.session.completed", "customer.subscription.deleted
 
 class PremiumStatusOut(BaseModel):
     premium: bool
-    premium_desde: Optional[datetime] = None
+    premium_desde: datetime | None = None
 
 
 class CheckoutOut(BaseModel):
@@ -63,8 +63,14 @@ async def status_premium(user: dict = Depends(current_user), db: Session = Depen
     response_model=CheckoutOut,
     responses={
         **UNAUTHORIZED,
-        409: {"description": "Usuário já é Premium", "content": {"application/json": {"example": {"detail": "Você já é Premium"}}}},
-        502: {"description": "Stripe recusou ou não respondeu", "content": {"application/json": {"example": {"detail": "Não foi possível iniciar o pagamento"}}}},
+        409: {
+            "description": "Usuário já é Premium",
+            "content": {"application/json": {"example": {"detail": "Você já é Premium"}}},
+        },
+        502: {
+            "description": "Stripe recusou ou não respondeu",
+            "content": {"application/json": {"example": {"detail": "Não foi possível iniciar o pagamento"}}},
+        },
         **STRIPE_NAO_CONFIGURADO,
     },
 )
@@ -85,7 +91,7 @@ async def criar_checkout(request: Request, background: BackgroundTasks, user: di
     return CheckoutOut(url=url)
 
 
-def _recorte_do_evento(evento: dict) -> Optional[dict]:
+def _recorte_do_evento(evento: dict) -> dict | None:
     """Extrai só os IDs que o auth-service precisa. None = evento a ignorar."""
     tipo = evento.get("type")
     obj = (evento.get("data") or {}).get("object") or {}
@@ -111,8 +117,14 @@ def _recorte_do_evento(evento: dict) -> Optional[dict]:
 @webhook_router.post(
     "/webhooks/stripe",
     responses={
-        400: {"description": "Assinatura ausente ou inválida", "content": {"application/json": {"example": {"detail": "Assinatura inválida"}}}},
-        500: {"description": "Falha ao aplicar o evento (o Stripe reenvia)", "content": {"application/json": {"example": {"detail": "Falha ao processar o evento"}}}},
+        400: {
+            "description": "Assinatura ausente ou inválida",
+            "content": {"application/json": {"example": {"detail": "Assinatura inválida"}}},
+        },
+        500: {
+            "description": "Falha ao aplicar o evento (o Stripe reenvia)",
+            "content": {"application/json": {"example": {"detail": "Falha ao processar o evento"}}},
+        },
         **STRIPE_NAO_CONFIGURADO,
     },
 )

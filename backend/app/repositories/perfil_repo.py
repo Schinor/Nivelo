@@ -1,9 +1,9 @@
-from typing import Optional
 from sqlalchemy.orm import Session
+
 from app.models.perfil import Perfil
 
 
-def get(db: Session, usuario_id: int) -> Optional[Perfil]:
+def get(db: Session, usuario_id: int) -> Perfil | None:
     return db.get(Perfil, usuario_id)
 
 
@@ -16,7 +16,7 @@ def get_or_new(db: Session, usuario_id: int) -> Perfil:
     return perfil
 
 
-def atualizar_bio(db: Session, usuario_id: int, bio: Optional[str]) -> Perfil:
+def atualizar_bio(db: Session, usuario_id: int, bio: str | None) -> Perfil:
     perfil = get_or_new(db, usuario_id)
     perfil.bio = bio
     db.commit()
@@ -24,7 +24,7 @@ def atualizar_bio(db: Session, usuario_id: int, bio: Optional[str]) -> Perfil:
     return perfil
 
 
-def definir_foto(db: Session, usuario_id: int, foto_key: Optional[str], foto_bytes: Optional[int]) -> Perfil:
+def definir_foto(db: Session, usuario_id: int, foto_key: str | None, foto_bytes: int | None) -> Perfil:
     perfil = get_or_new(db, usuario_id)
     perfil.foto_key = foto_key
     perfil.foto_bytes = foto_bytes

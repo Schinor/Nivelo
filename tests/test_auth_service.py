@@ -11,8 +11,9 @@ os.environ["RESET_TOKEN_EXPIRE_MINUTES"] = "30"
 # Adiciona caminhos
 sys.path.insert(0, os.path.abspath("auth-service"))
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from email import message_from_string
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -20,11 +21,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
-from app.models.usuario import Usuario
-from app.models.reset_token import ResetToken
 from app.core.rbac_seed import seed_rbac
-from app.repositories import usuario_repo
 from app.main import app
+from app.models.reset_token import ResetToken
+from app.models.usuario import Usuario
+from app.repositories import usuario_repo
 
 # Banco de dados em memória exclusivo para a suite de testes automatizados
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -185,7 +186,7 @@ def test_cadastro_publico_ignora_papel_do_corpo_e_cria_dono(extras):
 
 def test_permissao_exclusiva_admin():
     # 1. Usuário comum tentando acessar endpoint de admin status -> 403
-    user_resp = client.post(
+    client.post(
         "/cadastro",
         json={"nome": "Comum", "email": "comum@exemplo.com", "senha": "password123", "role": "dono"},
     )
@@ -297,8 +298,8 @@ def test_negativo_token_expirado():
     db_token = ResetToken(
         token=token_expirado_str,
         usuario_id=user_id,
-        criado_em=datetime.now(timezone.utc) - timedelta(minutes=45),
-        expira_em=datetime.now(timezone.utc) - timedelta(minutes=15),
+        criado_em=datetime.now(UTC) - timedelta(minutes=45),
+        expira_em=datetime.now(UTC) - timedelta(minutes=15),
         usado=False,
     )
     db.add(db_token)
@@ -376,12 +377,23 @@ def test_email_escapa_html_no_nome_do_usuario(monkeypatch):
     capturado = {}
 
     class FakeSMTP:
-        def __init__(self, *a, **k): pass
-        def __enter__(self): return self
-        def __exit__(self, *a): return False
-        def starttls(self): pass
-        def login(self, *a): pass
-        def sendmail(self, frm, to, msg): capturado["msg"] = msg
+        def __init__(self, *a, **k):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def starttls(self):
+            pass
+
+        def login(self, *a):
+            pass
+
+        def sendmail(self, frm, to, msg):
+            capturado["msg"] = msg
 
     monkeypatch.setattr(email_mod.settings, "MAILTRAP_USERNAME", "api")
     monkeypatch.setattr(email_mod.settings, "MAILTRAP_PASSWORD", "segredo")
@@ -435,9 +447,12 @@ def test_gestao_de_usuarios_exige_admin():
 
     assert client.get("/users", headers=comum).status_code == 403
     assert client.put(f"/users/{alvo_id}/role", json={"role": "admin"}, headers=comum).status_code == 403
-    assert client.put(
-        f"/users/{alvo_id}/permissions", json={"permissions": ["administrar:sistema"]}, headers=comum
-    ).status_code == 403
+    assert (
+        client.put(
+            f"/users/{alvo_id}/permissions", json={"permissions": ["administrar:sistema"]}, headers=comum
+        ).status_code
+        == 403
+    )
     assert client.delete(f"/users/{alvo_id}", headers=comum).status_code == 403
     assert client.delete(f"/users/{alvo_id}").status_code == 401
 
@@ -474,9 +489,7 @@ def test_admin_concede_permissoes_individuais():
     login = client.post("/login", data={"username": "perms@exemplo.com", "password": "password123"})
     assert set(login.json()["user"]["permissions"]) == {"visualizar:logs"}
 
-    desconhecida = client.put(
-        f"/users/{alvo_id}/permissions", json={"permissions": ["voar:nave"]}, headers=admin
-    )
+    desconhecida = client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["voar:nave"]}, headers=admin)
     assert desconhecida.status_code == 400
     assert "voar:nave" in desconhecida.json()["detail"]
 
@@ -540,7 +553,9 @@ def test_usuario_novo_nao_e_premium():
 def test_rota_interna_exige_token(monkeypatch, interno):
     corpo = _evento("evt_sem_token", usuario_id=1)
     assert client.post("/internal/premium/eventos", json=corpo).status_code == 401
-    assert client.post("/internal/premium/eventos", json=corpo, headers={"X-Internal-Token": "errado"}).status_code == 401
+    assert (
+        client.post("/internal/premium/eventos", json=corpo, headers={"X-Internal-Token": "errado"}).status_code == 401
+    )
 
     from app.core.config import settings
 
@@ -617,9 +632,12 @@ def test_evento_de_usuario_inexistente_e_registrado_sem_erro(interno):
     assert resp.status_code == 200
     assert resp.json()["aplicado"] is False
     # Registrado: o reenvio do Stripe não fica em loop
-    assert client.post(
-        "/internal/premium/eventos", json=_evento("evt_fantasma", usuario_id=99999), headers=interno
-    ).json()["duplicado"] is True
+    assert (
+        client.post(
+            "/internal/premium/eventos", json=_evento("evt_fantasma", usuario_id=99999), headers=interno
+        ).json()["duplicado"]
+        is True
+    )
 
 
 def test_rota_interna_recusa_tipo_de_evento_desconhecido(interno):

@@ -1,8 +1,9 @@
 import logging
-from typing import List
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+
 from app.clients import log_client
 from app.clients.auth_client import forward_request
 from app.core.api_responses import (
@@ -18,23 +19,23 @@ from app.core.api_responses import (
 from app.core.database import get_db
 from app.dependencies import current_user, require_permission
 from app.models.perfil import Perfil
-from app.services import storage
 from app.schemas.usuario import (
-    UsuarioCreate,
-    UsuarioOut,
-    Token,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    PapelCreate,
+    PapelOut,
+    PermissaoOut,
     ResetPasswordRequest,
     ResetPasswordResponse,
-    ValidateTokenResponse,
+    Token,
+    UserPermissionsUpdate,
     UserRoleOut,
     UserRoleUpdate,
-    UserPermissionsUpdate,
-    PapelOut,
-    PapelCreate,
-    PermissaoOut,
+    UsuarioCreate,
+    UsuarioOut,
+    ValidateTokenResponse,
 )
+from app.services import storage
 
 logger = logging.getLogger("nivelo.api.auth")
 
@@ -151,7 +152,7 @@ async def get_user_role(user_id: int):
 
 @router.get(
     "/users",
-    response_model=List[UsuarioOut],
+    response_model=list[UsuarioOut],
     responses={**UNAUTHORIZED, **forbidden("gerenciar:usuarios"), **AUTH_SERVICE_INDISPONIVEL},
 )
 async def list_users(request: Request):
@@ -295,7 +296,7 @@ async def delete_user(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/roles", response_model=List[PapelOut], responses={**AUTH_SERVICE_INDISPONIVEL})
+@router.get("/roles", response_model=list[PapelOut], responses={**AUTH_SERVICE_INDISPONIVEL})
 async def list_roles():
     return await forward_request("GET", "/roles")
 
@@ -318,7 +319,7 @@ async def create_or_update_role(payload: PapelCreate, request: Request):
 
 @router.get(
     "/permissions",
-    response_model=List[PermissaoOut],
+    response_model=list[PermissaoOut],
     responses={**UNAUTHORIZED, **forbidden("gerenciar:permissoes"), **AUTH_SERVICE_INDISPONIVEL},
 )
 async def list_permissions(request: Request):

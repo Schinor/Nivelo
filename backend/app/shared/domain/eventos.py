@@ -1,4 +1,5 @@
 """Evento de domínio base. Os contextos herdam e acrescentam os próprios campos."""
+
 from __future__ import annotations
 
 import uuid

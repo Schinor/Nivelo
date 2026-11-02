@@ -1,4 +1,5 @@
-from typing import Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -10,9 +11,9 @@ class PremiumEventoIn(BaseModel):
 
     event_id: str
     tipo: Literal["checkout.session.completed", "customer.subscription.deleted"]
-    usuario_id: Optional[int] = None
-    customer_id: Optional[str] = None
-    subscription_id: Optional[str] = None
+    usuario_id: int | None = None
+    customer_id: str | None = None
+    subscription_id: str | None = None
 
 
 class PremiumEventoOut(BaseModel):
@@ -20,5 +21,5 @@ class PremiumEventoOut(BaseModel):
     duplicado: bool
     # True = algum usuário mudou de plano por causa deste evento
     aplicado: bool
-    usuario_id: Optional[int] = None
-    premium: Optional[bool] = None
+    usuario_id: int | None = None
+    premium: bool | None = None

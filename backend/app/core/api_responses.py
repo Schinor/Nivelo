@@ -25,9 +25,7 @@ def forbidden(permission: str) -> dict:
         403: {
             "description": "Autenticado, mas sem a permissão necessária (evento 'acesso_negado' é registrado na auditoria)",
             "content": {
-                "application/json": {
-                    "example": {"detail": f"Acesso negado: permissão '{permission}' necessária"}
-                }
+                "application/json": {"example": {"detail": f"Acesso negado: permissão '{permission}' necessária"}}
             },
         }
     }
@@ -36,11 +34,7 @@ def forbidden(permission: str) -> dict:
 AUTH_SERVICE_INDISPONIVEL = {
     503: {
         "description": "auth-service inacessível",
-        "content": {
-            "application/json": {
-                "example": {"detail": "Serviço de autenticação inacessível: ..."}
-            }
-        },
+        "content": {"application/json": {"example": {"detail": "Serviço de autenticação inacessível: ..."}}},
     }
 }
 
@@ -71,6 +65,7 @@ NOT_FOUND_USER = {
         "content": {"application/json": {"example": {"detail": "Usuário não encontrado"}}},
     }
 }
+
 
 def gestao_usuario_invalida(**exemplos: str) -> dict:
     """400 das rotas de gestão de usuários: ação sobre a própria conta, mais os exemplos da rota."""

@@ -1,5 +1,5 @@
-from typing import Optional
 from pydantic import BaseModel, EmailStr
+
 from app.schemas.usuario import UsuarioOut
 
 
@@ -28,5 +28,5 @@ class ResetPasswordResponse(BaseModel):
 
 class ValidateTokenResponse(BaseModel):
     valid: bool
-    email: Optional[str] = None
-    message: Optional[str] = None
+    email: str | None = None
+    message: str | None = None

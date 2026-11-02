@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from sqlalchemy import String, DateTime
+from datetime import UTC, datetime
+
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.core.database import Base
 
 
@@ -15,4 +17,4 @@ class StripeEventoProcessado(Base):
 
     event_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tipo: Mapped[str] = mapped_column(String(100), nullable=False)
-    processado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    processado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(UTC))

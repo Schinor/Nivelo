@@ -25,9 +25,7 @@ def forbidden(permission: str) -> dict:
         403: {
             "description": "Autenticado, mas sem a permissão necessária",
             "content": {
-                "application/json": {
-                    "example": {"detail": f"Acesso negado: permissão '{permission}' necessária"}
-                }
+                "application/json": {"example": {"detail": f"Acesso negado: permissão '{permission}' necessária"}}
             },
         }
     }

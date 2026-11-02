@@ -7,6 +7,7 @@ Na Fase 1 os papéis de negócio (`dono`, `encarregado`, `cliente`) ainda não t
 permissões granulares: a autorização deles chega na Fase 3, por vínculo com a empresa
 e pela dependência `requer_papel`. Só o `admin` (da plataforma) tem permissões aqui.
 """
+
 from sqlalchemy.orm import Session
 
 from app.models.papel import Papel, role_permissions
@@ -22,7 +23,11 @@ PERMISSOES_DEFINICAO = [
     {"action": "gerenciar", "resource": "papeis", "description": "Criar, alterar e listar papéis do sistema"},
     {"action": "gerenciar", "resource": "permissoes", "description": "Gerenciar matriz de permissões"},
     {"action": "visualizar", "resource": "logs", "description": "Consultar a trilha de auditoria do sistema"},
-    {"action": "administrar", "resource": "sistema", "description": "Permissão exclusiva de administração da plataforma"},
+    {
+        "action": "administrar",
+        "resource": "sistema",
+        "description": "Permissão exclusiva de administração da plataforma",
+    },
 ]
 
 PAPEIS_DEFINICAO = [
@@ -62,10 +67,14 @@ def seed_rbac(db: Session) -> None:
     # 1. Cria as permissões da matriz
     perm_dict: dict[str, Permissao] = {}
     for p_data in PERMISSOES_DEFINICAO:
-        perm = db.query(Permissao).filter(
-            Permissao.action == p_data["action"],
-            Permissao.resource == p_data["resource"],
-        ).first()
+        perm = (
+            db.query(Permissao)
+            .filter(
+                Permissao.action == p_data["action"],
+                Permissao.resource == p_data["resource"],
+            )
+            .first()
+        )
         if not perm:
             perm = Permissao(action=p_data["action"], resource=p_data["resource"], description=p_data["description"])
             db.add(perm)

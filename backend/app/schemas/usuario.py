@@ -1,13 +1,13 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, EmailStr, ConfigDict, computed_field
+
+from pydantic import BaseModel, ConfigDict, EmailStr, computed_field
 
 
 class PermissaoOut(BaseModel):
     id: int
     action: str
     resource: str
-    description: Optional[str] = None
+    description: str | None = None
 
     @computed_field
     @property
@@ -21,8 +21,8 @@ class PapelOut(BaseModel):
     id: int
     name: str
     slug: str
-    description: Optional[str] = None
-    permissoes: List[PermissaoOut] = []
+    description: str | None = None
+    permissoes: list[PermissaoOut] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -30,8 +30,8 @@ class PapelOut(BaseModel):
 class PapelCreate(BaseModel):
     name: str
     slug: str
-    description: Optional[str] = None
-    permission_ids: List[int] = []
+    description: str | None = None
+    permission_ids: list[int] = []
 
 
 class UsuarioCreate(BaseModel):
@@ -48,11 +48,11 @@ class UsuarioOut(BaseModel):
     nome: str
     email: str
     role: str = "cliente"
-    role_id: Optional[int] = None
-    permissions: List[str] = []
-    criado_em: Optional[datetime] = None
+    role_id: int | None = None
+    permissions: list[str] = []
+    criado_em: datetime | None = None
     premium: bool = False
-    premium_desde: Optional[datetime] = None
+    premium_desde: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -60,7 +60,7 @@ class UsuarioOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: Optional[UsuarioOut] = None
+    user: UsuarioOut | None = None
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -82,8 +82,8 @@ class ResetPasswordResponse(BaseModel):
 
 class ValidateTokenResponse(BaseModel):
     valid: bool
-    email: Optional[str] = None
-    message: Optional[str] = None
+    email: str | None = None
+    message: str | None = None
 
 
 class UserRoleUpdate(BaseModel):
@@ -91,11 +91,11 @@ class UserRoleUpdate(BaseModel):
 
 
 class UserPermissionsUpdate(BaseModel):
-    permissions: List[str]
+    permissions: list[str]
 
 
 class UserRoleOut(BaseModel):
     user_id: int
     role: str
-    role_id: Optional[int] = None
-    permissions: List[str] = []
+    role_id: int | None = None
+    permissions: list[str] = []

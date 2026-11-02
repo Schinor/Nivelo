@@ -3,6 +3,7 @@
 Lê o `X-Request-ID` de entrada (se for um valor seguro) ou gera um novo, guarda num
 ContextVar para os clientes HTTP repassarem e devolve o mesmo valor na resposta.
 """
+
 from __future__ import annotations
 
 import re

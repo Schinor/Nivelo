@@ -39,7 +39,9 @@ class Settings(BaseSettings):
     def somente_modo_teste(cls, valor: str) -> str:
         # Falha cedo: chave live cobraria cartões de verdade
         if valor.startswith(("sk_live_", "rk_live_")):
-            raise ValueError("STRIPE_SECRET_KEY é uma chave LIVE; esta aplicação só aceita chaves de teste (sk_test_...)")
+            raise ValueError(
+                "STRIPE_SECRET_KEY é uma chave LIVE; esta aplicação só aceita chaves de teste (sk_test_...)"
+            )
         return valor
 
     @property

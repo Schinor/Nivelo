@@ -1,4 +1,5 @@
 """Esqueleto hexagonal (Fase 1): os pacotes existem e o kernel compartilhado se comporta."""
+
 import uuid
 from datetime import UTC, datetime
 

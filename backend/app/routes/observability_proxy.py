@@ -71,18 +71,17 @@ def _forward_headers(request: Request) -> list[tuple[bytes, bytes]]:
     - Bytes crus porque o Grafana envia headers com acento (X-Panel-Title:
       "Latência p95"), que o httpx não consegue codificar como ASCII a partir de str.
     """
-    headers = [
-        (key, value)
-        for key, value in request.headers.raw
-        if key.lower() not in _SKIP_REQUEST_HEADERS
-    ]
+    headers = [(key, value) for key, value in request.headers.raw if key.lower() not in _SKIP_REQUEST_HEADERS]
     # Estende a cadeia que já vier do Cloudflare em vez de duplicar os headers
     client_ip = request.client.host if request.client else ""
     forwarded_for = ", ".join(filter(None, [request.headers.get("x-forwarded-for"), client_ip]))
     headers += [
         (b"x-forwarded-for", forwarded_for.encode("latin-1")),
         (b"x-forwarded-proto", request.headers.get("x-forwarded-proto", request.url.scheme).encode("latin-1")),
-        (b"x-forwarded-host", request.headers.get("x-forwarded-host", request.headers.get("host", "")).encode("latin-1")),
+        (
+            b"x-forwarded-host",
+            request.headers.get("x-forwarded-host", request.headers.get("host", "")).encode("latin-1"),
+        ),
     ]
     return headers
 

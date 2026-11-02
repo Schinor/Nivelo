@@ -4,12 +4,12 @@ Requisito central: cada um só edita o PRÓPRIO perfil. O `{usuario_id}` da rota
 existe só para ser comparado com o id do JWT — nunca é a fonte da identidade.
 Admin não é exceção (decisão documentada no README).
 """
+
 import logging
 import time
 import uuid
 from collections import defaultdict, deque
 from io import BytesIO
-from typing import Optional
 
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import (
@@ -84,7 +84,7 @@ async def _dados_da_conta(usuario_id: int) -> dict:
     return await forward_request("GET", f"/users/{usuario_id}")
 
 
-async def _montar_perfil(db: Session, usuario_id: int, user: dict, perfil: Optional[Perfil] = None) -> PerfilOut:
+async def _montar_perfil(db: Session, usuario_id: int, user: dict, perfil: Perfil | None = None) -> PerfilOut:
     conta = await _dados_da_conta(usuario_id)
     if perfil is None:
         perfil = perfil_repo.get(db, usuario_id)
@@ -116,7 +116,9 @@ def _checar_limite_upload(usuario_id: int) -> None:
     while janela and agora - janela[0] > 60:
         janela.popleft()
     if len(janela) >= UPLOADS_POR_MINUTO:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Muitos envios de foto; aguarde um minuto")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Muitos envios de foto; aguarde um minuto"
+        )
     janela.append(agora)
 
 

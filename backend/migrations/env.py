@@ -4,6 +4,7 @@ A API e o auth-service dividem o mesmo banco, cada um com a sua árvore de migra
 Por isso esta árvore grava a versão em `alembic_version_api` (a do auth-service fica na
 tabela padrão `alembic_version`).
 """
+
 import os
 import sys
 from logging.config import fileConfig
@@ -13,9 +14,9 @@ from sqlalchemy import engine_from_config, pool
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import app.models  # noqa: E402,F401
 from app.core.config import settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
-import app.models  # noqa: E402,F401
 
 VERSION_TABLE = "alembic_version_api"
 

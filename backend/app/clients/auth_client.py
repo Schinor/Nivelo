@@ -1,19 +1,24 @@
 import os
-from typing import Optional, Any, Dict
+from typing import Any
+
 import httpx
 from fastapi import HTTPException, status
-from app.core.config import settings
-from app.shared.api.request_id import HEADER as REQUEST_ID_HEADER, obter_request_id
 
-AUTH_SERVICE_URL = getattr(settings, "AUTH_SERVICE_URL", os.getenv("AUTH_SERVICE_URL", "http://auth-service:8001")).rstrip("/")
+from app.core.config import settings
+from app.shared.api.request_id import HEADER as REQUEST_ID_HEADER
+from app.shared.api.request_id import obter_request_id
+
+AUTH_SERVICE_URL = getattr(
+    settings, "AUTH_SERVICE_URL", os.getenv("AUTH_SERVICE_URL", "http://auth-service:8001")
+).rstrip("/")
 
 
 async def forward_request(
     method: str,
     path: str,
-    json_data: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    headers: Optional[Dict[str, str]] = None,
+    json_data: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
     interno: bool = False,
 ) -> Any:
     url = f"{AUTH_SERVICE_URL}{path}"
@@ -55,7 +60,7 @@ async def forward_request(
             )
 
 
-async def get_authenticated_user(authorization: Optional[str]) -> Dict[str, Any]:
+async def get_authenticated_user(authorization: str | None) -> dict[str, Any]:
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

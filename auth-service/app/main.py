@@ -1,6 +1,6 @@
-import sys
-import os
 import logging
+import os
+import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
@@ -12,14 +12,13 @@ from fastapi.responses import JSONResponse
 from prometheus_client import CollectorRegistry
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
-from app.core.database import engine, SessionLocal
+
 import app.models  # força o registro dos models no metadata
+from app.core.database import SessionLocal, engine
 from app.core.rbac_seed import seed_rbac
-
 from app.routes.auth import router as auth_router
-from app.routes.users import router as users_router
 from app.routes.premium import router as premium_router
-
+from app.routes.users import router as users_router
 
 # Loggers "auth-service.*" em INFO no stdout (ex.: eventos do Stripe aplicados).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.

@@ -3,6 +3,7 @@
 O front trata o erro pelo `type`, não pelo texto. O campo `detail` continua existindo
 com a mensagem legível, então quem lia `detail` antes segue funcionando.
 """
+
 from __future__ import annotations
 
 import logging

@@ -1,29 +1,30 @@
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from app.core.config import settings
-from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, get_current_user
-from app.core.email import send_password_reset_email
+
 from app.core.api_responses import (
     CREDENCIAIS_INVALIDAS,
     EMAIL_JA_CADASTRADO,
     RESET_TOKEN_INVALIDO,
     UNAUTHORIZED,
 )
-from app.repositories import usuario_repo, reset_token_repo
-from app.schemas.usuario import UsuarioCreate, UsuarioOut
+from app.core.config import settings
+from app.core.database import get_db
+from app.core.email import send_password_reset_email
+from app.core.security import create_access_token, get_current_user, verify_password
+from app.repositories import reset_token_repo, usuario_repo
 from app.schemas.auth import (
-    Token,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
+    Token,
     ValidateTokenResponse,
 )
+from app.schemas.usuario import UsuarioCreate, UsuarioOut
 
 logger = logging.getLogger("auth-service.auth")
 
@@ -111,10 +112,10 @@ def validate_reset_token(token: str, db: Session = Depends(get_db)):
     if not reset_token:
         return {"valid": False, "message": "Token de recuperação inválido ou não encontrado."}
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     expira_em = reset_token.expira_em
     if expira_em.tzinfo is None:
-        expira_em = expira_em.replace(tzinfo=timezone.utc)
+        expira_em = expira_em.replace(tzinfo=UTC)
 
     if now_utc >= expira_em:
         return {"valid": False, "message": "Link de recuperação expirado (limite de 30 minutos excedido)."}
@@ -139,10 +140,10 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             detail="Token de recuperação inválido ou inexistente.",
         )
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     expira_em = reset_token.expira_em
     if expira_em.tzinfo is None:
-        expira_em = expira_em.replace(tzinfo=timezone.utc)
+        expira_em = expira_em.replace(tzinfo=UTC)
 
     if now_utc >= expira_em:
         raise HTTPException(

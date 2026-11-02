@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/logs", tags=["logs"])
 async def listar_logs(
     limit: int = Query(50, ge=1, le=500),
     _user: dict = Depends(require_permission("visualizar:logs")),
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Trilha de auditoria (mais recentes primeiro) — requer 'visualizar:logs'."""
     try:
         async with httpx.AsyncClient(timeout=3) as client:

@@ -9,14 +9,15 @@ MariaDB e no SQLite e não depende de inspecionar o banco, então o script tamb�
 pode ser exportado offline (db/000_remove_catalogo.sql). O downgrade não recria
 nada: a remoção é definitiva.
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "api_002_remove_catalogo"
-down_revision: Union[str, None] = "api_001_perfis"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "api_001_perfis"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

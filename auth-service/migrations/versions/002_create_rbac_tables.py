@@ -5,15 +5,17 @@ Revises: 001_auth_service
 Create Date: 2026-09-13 18:00:00.000000
 
 """
-from typing import Sequence, Union
-from alembic import op
+
+from collections.abc import Sequence
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 
 revision: str = "002_rbac_system"
-down_revision: Union[str, None] = "001_auth_service"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "001_auth_service"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -47,7 +49,9 @@ def upgrade() -> None:
         op.create_table(
             "role_permissions",
             sa.Column("role_id", sa.Integer(), sa.ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
-            sa.Column("permission_id", sa.Integer(), sa.ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
+            sa.Column(
+                "permission_id", sa.Integer(), sa.ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
+            ),
         )
 
     # 4. Adiciona coluna role_id em usuarios se nao existir
