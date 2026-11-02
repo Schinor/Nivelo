@@ -6,6 +6,7 @@ import httpx
 from fastapi import Request
 
 from app.core.config import settings
+from app.shared.api.request_id import obter_request_id
 
 logger = logging.getLogger("nivelo.api.log_client")
 
@@ -29,6 +30,7 @@ async def registrar(
         "recurso": recurso,
         "detalhes": detalhes,
         "ip": request.client.host if request and request.client else None,
+        "request_id": obter_request_id(),
     }
     try:
         async with httpx.AsyncClient(timeout=1.5) as client:

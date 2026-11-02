@@ -27,6 +27,7 @@ class Evento(BaseModel):
     recurso: str | None = None
     detalhes: str | None = None
     ip: str | None = None
+    request_id: str | None = None
 
 
 def checar_token(token: str) -> None:

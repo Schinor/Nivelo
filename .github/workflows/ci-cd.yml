@@ -35,8 +35,8 @@ jobs:
       - name: Build e subida da stack (espera todos ficarem healthy)
         run: docker compose -f docker-compose.ci.yml up -d --build --wait --wait-timeout 240
 
-      - name: Teste 1 - /health da api responde 200
-        run: curl --fail --silent --show-error http://localhost:8000/health
+      - name: Teste 1 - /health/ready da api responde 200
+        run: curl --fail --silent --show-error http://localhost:8000/health/ready
 
       - name: Teste 2 - a cadeia api → auth → banco responde
         run: |

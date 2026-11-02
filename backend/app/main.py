@@ -6,23 +6,20 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-import asyncio
 import logging
 
-import httpx
 from fastapi import FastAPI, Request, status
-from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from prometheus_client import CollectorRegistry
 from prometheus_fastapi_instrumentator import Instrumentator
-from sqlalchemy import text
 
-from app.core.config import settings
-from app.core.database import engine
 from app.dependencies import auditar_acesso_negado
 import app.models  # noqa: F401 — força o registro dos models no metadata
+from app.shared.api.health import router as health_router
+from app.shared.api.problem_details import registrar_handlers
+from app.shared.api.request_id import RequestIdMiddleware
 
 from app.routes.auth import router as auth_router
 from app.routes.logs import router as logs_router
@@ -53,9 +50,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
+# Por último = mais externo: o Request ID já existe quando qualquer outro middleware ou handler roda
+app.add_middleware(RequestIdMiddleware)
 
 # Rotas da API
+app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(logs_router)
 app.include_router(perfis_router)
@@ -67,54 +68,18 @@ app.include_router(storage_router)
 
 
 
-@app.exception_handler(StarletteHTTPException)
-async def auditar_403(request: Request, exc: StarletteHTTPException):
+async def auditar_403(request: Request, exc: StarletteHTTPException) -> None:
     """Ponto central da auditoria de negação: TODA resposta 403 gera 'acesso_negado'."""
     if exc.status_code == status.HTTP_403_FORBIDDEN:
         await auditar_acesso_negado(request)
-    return await http_exception_handler(request, exc)
 
 
-def _banco_ok() -> bool:
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return True
-    except Exception:
-        return False
-
-
-async def _http_ok(url: str, aceitar_qualquer_resposta: bool = False) -> bool:
-    try:
-        async with httpx.AsyncClient(timeout=2) as client:
-            resp = await client.get(url)
-    except httpx.HTTPError:
-        return False
-    return resp.status_code < 500 if aceitar_qualquer_resposta else resp.status_code == 200
-
-
-@app.get("/health", include_in_schema=False)
-async def health():
-    """Readiness: 200 só se banco, auth-service e object storage responderem; senão 503."""
-    banco, auth, storage = await asyncio.gather(
-        asyncio.to_thread(_banco_ok),
-        _http_ok(f"{settings.AUTH_SERVICE_URL.rstrip('/')}/health"),
-        # Sem credenciais o Garage responde 403: o que importa aqui é ele estar de pé
-        _http_ok(settings.STORAGE_ENDPOINT, aceitar_qualquer_resposta=True),
-    )
-    corpo = {
-        "db": "up" if banco else "down",
-        "auth_service": "up" if auth else "down",
-        "storage": "up" if storage else "down",
-    }
-    if not (banco and auth and storage):
-        return JSONResponse(status_code=503, content={"status": "unhealthy", **corpo})
-    return {"status": "healthy", **corpo}
+registrar_handlers(app, antes_de_http=auditar_403)
 
 
 # Registry próprio evita colisão de métricas quando mais de um app é importado no mesmo processo.
 # Registrado antes do fallback da SPA para que /metrics não caia no index.html.
-Instrumentator(registry=CollectorRegistry(), excluded_handlers=["/metrics", "/health"]).instrument(app).expose(
+Instrumentator(registry=CollectorRegistry(), excluded_handlers=["/metrics", "/health", "/health/live", "/health/ready"]).instrument(app).expose(
     app, include_in_schema=False
 )
 

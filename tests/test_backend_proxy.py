@@ -80,21 +80,24 @@ def _mock_log_service(monkeypatch, handler):
     )
 
 
-def _mock_dependencias_health(monkeypatch, auth_status=200, storage_status=403):
-    """auth-service e Garage simulados; None = serviço fora do ar."""
+def _mock_dependencias_health(monkeypatch, auth_status=200, storage_status=403, log_status=200):
+    """auth-service, log-service e Garage simulados; None = serviço fora do ar."""
     import httpx
 
     def handler(request: httpx.Request) -> httpx.Response:
-        codigo = auth_status if request.url.host == "auth-service" else storage_status
+        codigo = {"auth-service": auth_status, "log-service": log_status}.get(request.url.host, storage_status)
         if codigo is None:
             raise httpx.ConnectError("sem rota", request=request)
         return httpx.Response(codigo)
 
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        "app.main.httpx.AsyncClient",
+        "app.shared.api.health.httpx.AsyncClient",
         lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
     )
+
+
+SAUDAVEL = {"status": "healthy", "db": "up", "auth_service": "up", "auditoria": "up", "storage": "up"}
 
 
 def test_health_e_metrics_da_api(monkeypatch):
@@ -102,9 +105,11 @@ def test_health_e_metrics_da_api(monkeypatch):
     _mock_dependencias_health(monkeypatch)
     client = TestClient(app)
 
-    health = client.get("/health")
-    assert health.status_code == 200
-    assert health.json() == {"status": "healthy", "db": "up", "auth_service": "up", "storage": "up"}
+    for rota in ("/health", "/health/ready"):
+        resp = client.get(rota)
+        assert resp.status_code == 200
+        assert resp.json() == SAUDAVEL
+    assert client.get("/health/live").json() == {"status": "live"}
 
     client.get("/api/docs")
     metrics = client.get("/metrics")
@@ -113,17 +118,26 @@ def test_health_e_metrics_da_api(monkeypatch):
     assert "http_request_duration_seconds" in metrics.text
 
 
+def test_health_live_nao_depende_de_nada(monkeypatch):
+    app, _, _, TestClient = setup_api_app()
+    _mock_dependencias_health(monkeypatch, auth_status=None, storage_status=None, log_status=None)
+    client = TestClient(app)
+
+    assert client.get("/health/live").status_code == 200
+    assert client.get("/health/ready").status_code == 503
+
+
 def test_health_retorna_503_quando_banco_cai(monkeypatch):
     app, _, _, TestClient = setup_api_app()
-    import app.main as main_mod
+    import app.core.database as database
 
     class BancoFora:
         def connect(self):
             raise RuntimeError("banco indisponível")
 
     _mock_dependencias_health(monkeypatch)
-    monkeypatch.setattr(main_mod, "engine", BancoFora())
-    resp = TestClient(app).get("/health")
+    monkeypatch.setattr(database, "engine", BancoFora())
+    resp = TestClient(app).get("/health/ready")
     assert resp.status_code == 503
     assert resp.json()["status"] == "unhealthy"
     assert resp.json()["db"] == "down"

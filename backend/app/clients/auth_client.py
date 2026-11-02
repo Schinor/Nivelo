@@ -3,6 +3,7 @@ from typing import Optional, Any, Dict
 import httpx
 from fastapi import HTTPException, status
 from app.core.config import settings
+from app.shared.api.request_id import HEADER as REQUEST_ID_HEADER, obter_request_id
 
 AUTH_SERVICE_URL = getattr(settings, "AUTH_SERVICE_URL", os.getenv("AUTH_SERVICE_URL", "http://auth-service:8001")).rstrip("/")
 
@@ -22,6 +23,9 @@ async def forward_request(
     if interno:
         # Rotas /internal do auth-service (ex.: gravar o status premium vindo do webhook do Stripe)
         req_headers["X-Internal-Token"] = settings.AUTH_INTERNAL_TOKEN
+    request_id = obter_request_id()
+    if request_id:
+        req_headers[REQUEST_ID_HEADER] = request_id
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
