@@ -1,0 +1,11 @@
+# Ferramentas de desenvolvimento e CI (os serviços usam o próprio requirements.txt)
+-r backend/requirements.txt
+-r auth-service/requirements.txt
+-r log-service/requirements.txt
+pytest==9.2.0
+fakeredis==2.40.0
+moto[s3]==5.2.5
+ruff==0.17.3
+mypy==2.4.1
+import-linter==2.15
+pre-commit==4.7.0

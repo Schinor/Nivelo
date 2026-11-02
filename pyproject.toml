@@ -1,0 +1,101 @@
+# Configuração das ferramentas de qualidade do repositório (não é um pacote instalável).
+# Os serviços continuam com o próprio requirements.txt; as ferramentas ficam em requirements-dev.txt.
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["frontend", "**/migrations/script.py.mako"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E501",  # o formatter cuida do comprimento; sobra só texto longo (mensagens, SQL)
+    "B008",  # Depends()/Header()/File() no default é o padrão do FastAPI
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Os entrypoints e o env do Alembic ajustam o sys.path antes de importar o pacote app
+"backend/app/main.py" = ["E402"]
+"auth-service/app/main.py" = ["E402"]
+"**/migrations/env.py" = ["E402"]
+# Os testes trocam o pacote app (API ou auth-service) em sys.modules e importam depois
+"tests/**" = ["E402"]
+# Código herdado: o raise sem "from" dentro de except vira dívida, corrigida quando o módulo
+# migrar para a arquitetura nova. Código novo (shared, obras, assinaturas, admin) não tem exceção.
+"backend/app/routes/**" = ["B904"]
+"backend/app/clients/**" = ["B904"]
+"backend/app/core/**" = ["B904"]
+"auth-service/app/**" = ["B904"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "backend"
+explicit_package_bases = true
+packages = ["app.shared", "app.obras", "app.assinaturas", "app.admin"]
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+# Regra do projeto: domínio em modo strict
+[[tool.mypy.overrides]]
+module = ["app.shared.domain.*", "app.obras.domain.*", "app.assinaturas.domain.*"]
+strict = true
+
+# Código herdado alcançado por import (o health usa app.core): não é verificado até migrar.
+# Ao migrar outro módulo herdado que o código novo importe, acrescente-o aqui ou tipe-o.
+[[tool.mypy.overrides]]
+module = ["app.core.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.importlinter]
+root_package = "app"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Domínio puro: nenhum domain importa framework, banco, fila, S3 ou Stripe"
+type = "forbidden"
+source_modules = ["app.shared.domain", "app.obras.domain", "app.assinaturas.domain"]
+forbidden_modules = ["fastapi", "starlette", "sqlalchemy", "redis", "boto3", "botocore", "stripe", "httpx", "pydantic"]
+
+[[tool.importlinter.contracts]]
+name = "Domínio não importa o código herdado da API"
+type = "forbidden"
+source_modules = ["app.shared.domain", "app.obras.domain", "app.assinaturas.domain"]
+forbidden_modules = [
+    "app.core",
+    "app.clients",
+    "app.routes",
+    "app.models",
+    "app.repositories",
+    "app.schemas",
+    "app.services",
+    "app.dependencies",
+    "app.main",
+]
+
+[[tool.importlinter.contracts]]
+name = "Camadas de cada contexto: api > infrastructure > application > domain"
+type = "layers"
+containers = ["app.shared", "app.obras", "app.assinaturas"]
+layers = ["api", "infrastructure", "application", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "Gestão de Obras não importa a infraestrutura de Assinaturas"
+type = "forbidden"
+source_modules = ["app.obras"]
+forbidden_modules = ["app.assinaturas.infrastructure", "app.assinaturas.api"]
+
+[[tool.importlinter.contracts]]
+name = "Contextos não dependem do painel admin"
+type = "forbidden"
+source_modules = ["app.shared", "app.obras", "app.assinaturas"]
+forbidden_modules = ["app.admin"]

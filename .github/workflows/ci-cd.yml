@@ -27,10 +27,25 @@ jobs:
           echo "CI_STORAGE_ACCESS_KEY=GK$(openssl rand -hex 16)" >> "$GITHUB_ENV"
           echo "CI_STORAGE_SECRET_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
 
-      - name: Testes unitários (pytest)
+      - name: Dependências de desenvolvimento
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint e formatação (ruff)
         run: |
-          pip install -r backend/requirements.txt -r auth-service/requirements.txt -r log-service/requirements.txt pytest fakeredis "moto[s3]"
-          pytest -q
+          ruff check .
+          ruff format --check .
+
+      - name: Tipos (mypy, strict no domínio)
+        run: mypy
+
+      - name: Fronteiras de camada e contexto (import-linter)
+        run: PYTHONPATH=backend lint-imports
+
+      - name: Nenhuma referência ao domínio antigo
+        run: "! git grep -niE 'hanks|filme|tmdb|movie|poster'"
+
+      - name: Testes (pytest)
+        run: pytest -q
 
       - name: Build e subida da stack (espera todos ficarem healthy)
         run: docker compose -f docker-compose.ci.yml up -d --build --wait --wait-timeout 240
