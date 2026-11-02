@@ -64,12 +64,12 @@ services:
       retries: 20
       start_period: 10s
 
-  catalogo:
+  api:
     build: .
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: sqlite:////tmp/catalogo.db
+      DATABASE_URL: sqlite:////tmp/api.db
       SECRET_KEY: ${CI_SECRET_KEY}
       ALGORITHM: HS256
       PORT: "8000"

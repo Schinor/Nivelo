@@ -35,10 +35,10 @@ jobs:
       - name: Build e subida da stack (espera todos ficarem healthy)
         run: docker compose -f docker-compose.ci.yml up -d --build --wait --wait-timeout 240
 
-      - name: Teste 1 - /health do catálogo responde 200
+      - name: Teste 1 - /health da api responde 200
         run: curl --fail --silent --show-error http://localhost:8000/health
 
-      - name: Teste 2 - a cadeia catálogo → auth → banco responde
+      - name: Teste 2 - a cadeia api → auth → banco responde
         run: |
           code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -d "username=naoexiste@teste.com&password=errada" \
@@ -46,7 +46,7 @@ jobs:
           echo "login inexistente retornou $code"
           test "$code" = "401"
 
-      - name: Teste 3 - /metrics do catálogo expõe métricas Prometheus
+      - name: Teste 3 - /metrics da api expõe métricas Prometheus
         run: curl --fail --silent http://localhost:8000/metrics | grep -q http_requests_total
 
       - name: Teste 4 - ponte /storage existe e recusa URL sem assinatura
@@ -70,12 +70,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - { name: catalogo-filmes, context: ".", file: "Dockerfile" }
-          - { name: auth-service, context: "./auth-service", file: "auth-service/Dockerfile" }
-          - { name: log-service, context: "./log-service", file: "log-service/Dockerfile" }
-          - { name: prometheus, context: "./prometheus", file: "prometheus/Dockerfile" }
-          - { name: grafana, context: "./grafana", file: "grafana/Dockerfile" }
-          - { name: garage, context: "./garage", file: "garage/Dockerfile" }
+          - { name: nivelo-api, context: ".", file: "Dockerfile" }
+          - { name: nivelo-auth-service, context: "./auth-service", file: "auth-service/Dockerfile" }
+          - { name: nivelo-log-service, context: "./log-service", file: "log-service/Dockerfile" }
+          - { name: nivelo-prometheus, context: "./prometheus", file: "prometheus/Dockerfile" }
+          - { name: nivelo-grafana, context: "./grafana", file: "grafana/Dockerfile" }
+          - { name: nivelo-garage, context: "./garage", file: "garage/Dockerfile" }
     steps:
       - uses: actions/checkout@v4
 

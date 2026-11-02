@@ -1,7 +1,7 @@
 services:
-  catalogo:
-    image: ghcr.io/schinor/catalogo-filmes:${IMAGE_TAG:-latest}
-    container_name: catalogo-filmes-schinor
+  api:
+    image: ghcr.io/schinor/nivelo-api:${IMAGE_TAG:-latest}
+    container_name: nivelo-api-schinor
     ports:
       # Se a porta 8000 já estiver em uso por outro aluno, troque a porta da esquerda (ex: 8050:8000)
       - "${PORT:-8000}:8000"
@@ -52,11 +52,11 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
   auth-service:
-    image: ghcr.io/schinor/auth-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/schinor/nivelo-auth-service:${IMAGE_TAG:-latest}
     container_name: auth-service-schinor
     expose:
       - "8001"
@@ -88,11 +88,11 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
   log-service:
-    image: ghcr.io/schinor/log-service:${IMAGE_TAG:-latest}
+    image: ghcr.io/schinor/nivelo-log-service:${IMAGE_TAG:-latest}
     container_name: log-service-schinor
     expose:
       - "8002"                # Sem "ports:" — não é publicado no host
@@ -110,7 +110,7 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
   redis:
@@ -125,11 +125,11 @@ services:
       timeout: 3s
       retries: 3
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
   garage:
-    image: ghcr.io/schinor/garage:${IMAGE_TAG:-latest}
+    image: ghcr.io/schinor/nivelo-garage:${IMAGE_TAG:-latest}
     container_name: garage-schinor
     # --single-node: layout de 1 nó automático
     # --default-bucket: cria chave de acesso + bucket a partir das variáveis (idempotente no restart)
@@ -144,7 +144,7 @@ services:
       - garage-meta:/var/lib/garage/meta
       - garage-data:/var/lib/garage/data
     expose:
-      - "3900"            # Sem "ports:" — só a rede interna enxerga (acesso do navegador via /storage no catalogo)
+      - "3900"            # Sem "ports:" — só a rede interna enxerga (acesso do navegador via /storage na api)
     healthcheck:
       # imagem sem shell/curl: usa o próprio binário
       test: ["CMD", "/garage", "status"]
@@ -153,15 +153,15 @@ services:
       retries: 6
       start_period: 10s
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
   prometheus:
-    image: ghcr.io/schinor/prometheus:${IMAGE_TAG:-latest}
+    image: ghcr.io/schinor/nivelo-prometheus:${IMAGE_TAG:-latest}
     # --web.external-url: portas dedicadas (9090) não chegam pelo proxy do domínio público
-    # (ver /prometheus em catalogo), então os links gerados pelo próprio Prometheus
+    # (ver /prometheus na api), então os links gerados pelo próprio Prometheus
     # precisam já vir com esse prefixo. --web.route-prefix mantém as rotas internas
-    # na raiz, que é o que o proxy do catalogo espera ao encaminhar as requisições.
+    # na raiz, que é o que o proxy da api espera ao encaminhar as requisições.
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -171,26 +171,26 @@ services:
       - "--web.route-prefix=/"
     # Sem "ports:" — a porta dedicada não chega pelo domínio público e, no host
     # compartilhado do Portainer, publicar 9090 conflita com a stack de outro aluno
-    # ("port is already allocated") e o container nem sobe. Acesso: /prometheus no catalogo.
+    # ("port is already allocated") e o container nem sobe. Acesso: /prometheus na api.
     expose:
       - "9090"
     depends_on:
-      - catalogo
+      - api
       - auth-service
       - log-service
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
   grafana:
-    image: ghcr.io/schinor/grafana:${IMAGE_TAG:-latest}
-    # Sem "ports:" pelo mesmo motivo do Prometheus — acesso via /grafana no catalogo.
+    image: ghcr.io/schinor/nivelo-grafana:${IMAGE_TAG:-latest}
+    # Sem "ports:" pelo mesmo motivo do Prometheus — acesso via /grafana na api.
     expose:
       - "3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       # ROOT_URL só define os links gerados (/grafana/...). Sem SERVE_FROM_SUB_PATH:
-      # o proxy do catalogo já remove o prefixo /grafana, então o Grafana serve na raiz.
+      # o proxy da api já remove o prefixo /grafana, então o Grafana serve na raiz.
       # Com ele ligado, toda requisição sem o prefixo era redirecionada para ROOT_URL (loop).
       # CATALOGO_URL precisa ser a URL pública (https://...) — senão o login cai em localhost.
       - GF_SERVER_ROOT_URL=${CATALOGO_URL:-http://localhost:8000}/grafana/
@@ -199,11 +199,11 @@ services:
     depends_on:
       - prometheus
     networks:
-      - filmes-network
+      - nivelo-network
     restart: unless-stopped
 
 networks:
-  filmes-network:
+  nivelo-network:
     driver: bridge
     ipam:
       driver: default

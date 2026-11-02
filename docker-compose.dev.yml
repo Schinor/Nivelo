@@ -12,11 +12,11 @@
 #   docker compose -f docker-compose.dev.yml --profile stripe up --build
 
 services:
-  catalogo:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: catalogo-filmes-dev
+    container_name: nivelo-api-dev
     ports:
       - "${PORT:-8000}:8000"
     environment:
@@ -63,7 +63,7 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   auth-service:
@@ -101,7 +101,7 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   log-service:
@@ -125,7 +125,7 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   redis:
@@ -140,7 +140,7 @@ services:
       timeout: 3s
       retries: 3
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   garage:
@@ -158,7 +158,7 @@ services:
       - garage-meta:/var/lib/garage/meta
       - garage-data:/var/lib/garage/data
     expose:
-      - "3900"            # Sem "ports:" — acesso do navegador via /storage no catalogo
+      - "3900"            # Sem "ports:" — acesso do navegador via /storage na api
     healthcheck:
       test: ["CMD", "/garage", "status"]
       interval: 10s
@@ -166,7 +166,7 @@ services:
       retries: 6
       start_period: 10s
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   # Stripe CLI (só dev): escuta os eventos da conta de TESTE e encaminha para o webhook
@@ -184,12 +184,12 @@ services:
       - --events
       - checkout.session.completed,customer.subscription.deleted,invoice.payment_failed
       - --forward-to
-      - http://catalogo:8000/webhooks/stripe
+      - http://api:8000/webhooks/stripe
     depends_on:
-      catalogo:
+      api:
         condition: service_healthy
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   prometheus:
@@ -199,11 +199,11 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     depends_on:
-      - catalogo
+      - api
       - auth-service
       - log-service
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
   grafana:
@@ -219,11 +219,11 @@ services:
     depends_on:
       - prometheus
     networks:
-      - filmes-network-dev
+      - nivelo-network-dev
     restart: unless-stopped
 
 networks:
-  filmes-network-dev:
+  nivelo-network-dev:
     driver: bridge
 
 volumes:
