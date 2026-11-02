@@ -11,10 +11,9 @@ import time
 
 import pytest
 
-from test_backend_proxy import _capturar_eventos, _usuario, setup_catalogo_app
+from test_backend_proxy import _capturar_eventos, _usuario, setup_api_app
 
 WHSEC = "whsec_teste_123"
-PERMS_FAVORITOS = ["listar:favoritos", "adicionar:favoritos", "remover:favoritos"]
 
 
 def _assinar(corpo: bytes, segredo: str = WHSEC, t: int | None = None) -> str:
@@ -43,13 +42,12 @@ def _evento_checkout(event_id, usuario_id, payment_status="paid"):
 
 @pytest.fixture
 def ctx(monkeypatch):
-    app, SessionLocal, current_user, TestClient = setup_catalogo_app()
+    app, SessionLocal, current_user, TestClient = setup_api_app()
     from app.core.config import settings
 
     monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_fake")
     monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", WHSEC)
     monkeypatch.setattr(settings, "STRIPE_PRICE_ID", "price_fake")
-    monkeypatch.setattr(settings, "LIMITE_FAVORITOS_FREE", 5)
 
     class Ctx:
         pass
@@ -80,7 +78,7 @@ def ctx(monkeypatch):
     c.app, c.settings, c.SessionLocal = app, settings, SessionLocal
     c.eventos = _capturar_eventos(monkeypatch)
     c.client = TestClient(app)
-    app.dependency_overrides[current_user] = lambda: _usuario(1, "preso-no-terminal", PERMS_FAVORITOS)
+    app.dependency_overrides[current_user] = lambda: _usuario(1, "dono", [])
 
     def webhook(evento, assinatura=None):
         corpo = json.dumps(evento).encode()
@@ -94,14 +92,10 @@ def ctx(monkeypatch):
     return c
 
 
-def _favoritar(ctx, movie_id):
-    return ctx.client.post("/api/favoritos", json={"tmdb_movie_id": movie_id, "titulo": f"Filme {movie_id}"})
-
-
 # ── Configuração ──────────────────────────────────────────────────────────────
 
 def test_chave_live_e_recusada_na_inicializacao():
-    setup_catalogo_app()
+    setup_api_app()
     from pydantic import ValidationError
     from app.core.config import Settings
 
@@ -164,7 +158,7 @@ def test_checkout_com_erro_do_stripe_retorna_502(ctx, monkeypatch):
 
 
 def test_checkout_exige_login():
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
     assert TestClient(app).post("/api/premium/checkout").status_code == 401
 
 
@@ -234,62 +228,23 @@ def test_webhook_com_auth_service_fora_retorna_500_para_o_stripe_reenviar(ctx, m
     assert ctx.webhook(_evento_checkout("evt_500", 1)).status_code == 500
 
 
-# ── Benefício: limite de favoritos ────────────────────────────────────────────
-
-def test_usuario_comum_e_bloqueado_no_sexto_favorito(ctx):
-    for movie_id in range(1, 6):
-        assert _favoritar(ctx, movie_id).status_code == 201
-
-    sexto = _favoritar(ctx, 6)
-    assert sexto.status_code == 403
-    assert sexto.json()["detail"] == "Limite de 5 favoritos atingido. Assine o Premium para favoritos ilimitados."
-    # Repetido continua sendo 409, mesmo no limite
-    assert _favoritar(ctx, 1).status_code == 409
-
-    status = ctx.client.get("/api/premium/status").json()
-    assert status == {"premium": False, "premium_desde": None, "favoritos": 5, "limite_favoritos": 5}
+# ── Status do plano ───────────────────────────────────────────────────────────
 
 
-def test_premium_via_webhook_libera_favoritos_ilimitados(ctx):
-    for movie_id in range(1, 6):
-        _favoritar(ctx, movie_id)
-    assert _favoritar(ctx, 6).status_code == 403
-
-    ctx.webhook(_evento_checkout("evt_libera", 1))
-
-    for movie_id in range(6, 12):
-        assert _favoritar(ctx, movie_id).status_code == 201
-    status = ctx.client.get("/api/premium/status").json()
-    assert status["premium"] is True and status["limite_favoritos"] is None and status["favoritos"] == 11
 
 
-def test_premium_vem_do_banco_e_nao_do_jwt(ctx):
-    """Mesmo com um JWT que diga premium=true, o limite consulta o auth-service (banco)."""
+
+def test_status_vem_do_banco_e_nao_do_jwt(ctx):
+    """Mesmo com um JWT que diga premium=true, o status consulta o auth-service (banco)."""
     from app.dependencies import current_user
 
-    ctx.app.dependency_overrides[current_user] = lambda: {
-        **_usuario(1, "preso-no-terminal", PERMS_FAVORITOS),
-        "premium": True,
-    }
-    for movie_id in range(1, 6):
-        _favoritar(ctx, movie_id)
-    assert _favoritar(ctx, 6).status_code == 403
+    ctx.app.dependency_overrides[current_user] = lambda: {**_usuario(1, "dono", []), "premium": True}
+    assert ctx.client.get("/api/premium/status").json() == {"premium": False, "premium_desde": None}
 
 
-def test_limite_configuravel(ctx, monkeypatch):
-    monkeypatch.setattr(ctx.settings, "LIMITE_FAVORITOS_FREE", 2)
-    assert _favoritar(ctx, 1).status_code == 201
-    assert _favoritar(ctx, 2).status_code == 201
-    resp = _favoritar(ctx, 3)
-    assert resp.status_code == 403
-    assert "Limite de 2 favoritos" in resp.json()["detail"]
-
-
-def test_bloqueio_do_limite_e_auditado(ctx):
-    for movie_id in range(1, 7):
-        _favoritar(ctx, movie_id)
-    negados = [e for e in ctx.eventos if e["acao"] == "acesso_negado"]
-    assert negados and negados[-1]["recurso"] == "favoritos:limite-free" and negados[-1]["usuario_id"] == 1
+def test_premium_via_webhook_aparece_no_status(ctx):
+    ctx.webhook(_evento_checkout("evt_libera", 1))
+    assert ctx.client.get("/api/premium/status").json()["premium"] is True
 
 
 def test_perfil_exibe_selo_premium(ctx, monkeypatch):

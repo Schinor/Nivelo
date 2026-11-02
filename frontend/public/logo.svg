@@ -1,38 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 140" role="img" aria-labelledby="logo-title">
-  <title id="logo-title">HANKS+</title>
-  <!-- Logo horizontal para fundos escuros (cores do design system: surface, ink e gold) -->
-
-  <!-- Emblema: fotograma de filme com o "play" do streaming -->
-  <rect x="10" y="10" width="120" height="120" rx="22" fill="#1a1410" stroke="#d1a441" stroke-width="3"/>
-  <g fill="#3d2f27">
-    <rect x="21" y="20" width="12" height="10" rx="2"/>
-    <rect x="42" y="20" width="12" height="10" rx="2"/>
-    <rect x="64" y="20" width="12" height="10" rx="2"/>
-    <rect x="86" y="20" width="12" height="10" rx="2"/>
-    <rect x="107" y="20" width="12" height="10" rx="2"/>
-    <rect x="21" y="110" width="12" height="10" rx="2"/>
-    <rect x="42" y="110" width="12" height="10" rx="2"/>
-    <rect x="64" y="110" width="12" height="10" rx="2"/>
-    <rect x="86" y="110" width="12" height="10" rx="2"/>
-    <rect x="107" y="110" width="12" height="10" rx="2"/>
-  </g>
-  <path d="M59 50 L91 70 L59 90 Z" fill="#d1a441" stroke="#d1a441" stroke-width="8" stroke-linejoin="round"/>
-
-  <!-- Wordmark: letras condensadas desenhadas em vetor (não depende de fonte instalada) -->
-  <g transform="translate(160 20)" fill="#f6ede1">
-    <!-- H -->
-    <path d="M0 0 H18 V41 H34 V0 H52 V100 H34 V59 H18 V100 H0 Z"/>
-    <!-- A -->
-    <path fill-rule="evenodd" d="M62 100 L79 0 H97 L114 100 H96 L92.5 80 H83.5 L80 100 Z M85.5 64 H90.5 L88 38 Z"/>
-    <!-- N -->
-    <path d="M124 100 V0 H141 L159 58 V0 H176 V100 H159 L141 42 V100 Z"/>
-    <!-- K -->
-    <path d="M186 0 H204 V40 L220 0 H238 L218 48 L238 100 H220 L204 60 V100 H186 Z"/>
-    <!-- S -->
-    <path d="M292 24 C292 13 283 9 272 9 C259 9 253.5 16 253.5 27 C253.5 50 290.5 44 290.5 72 C290.5 85 283 91 272 91 C259 91 251.5 86 250.5 76"
-          fill="none" stroke="#f6ede1" stroke-width="18"/>
-  </g>
-
-  <!-- "+" dourado da marca -->
-  <path d="M500 22 H518 V47 H543 V65 H518 V90 H500 V65 H475 V47 H500 Z" fill="#d1a441"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Nivelo</title>
+  <!-- Emblema: nível de bolha sobre a linha do terreno -->
+  <rect x="6" y="6" width="108" height="108" rx="20" fill="#1a1410" stroke="#d1a441" stroke-width="4"/>
+  <rect x="22" y="48" width="76" height="24" rx="12" fill="none" stroke="#f6ede1" stroke-width="5"/>
+  <circle cx="60" cy="60" r="6" fill="#d1a441"/>
+  <path d="M22 88 H98" stroke="#d1a441" stroke-width="5" stroke-linecap="round"/>
 </svg>

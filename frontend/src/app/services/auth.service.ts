@@ -35,8 +35,8 @@ export interface ValidateTokenResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly TOKEN_KEY = 'tomhanks_token';
-  private readonly USER_KEY = 'tomhanks_user';
+  private readonly TOKEN_KEY = 'nivelo_token';
+  private readonly USER_KEY = 'nivelo_user';
 
   private _token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY));
   private _user = signal<Usuario | null>(
@@ -68,12 +68,11 @@ export class AuthService {
     return permissions.some((p) => this.hasPermission(p));
   }
 
-  cadastrar(nome: string, email: string, senha: string, role: string = 'amigo-do-wilson'): Observable<Usuario> {
+  cadastrar(nome: string, email: string, senha: string): Observable<Usuario> {
     return this.http.post<Usuario>('/api/auth/cadastro', {
       nome: nome.trim(),
       email: email.trim(),
       senha,
-      role,
     });
   }
 

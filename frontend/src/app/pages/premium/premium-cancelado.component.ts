@@ -12,7 +12,7 @@ import { PremiumCtaComponent } from '../../components/premium-cta/premium-cta.co
         <p>Nenhuma cobrança foi feita. Você continua no plano gratuito e pode assinar quando quiser.</p>
         <div class="acoes">
           <app-premium-cta rotulo="Tentar de novo" />
-          <a routerLink="/catalogo" class="btn-secondary">Voltar ao catálogo</a>
+          <a routerLink="/obras" class="btn-secondary">Voltar às obras</a>
         </div>
       </div>
     </div>

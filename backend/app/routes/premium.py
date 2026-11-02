@@ -20,7 +20,6 @@ from app.core.api_responses import AUTH_SERVICE_INDISPONIVEL, STRIPE_NAO_CONFIGU
 from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies import current_user
-from app.repositories import favorito_repo
 from app.services import pagamentos
 
 logger = logging.getLogger("catalogo.premium")
@@ -34,9 +33,6 @@ EVENTOS_TRATADOS = {"checkout.session.completed", "customer.subscription.deleted
 class PremiumStatusOut(BaseModel):
     premium: bool
     premium_desde: Optional[datetime] = None
-    favoritos: int
-    # null = sem limite (Premium)
-    limite_favoritos: Optional[int] = None
 
 
 class CheckoutOut(BaseModel):
@@ -53,14 +49,12 @@ def _exigir_stripe() -> None:
 
 @router.get("/status", response_model=PremiumStatusOut, responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL})
 async def status_premium(user: dict = Depends(current_user), db: Session = Depends(get_db)):
-    """Plano do usuário logado, lido do banco (não do JWT), com o uso de favoritos."""
+    """Plano do usuário logado, lido do banco (não do JWT)."""
     usuario = await forward_request("GET", f"/users/{user['id']}")
     premium = bool(usuario.get("premium"))
     return PremiumStatusOut(
         premium=premium,
         premium_desde=usuario.get("premium_desde"),
-        favoritos=favorito_repo.count_by_user(db, user["id"]),
-        limite_favoritos=None if premium else settings.LIMITE_FAVORITOS_FREE,
     )
 
 

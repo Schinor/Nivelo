@@ -317,7 +317,7 @@
 
 /* Rota de Fuga — integração com o design system editorial */
 .login-bg { background: var(--bg); position: relative; overflow: hidden; }
-.login-bg::before { content: ''; position: absolute; inset: 0 50% 0 0; background: linear-gradient(90deg, rgba(14,18,15,.18), var(--bg)), url('/background-login-register.jpg') center/cover; opacity: .72; }
+.login-bg::before { content: ''; position: absolute; inset: 0 50% 0 0; background: linear-gradient(135deg, var(--accent, #d9822b) 0%, var(--bg) 70%); opacity: .72; }
 .login-card { position: relative; margin-left: min(42vw, 560px); max-width: 480px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 30px 80px rgba(0,0,0,.55); }
 .login-header h1 { font-family: var(--font-display); letter-spacing: 1.8px; text-transform: uppercase; color: var(--paper); }
 .login-header p, .field label, .field-label, .forgot-instruction { color: var(--paper-muted); }
@@ -335,7 +335,7 @@
 .link-forgot { color: var(--accent-light); }
 @media (max-width: 900px) { .login-bg::before { inset: 0; opacity: .18; } .login-card { margin-left: 0; } }
 
-/* HANKS+ */
+/* Nivelo */
 .login-card { border-radius: var(--radius-lg); background: var(--surface-200); }
 .auth-brand h1 { font-size: 2.4rem; color: var(--gold); }
 .auth-brand-icon { display: none; }

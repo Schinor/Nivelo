@@ -19,15 +19,14 @@ export class NavbarComponent {
     switch (role) {
       case 'admin':
         return { name: 'Admin', class: 'badge-admin' };
-      case 'capitao-hanks':
-        return { name: 'Capitão Hanks', class: 'badge-capitao' };
-      case 'houston-temos-acesso':
-        return { name: 'Houston, Temos Acesso', class: 'badge-houston' };
-      case 'preso-no-terminal':
-        return { name: 'Preso no Terminal', class: 'badge-terminal' };
-      case 'amigo-do-wilson':
+      case 'dono':
+        return { name: 'Dono', class: 'badge-dono' };
+      case 'encarregado':
+        return { name: 'Encarregado', class: 'badge-encarregado' };
+      case 'cliente':
+        return { name: 'Cliente', class: 'badge-cliente' };
       default:
-        return { name: 'Amigo do Wilson', class: 'badge-wilson' };
+        return { name: 'Sem papel', class: 'badge-neutro' };
     }
   }
 

@@ -7,7 +7,7 @@
   } @else if (erro()) {
     <div class="empty">
       <p>{{ erro() }}</p>
-      <a routerLink="/catalogo" class="btn-primary">Voltar ao catálogo</a>
+      <a routerLink="/obras" class="btn-primary">Voltar às obras</a>
     </div>
   } @else if (perfil(); as p) {
     <section class="perfil-header">
@@ -51,7 +51,7 @@
               [maxLength]="bioMax"
               [ngModel]="bioRascunho()"
               (ngModelChange)="bioRascunho.set($event)"
-              placeholder="Conte em poucas palavras quem você é no catálogo"
+              placeholder="Conte em poucas palavras o que você faz"
             ></textarea>
             <span class="contador" [class.no-limite]="bioRascunho().length >= bioMax">
               {{ bioRascunho().length }}/{{ bioMax }}
@@ -86,37 +86,12 @@
       <section class="plano-card">
         <div>
           <h2>Plano gratuito</h2>
-          <p>Assine o HANK+ Premium e tenha favoritos ilimitados.</p>
+          <p>Assine o Premium e libere os recursos pagos.</p>
         </div>
         <app-premium-cta />
       </section>
     }
 
-    <section class="favoritos">
-      <h2>Filmes favoritos</h2>
-      @if (p.favoritos.length === 0) {
-        <p class="bio-vazia">{{ p.pode_editar ? 'Você ainda não favoritou nenhum filme.' : 'Nenhum filme favoritado ainda.' }}</p>
-        @if (p.pode_editar) {
-          <a routerLink="/catalogo" class="btn-primary">Explorar catálogo</a>
-        }
-      } @else {
-        <div class="fav-grid">
-          @for (fav of p.favoritos; track fav.tmdb_movie_id) {
-            <button type="button" class="fav-card" (click)="abrirFilme(fav)">
-              @if (fav.poster_path) {
-                <img [src]="'https://image.tmdb.org/t/p/w500' + fav.poster_path" [alt]="fav.titulo" />
-              } @else {
-                <div class="no-poster">SEM PÔSTER</div>
-              }
-              <span class="fav-titulo">{{ fav.titulo }}</span>
-            </button>
-          }
-        </div>
-      }
-    </section>
   }
 
-  @if (filmeAberto()) {
-    <app-movie-modal [filme]="filmeAberto()!" (fechar)="fecharModal()" />
-  }
 </div>

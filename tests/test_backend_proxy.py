@@ -9,12 +9,10 @@ os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_12345678901234567890"
 os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "1440"
-os.environ["TMDB_BASE_URL"] = "https://api.themoviedb.org/3"
-os.environ["TMDB_API_KEY"] = "fake_tmdb_key"
 os.environ["AUTH_SERVICE_URL"] = "http://auth-service:8001"
 
 
-def setup_catalogo_app():
+def setup_api_app():
     for mod in list(sys.modules.keys()):
         if mod == "app" or mod.startswith("app."):
             del sys.modules[mod]
@@ -25,8 +23,6 @@ def setup_catalogo_app():
     from app.main import app
     from app.core.database import Base, get_db
     from app.dependencies import current_user
-    from app.models.comentario import Comentario
-    from app.models.favoritos import Favorito
 
     engine_test = create_engine(
         "sqlite:///:memory:",
@@ -47,187 +43,14 @@ def setup_catalogo_app():
     return app, TestingSessionLocal, current_user, TestClient
 
 
-def test_catalogo_app_structure():
-    app, TestingSessionLocal, current_user, TestClient = setup_catalogo_app()
-
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 1,
-        "nome": "Allan Teste",
-        "email": "allan@teste.com",
-        "role": "houston-temos-acesso",
-        "permissions": ["assistir:catalogo", "listar:favoritos", "listar:comentarios"],
-    }
-
+def test_api_sobe_com_docs_e_titulo_nivelo():
+    app, _, _, TestClient = setup_api_app()
     client = TestClient(app)
 
-    response = client.get("/api/docs")
-    assert response.status_code == 200
-
-    fav_list = client.get("/api/favoritos")
-    assert fav_list.status_code == 200
-    assert isinstance(fav_list.json(), list)
-
-    com_list = client.get("/api/comentarios")
-    assert com_list.status_code == 200
-    assert isinstance(com_list.json(), list)
-
-
-def test_rbac_permissoes_amigo_do_wilson_e_terminal():
-    app, TestingSessionLocal, current_user, TestClient = setup_catalogo_app()
-    client = TestClient(app)
-
-    # 1. Amigo do Wilson tenta favoritar filme -> 403 Forbidden
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 10,
-        "nome": "Wilson User",
-        "email": "wilson@teste.com",
-        "role": "amigo-do-wilson",
-        "permissions": ["assistir:catalogo", "detalhes:filmes", "listar:comentarios"],
-    }
-
-    fav_resp = client.post(
-        "/api/favoritos",
-        json={"tmdb_movie_id": 550, "titulo": "Fight Club", "poster_path": "/path.jpg"},
-    )
-    assert fav_resp.status_code == 403
-    assert "adicionar:favoritos" in fav_resp.json()["detail"]
-
-    # 2. Preso no Terminal pode favoritar, mas não pode comentar -> 403 Forbidden
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 20,
-        "nome": "Terminal User",
-        "email": "terminal@teste.com",
-        "role": "preso-no-terminal",
-        "permissions": [
-            "assistir:catalogo",
-            "detalhes:filmes",
-            "listar:comentarios",
-            "listar:favoritos",
-            "adicionar:favoritos",
-            "remover:favoritos",
-        ],
-    }
-
-    fav_ok = client.post(
-        "/api/favoritos",
-        json={"tmdb_movie_id": 550, "titulo": "Fight Club", "poster_path": "/path.jpg"},
-    )
-    assert fav_ok.status_code == 201
-
-    com_resp = client.post(
-        "/api/comentarios",
-        json={"tmdb_movie_id": 550, "texto": "Tentativa de comentário no Terminal"},
-    )
-    assert com_resp.status_code == 403
-    assert "criar:comentarios" in com_resp.json()["detail"]
-
-
-def test_rbac_comentarios_dono_outro_usuario_e_admin():
-    app, TestingSessionLocal, current_user, TestClient = setup_catalogo_app()
-    client = TestClient(app)
-
-    # 1. Usuário 1 (Houston) cria um comentário
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 1,
-        "nome": "Usuario Um",
-        "email": "user1@teste.com",
-        "role": "houston-temos-acesso",
-        "permissions": ["criar:comentarios", "apagar:comentario-proprio", "listar:comentarios"],
-    }
-
-    create_resp = client.post(
-        "/api/comentarios",
-        json={"tmdb_movie_id": 100, "texto": "Excelente filme do Tom Hanks!"},
-    )
-    assert create_resp.status_code == 201
-    comentario_id = create_resp.json()["id"]
-
-    # 2. Usuário 2 (Houston) tenta deletar comentário do Usuário 1 -> 403 Forbidden
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 2,
-        "nome": "Usuario Dois",
-        "email": "user2@teste.com",
-        "role": "houston-temos-acesso",
-        "permissions": ["criar:comentarios", "apagar:comentario-proprio", "listar:comentarios"],
-    }
-
-    del_user2_resp = client.delete(f"/api/comentarios/{comentario_id}")
-    assert del_user2_resp.status_code == 403
-    assert (
-        del_user2_resp.json()["detail"]
-        == "Apenas o autor ou um administrador podem remover este comentário"
-    )
-
-    # 3. Usuário 3 (Admin) deleta comentário do Usuário 1 -> 200 OK
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 99,
-        "nome": "Admin Geral",
-        "email": "admin@teste.com",
-        "role": "admin",
-        "permissions": ["apagar:comentario-de-outro", "administrar:sistema"],
-    }
-
-    del_admin_resp = client.delete(f"/api/comentarios/{comentario_id}")
-    assert del_admin_resp.status_code == 200
-    assert del_admin_resp.json() == {"detail": "Comentário removido"}
-
-    # 4. Criar novo comentário do Usuário 1 e ele mesmo deletar -> 200 OK
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 1,
-        "nome": "Usuario Um",
-        "email": "user1@teste.com",
-        "role": "houston-temos-acesso",
-        "permissions": ["criar:comentarios", "apagar:comentario-proprio", "listar:comentarios"],
-    }
-    create_resp2 = client.post(
-        "/api/comentarios",
-        json={"tmdb_movie_id": 100, "texto": "Outro comentário para auto-exclusão"},
-    )
-    assert create_resp2.status_code == 201
-    comentario_id_2 = create_resp2.json()["id"]
-
-    del_owner_resp = client.delete(f"/api/comentarios/{comentario_id_2}")
-    assert del_owner_resp.status_code == 200
-    assert del_owner_resp.json() == {"detail": "Comentário removido"}
-
-    # 5. Tentativa de deletar comentário que não existe -> 404
-    del_404_resp = client.delete("/api/comentarios/999999")
-    assert del_404_resp.status_code == 404
-    assert del_404_resp.json()["detail"] == "Comentário não encontrado"
-
-
-def test_listar_comentarios_exibe_publicacoes_de_outros_usuarios():
-    app, TestingSessionLocal, current_user, TestClient = setup_catalogo_app()
-    client = TestClient(app)
-
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 1,
-        "nome": "Autor",
-        "email": "autor@teste.com",
-        "role": "houston-temos-acesso",
-        "permissions": ["listar:comentarios", "criar:comentarios"],
-    }
-    criado = client.post(
-        "/api/comentarios",
-        json={"tmdb_movie_id": 550, "texto": "Comentário público"},
-    )
-    assert criado.status_code == 201
-
-    app.dependency_overrides[current_user] = lambda: {
-        "id": 2,
-        "nome": "Leitor",
-        "email": "leitor@teste.com",
-        "role": "amigo-do-wilson",
-        "permissions": ["listar:comentarios"],
-    }
-
-    todos = client.get("/api/comentarios")
-    assert todos.status_code == 200
-    assert [comentario["id"] for comentario in todos.json()] == [criado.json()["id"]]
-
-    por_filme = client.get("/api/comentarios/550")
-    assert por_filme.status_code == 200
-    assert [comentario["id"] for comentario in por_filme.json()] == [criado.json()["id"]]
+    assert client.get("/api/docs").status_code == 200
+    assert app.title == "Nivelo API"
+    rotas = {r.path for r in app.routes}
+    assert not any(r.startswith(("/api/filmes", "/api/favoritos", "/api/comentarios")) for r in rotas)
 
 
 # ── Auditoria (log-service), /api/logs, logout, health e métricas ─────────────
@@ -237,7 +60,7 @@ def _usuario(uid, role, permissions):
 
 
 def _capturar_eventos(monkeypatch):
-    """Troca o cliente do log-service por um coletor em memória (chamar após setup_catalogo_app)."""
+    """Troca o cliente do log-service por um coletor em memória (chamar após setup_api_app)."""
     from app.clients import log_client
 
     eventos = []
@@ -276,8 +99,8 @@ def _mock_dependencias_health(monkeypatch, auth_status=200, storage_status=403):
     )
 
 
-def test_health_e_metrics_do_catalogo(monkeypatch):
-    app, _, _, TestClient = setup_catalogo_app()
+def test_health_e_metrics_da_api(monkeypatch):
+    app, _, _, TestClient = setup_api_app()
     _mock_dependencias_health(monkeypatch)
     client = TestClient(app)
 
@@ -293,7 +116,7 @@ def test_health_e_metrics_do_catalogo(monkeypatch):
 
 
 def test_health_retorna_503_quando_banco_cai(monkeypatch):
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
     import app.main as main_mod
 
     class BancoFora:
@@ -313,7 +136,7 @@ def test_health_retorna_503_quando_banco_cai(monkeypatch):
     [(None, 403, "auth_service"), (503, 403, "auth_service"), (200, None, "storage"), (200, 502, "storage")],
 )
 def test_health_retorna_503_quando_auth_service_ou_storage_caem(monkeypatch, auth_status, storage_status, campo):
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
     _mock_dependencias_health(monkeypatch, auth_status=auth_status, storage_status=storage_status)
 
     resp = TestClient(app).get("/health")
@@ -326,7 +149,7 @@ def test_403_repassado_do_auth_service_tambem_gera_acesso_negado(monkeypatch):
     from fastapi import HTTPException
     from jose import jwt
 
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
     eventos = _capturar_eventos(monkeypatch)
 
     async def auth_nega(method, path, **kw):
@@ -343,7 +166,7 @@ def test_403_repassado_do_auth_service_tambem_gera_acesso_negado(monkeypatch):
 
 
 def test_api_logs_usuario_comum_recebe_403_e_gera_acesso_negado(monkeypatch):
-    app, _, current_user, TestClient = setup_catalogo_app()
+    app, _, current_user, TestClient = setup_api_app()
     eventos = _capturar_eventos(monkeypatch)
     client = TestClient(app)
 
@@ -361,7 +184,7 @@ def test_api_logs_usuario_comum_recebe_403_e_gera_acesso_negado(monkeypatch):
 def test_api_logs_admin_lista_eventos_do_log_service(monkeypatch):
     import httpx
 
-    app, _, current_user, TestClient = setup_catalogo_app()
+    app, _, current_user, TestClient = setup_api_app()
     chamadas = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -381,7 +204,7 @@ def test_api_logs_admin_lista_eventos_do_log_service(monkeypatch):
 def test_api_logs_retorna_503_se_log_service_estiver_fora(monkeypatch):
     import httpx
 
-    app, _, current_user, TestClient = setup_catalogo_app()
+    app, _, current_user, TestClient = setup_api_app()
 
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("sem rota", request=request)
@@ -393,56 +216,14 @@ def test_api_logs_retorna_503_se_log_service_estiver_fora(monkeypatch):
     assert resp.status_code == 503
 
 
-def test_favoritar_e_comentar_emitem_eventos(monkeypatch):
-    app, _, current_user, TestClient = setup_catalogo_app()
-    eventos = _capturar_eventos(monkeypatch)
-    client = TestClient(app)
-    app.dependency_overrides[current_user] = lambda: _usuario(
-        3, "houston-temos-acesso", ["adicionar:favoritos", "criar:comentarios", "apagar:comentario-proprio"]
-    )
-
-    assert client.post(
-        "/api/favoritos", json={"tmdb_movie_id": 13, "titulo": "Forrest Gump", "poster_path": "/fg.jpg"}
-    ).status_code == 201
-    com = client.post("/api/comentarios", json={"tmdb_movie_id": 13, "texto": "Clássico"})
-    assert com.status_code == 201
-    assert client.delete(f"/api/comentarios/{com.json()['id']}").status_code == 200
-
-    assert [(e["acao"], e["usuario_id"]) for e in eventos] == [
-        ("favoritar", 3),
-        ("comentar", 3),
-        ("apagar_comentario", 3),
-    ]
-    assert eventos[0]["recurso"] == "filme:13"
-    assert eventos[2]["detalhes"] == "autor"
 
 
-def test_apagar_comentario_de_outro_registra_moderacao_e_negacao(monkeypatch):
-    app, _, current_user, TestClient = setup_catalogo_app()
-    eventos = _capturar_eventos(monkeypatch)
-    client = TestClient(app)
-
-    app.dependency_overrides[current_user] = lambda: _usuario(1, "houston-temos-acesso", ["criar:comentarios"])
-    cid = client.post("/api/comentarios", json={"tmdb_movie_id": 5, "texto": "meu"}).json()["id"]
-
-    # Outro usuário comum tenta apagar: 403 + acesso_negado
-    app.dependency_overrides[current_user] = lambda: _usuario(2, "houston-temos-acesso", ["apagar:comentario-proprio"])
-    assert client.delete(f"/api/comentarios/{cid}").status_code == 403
-    assert eventos[-1]["acao"] == "acesso_negado"
-    assert eventos[-1]["usuario_id"] == 2
-    assert eventos[-1]["recurso"] == f"comentario:{cid}"
-
-    # Moderador apaga: apagar_comentario com detalhe "moderacao"
-    app.dependency_overrides[current_user] = lambda: _usuario(9, "admin", ["apagar:comentario-de-outro"])
-    assert client.delete(f"/api/comentarios/{cid}").status_code == 200
-    assert eventos[-1]["acao"] == "apagar_comentario"
-    assert eventos[-1]["detalhes"] == "moderacao"
 
 
 def test_login_e_login_falhou_geram_eventos(monkeypatch):
     from fastapi import HTTPException
 
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
     eventos = _capturar_eventos(monkeypatch)
     client = TestClient(app)
 
@@ -465,7 +246,7 @@ def test_login_e_login_falhou_geram_eventos(monkeypatch):
 
 
 def test_logout_exige_jwt_e_registra_evento(monkeypatch):
-    app, _, current_user, TestClient = setup_catalogo_app()
+    app, _, current_user, TestClient = setup_api_app()
     eventos = _capturar_eventos(monkeypatch)
     client = TestClient(app)
 
@@ -478,75 +259,12 @@ def test_logout_exige_jwt_e_registra_evento(monkeypatch):
     assert eventos == [{"acao": "logout", "usuario_id": 5, "recurso": None, "detalhes": None}]
 
 
-def test_admin_remove_usuario_limpa_favoritos_e_comentarios(monkeypatch):
-    from fastapi import HTTPException
-
-    app, TestingSessionLocal, current_user, TestClient = setup_catalogo_app()
-    from app.models.comentario import Comentario
-    from app.models.favoritos import Favorito
-
-    eventos = _capturar_eventos(monkeypatch)
-    client = TestClient(app)
-
-    db = TestingSessionLocal()
-    db.add_all([
-        Favorito(usuario_id=7, tmdb_movie_id=13, titulo="Forrest Gump"),
-        Comentario(usuario_id=7, tmdb_movie_id=13, texto="Corre, Forrest!"),
-        Comentario(usuario_id=8, tmdb_movie_id=13, texto="Fica"),
-    ])
-    db.commit()
-    db.close()
-
-    chamadas = []
-
-    async def auth_ok(method, path, **kw):
-        chamadas.append((method, path))
-        return None
-
-    monkeypatch.setattr("app.routes.auth.forward_request", auth_ok)
-
-    # Usuário comum é barrado antes de chegar ao auth-service
-    app.dependency_overrides[current_user] = lambda: _usuario(9, "capitao-hanks", ["assistir:catalogo"])
-    assert client.delete("/api/auth/users/7").status_code == 403
-    assert chamadas == []
-
-    app.dependency_overrides[current_user] = lambda: _usuario(1, "admin", ["gerenciar:usuarios"])
-    assert client.delete("/api/auth/users/7").status_code == 204
-    # Confere a existência, limpa o catálogo e só então apaga a conta (FK RESTRICT em produção)
-    assert chamadas == [("GET", "/users/7"), ("DELETE", "/users/7")]
-    assert eventos[-1] == {"acao": "usuario_removido", "usuario_id": 1, "recurso": "usuario:7", "detalhes": None}
-
-    db = TestingSessionLocal()
-    assert db.query(Favorito).filter_by(usuario_id=7).count() == 0
-    assert db.query(Comentario).filter_by(usuario_id=7).count() == 0
-    assert db.query(Comentario).filter_by(usuario_id=8).count() == 1
-    db.close()
-
-    # Se o auth-service recusar, nada é apagado no catálogo
-    async def auth_recusa(method, path, **kw):
-        raise HTTPException(status_code=400, detail="Você não pode alterar ou remover a sua própria conta por aqui")
-
-    monkeypatch.setattr("app.routes.auth.forward_request", auth_recusa)
-    assert client.delete("/api/auth/users/8").status_code == 400
-    db = TestingSessionLocal()
-    assert db.query(Comentario).filter_by(usuario_id=8).count() == 1
-    db.close()
-
-    # Admin tentando apagar a própria conta: recusado no catálogo, sem chamar o auth-service
-    monkeypatch.setattr("app.routes.auth.forward_request", auth_ok)
-    chamadas.clear()
-    app.dependency_overrides[current_user] = lambda: _usuario(8, "admin", ["gerenciar:usuarios"])
-    assert client.delete("/api/auth/users/8").status_code == 400
-    assert chamadas == []
-    db = TestingSessionLocal()
-    assert db.query(Comentario).filter_by(usuario_id=8).count() == 1
-    db.close()
 
 
 def test_cliente_de_log_nunca_levanta_excecao_com_log_service_fora():
     import asyncio
 
-    setup_catalogo_app()
+    setup_api_app()
     from app.clients import log_client
     from app.core.config import settings
 
@@ -567,7 +285,7 @@ def _mock_grafana(monkeypatch, handler):
 def test_proxy_grafana_preserva_host_e_headers_com_acento(monkeypatch):
     import httpx
 
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
     recebidos = {}
 
     def handler(request):
@@ -599,7 +317,7 @@ def test_proxy_grafana_preserva_host_e_headers_com_acento(monkeypatch):
 def test_proxy_grafana_repassa_todos_os_set_cookie(monkeypatch):
     import httpx
 
-    app, _, _, TestClient = setup_catalogo_app()
+    app, _, _, TestClient = setup_api_app()
 
     def handler(request):
         return httpx.Response(

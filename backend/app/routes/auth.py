@@ -18,8 +18,6 @@ from app.core.api_responses import (
 )
 from app.core.database import get_db
 from app.dependencies import current_user, require_permission
-from app.models.comentario import Comentario
-from app.models.favoritos import Favorito
 from app.models.perfil import Perfil
 from app.services import storage
 from app.schemas.usuario import (
@@ -261,12 +259,10 @@ async def delete_user(
     db: Session = Depends(get_db),
     admin: dict = Depends(require_permission("gerenciar:usuarios")),
 ):
-    """Remove favoritos, comentários e perfil (com a foto) no catálogo e, em seguida, a conta no auth-service.
+    """Remove o perfil (com a foto) na API e, em seguida, a conta no auth-service.
 
-    O catálogo limpa ANTES porque, no MariaDB de produção, favoritos e comentarios têm
-    FK RESTRICT para usuarios: apagar a conta primeiro falharia para quem tem dados.
-    Por isso as recusas do auth-service (própria conta, usuário inexistente) são
-    conferidas antes de apagar qualquer coisa.
+    As recusas do auth-service (própria conta, usuário inexistente) são conferidas
+    antes de apagar qualquer coisa.
     """
     if user_id == admin["id"]:
         raise HTTPException(
@@ -275,8 +271,6 @@ async def delete_user(
         )
     await forward_request("GET", f"/users/{user_id}")  # 404 se não existir
 
-    db.query(Favorito).filter(Favorito.usuario_id == user_id).delete()
-    db.query(Comentario).filter(Comentario.usuario_id == user_id).delete()
     perfil = db.get(Perfil, user_id)
     foto_key = perfil.foto_key if perfil else None
     if perfil:

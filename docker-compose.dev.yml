@@ -21,8 +21,6 @@ services:
       - "${PORT:-8000}:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - TMDB_BASE_URL=${TMDB_BASE_URL:-https://api.themoviedb.org/3}
-      - TMDB_API_KEY=${TMDB_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=${ALGORITHM:-HS256}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
@@ -44,7 +42,6 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8000}
-      - LIMITE_FAVORITOS_FREE=${LIMITE_FAVORITOS_FREE:-5}
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
     depends_on:
       auth-service:

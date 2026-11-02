@@ -73,8 +73,6 @@ services:
       SECRET_KEY: ${CI_SECRET_KEY}
       ALGORITHM: HS256
       PORT: "8000"
-      TMDB_BASE_URL: https://api.themoviedb.org/3
-      TMDB_API_KEY: ci-dummy
       AUTH_SERVICE_URL: http://auth-service:8001
       LOG_SERVICE_URL: http://log-service:8002
       LOG_INTERNAL_TOKEN: ${CI_LOG_TOKEN}

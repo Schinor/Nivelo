@@ -112,56 +112,6 @@ RESET_TOKEN_INVALIDO = {
     }
 }
 
-TMDB_INDISPONIVEL = {
-    502: {
-        "description": "Erro ao consultar a API do TMDB",
-        "content": {
-            "application/json": {"example": {"detail": "Erro ao consultar TMDB: <motivo>"}}
-        },
-    }
-}
-
-FAVORITO_DUPLICADO = {
-    409: {
-        "description": "Filme já está nos favoritos do usuário",
-        "content": {"application/json": {"example": {"detail": "Filme já está nos favoritos"}}},
-    }
-}
-
-FAVORITO_NAO_ENCONTRADO = {
-    404: {
-        "description": "Favorito não encontrado para este usuário",
-        "content": {"application/json": {"example": {"detail": "Favorito não encontrado"}}},
-    }
-}
-
-COMENTARIO_NAO_ENCONTRADO = {
-    404: {
-        "description": "Comentário não encontrado",
-        "content": {"application/json": {"example": {"detail": "Comentário não encontrado"}}},
-    }
-}
-
-def forbidden_favoritar(permission: str) -> dict:
-    """403 do POST /api/favoritos: sem permissão (RBAC) ou limite do plano gratuito atingido."""
-    return {
-        403: {
-            "description": "Sem a permissão necessária, ou limite de favoritos do plano gratuito atingido "
-            "(evento 'acesso_negado' é registrado na auditoria)",
-            "content": {
-                "application/json": {
-                    "examples": {
-                        "sem_permissao": {"value": {"detail": f"Acesso negado: permissão '{permission}' necessária"}},
-                        "limite_free": {
-                            "value": {"detail": "Limite de 5 favoritos atingido. Assine o Premium para favoritos ilimitados."}
-                        },
-                    }
-                }
-            },
-        }
-    }
-
-
 STRIPE_NAO_CONFIGURADO = {
     503: {
         "description": "Stripe não configurado neste ambiente (STRIPE_* ausentes) ou auth-service inacessível",

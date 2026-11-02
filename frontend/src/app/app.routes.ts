@@ -21,19 +21,9 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
   },
   {
-    path: 'catalogo',
+    path: 'obras',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/catalogo/catalogo.component').then(m => m.CatalogoComponent),
-  },
-  {
-    path: 'favoritos',
-    canActivate: [authGuard, permissionGuard('listar:favoritos')],
-    loadComponent: () => import('./pages/favoritos/favoritos.component').then(m => m.FavoritosComponent),
-  },
-  {
-    path: 'comentarios',
-    canActivate: [authGuard, permissionGuard('listar:comentarios')],
-    loadComponent: () => import('./pages/comentarios/comentarios.component').then(m => m.ComentariosComponent),
+    loadComponent: () => import('./pages/obras/obras.component').then(m => m.ObrasComponent),
   },
   {
     path: 'perfil',

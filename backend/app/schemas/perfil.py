@@ -1,13 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-
-class FavoritoPerfilOut(BaseModel):
-    tmdb_movie_id: int
-    titulo: str
-    poster_path: Optional[str] = None
-
-    model_config = ConfigDict(from_attributes=True)
+from typing import Optional
+from pydantic import BaseModel, Field, field_validator
 
 
 class PerfilOut(BaseModel):
@@ -16,8 +8,7 @@ class PerfilOut(BaseModel):
     bio: Optional[str] = None
     # URL relativa ao catálogo (/storage/...), pré-assinada e com expiração; null sem foto
     foto_url: Optional[str] = None
-    favoritos: List[FavoritoPerfilOut] = []
-    # Selo "Premium" (visual); o benefício em si é checado no POST /api/favoritos
+    # Selo "Premium" (visual); os limites do plano são checados no backend
     premium: bool = False
     # Só para a UI esconder/mostrar os botões — não é controle de acesso
     pode_editar: bool = False

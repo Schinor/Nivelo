@@ -22,14 +22,10 @@ export class LoginComponent {
   email = '';
   senha = '';
   nome = '';
-  role = 'amigo-do-wilson';
   emailRecuperacao = '';
 
   constructor() {
-    const requestedRole = this.route.snapshot.queryParamMap.get('role');
-    const publicRoles = ['amigo-do-wilson', 'preso-no-terminal', 'houston-temos-acesso', 'capitao-hanks'];
-    if (requestedRole && publicRoles.includes(requestedRole)) {
-      this.role = requestedRole;
+    if (this.route.snapshot.queryParamMap.get('cadastro') !== null) {
       this.modo.set('cadastro');
     }
   }
@@ -54,7 +50,7 @@ export class LoginComponent {
     this.auth.login(emailTrimmed, this.senha).subscribe({
       next: () => {
         this.carregando.set(false);
-        this.router.navigate(['/catalogo']);
+        this.router.navigate(['/obras']);
       },
       error: (e) => {
         this.carregando.set(false);
@@ -81,12 +77,12 @@ export class LoginComponent {
     }
 
     this.carregando.set(true);
-    this.auth.cadastrar(nomeTrimmed, emailTrimmed, this.senha, this.role).subscribe({
+    this.auth.cadastrar(nomeTrimmed, emailTrimmed, this.senha).subscribe({
       next: () => {
         this.carregando.set(false);
         this.sucesso.set('Conta criada com sucesso! Entrando...');
         this.auth.login(emailTrimmed, this.senha).subscribe({
-          next: () => this.router.navigate(['/catalogo']),
+          next: () => this.router.navigate(['/obras']),
           error: () => {
             this.modo.set('login');
             this.sucesso.set('Conta criada! Faça login com suas credenciais.');
@@ -140,7 +136,7 @@ export class LoginComponent {
       return e.error.message;
     }
     if (e.status === 0) {
-      return 'Não foi possível conectar ao servidor. Verifique se o catálogo e o auth-service estão em execução.';
+      return 'Não foi possível conectar ao servidor. Tente novamente em instantes.';
     }
     return fallback;
   }

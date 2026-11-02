@@ -1,104 +1,52 @@
-<div class="landing-page">
-  <header class="site-header">
-    <a class="brand" routerLink="/">
-      <span class="brand-mark">TH</span>
-      <span><strong>HANKS+</strong><small>Sua assinatura, seu papel na história</small></span>
-    </a>
-    <nav class="header-nav" aria-label="Navegação principal">
-      <button type="button" (click)="scrollToPlans()">Perfis de acesso</button>
+<div class="landing">
+  <header class="topo">
+    <a class="marca" routerLink="/">Nivelo</a>
+    <nav>
+      <button type="button" (click)="irParaPlanos()">Planos</button>
       @if (auth.isLoggedIn()) {
-        <a routerLink="/catalogo" class="header-cta">Abrir catálogo</a>
+        <a routerLink="/obras" class="cta">Minhas obras</a>
       } @else {
-        <a routerLink="/login" class="login-link">Entrar</a>
-        <a routerLink="/login" class="header-cta">Criar conta</a>
+        <a routerLink="/login">Entrar</a>
+        <a routerLink="/login" [queryParams]="{ cadastro: '' }" class="cta">Criar conta grátis</a>
       }
     </nav>
   </header>
 
   <main>
     <section class="hero">
-      <div class="hero-collage" aria-hidden="true"></div>
-      <div class="hero-shade" aria-hidden="true"></div>
-      <div class="hero-content">
-        <span class="eyebrow"><i></i> Um catálogo, quatro jornadas</span>
-        <h1>Todo grande filme começa com um bom papel.</h1>
-        <p>Explore a filmografia de Tom Hanks, organize seus favoritos e participe de uma comunidade feita para quem sempre fica até o fim dos créditos.</p>
-        <div class="hero-actions">
-          <button class="primary-action" type="button" (click)="scrollToPlans()">Escolher meu perfil</button>
-          @if (auth.isLoggedIn()) {
-            <a class="secondary-action" routerLink="/catalogo">Continuar assistindo →</a>
-          } @else {
-            <a class="secondary-action" routerLink="/login">Já tenho uma conta →</a>
-          }
-        </div>
-        <div class="hero-stats">
-          <span><strong>4</strong> perfis públicos</span>
-        <span><strong>RBAC</strong> acesso por permissão</span>
-          <span><strong>1</strong> comunidade cinéfila</span>
-        </div>
+      <h1>O diário da sua obra em 2 minutos, pelo celular.</h1>
+      <p>
+        Registre o dia com foto, clima e ocorrências, e mostre ao cliente tudo o que foi feito.
+        Um histórico com data e autor, que não se perde no WhatsApp.
+      </p>
+      <div class="acoes">
+        @if (auth.isLoggedIn()) {
+          <a routerLink="/obras" class="primario">Abrir minhas obras</a>
+        } @else {
+          <a routerLink="/login" [queryParams]="{ cadastro: '' }" class="primario">Criar conta grátis</a>
+        }
+        <button type="button" class="secundario" (click)="irParaPlanos()">Ver planos</button>
       </div>
     </section>
 
-    <section class="manifesto">
-      <span class="section-index">01 — A EXPERIÊNCIA</span>
-      <div>
-        <h2>Seu acesso evolui junto com a sua jornada.</h2>
-        <p>Cada perfil libera ações reais do sistema. Comece explorando o catálogo e avance para favoritos, comentários e conteúdo premium — sem promessas que não existem no produto.</p>
-      </div>
-      <div class="manifesto-points">
-        <span>Catálogo selecionado</span><span>Favoritos pessoais</span>
-        <span>Comentários da comunidade</span><span>Permissões transparentes</span>
-      </div>
-    </section>
-
-    <section class="plans-section" id="planos-section">
-      <div class="section-heading">
-        <div><span class="section-index">02 — PERFIS DE ACESSO</span><h2>Escolha o seu papel</h2></div>
-        <p>As permissões abaixo são carregadas da matriz RBAC do sistema.</p>
-      </div>
-      @if (usingFallback()) {
-        <p class="data-warning">Exibindo a configuração padrão enquanto o serviço de perfis está indisponível.</p>
-      }
-      <div class="plans-grid" [class.is-loading]="loadingPlans()">
-        @for (plan of plans(); track plan.id; let idx = $index) {
-          <article class="plan-card card-index-{{ idx }}" [class.is-popular]="plan.isPopular" [class.is-flagship]="plan.isFlagship" [style.--card-accent]="plan.accent">
-            <div class="card-topline"></div>
-            <header class="card-header"><span class="plan-level">{{ plan.serialNumber }}</span><span class="plan-badge">{{ plan.badge }}</span></header>
-            <div class="plan-identity">
-              <span>{{ plan.filmRef }}</span><h3>{{ plan.name }}</h3><p>{{ plan.description }}</p>
-            </div>
-            <div class="permission-count"><strong>{{ plan.permissionCount }}</strong><span>permissões ativas</span></div>
-            <ul class="feature-list">
-              @for (feature of plan.features; track feature) { <li><span>✓</span>{{ feature }}</li> }
+    <section class="planos" id="planos">
+      <h2>Planos</h2>
+      <p class="sub">A cobrança é por empresa: encarregados e clientes não pagam.</p>
+      <div class="grade">
+        @for (plano of planos; track plano.nome) {
+          <article class="plano" [class.destaque]="plano.destaque">
+            <h3>{{ plano.nome }}</h3>
+            <strong>{{ plano.preco }}</strong>
+            <ul>
+              @for (item of plano.itens; track item) {
+                <li>{{ item }}</li>
+              }
             </ul>
-            <button type="button" class="plan-action" (click)="openPlanModal(plan)">{{ plan.ctaText }}</button>
           </article>
         }
       </div>
     </section>
-
-    <section class="closing-cta">
-      <span class="section-index">03 — LUZ, CÂMERA, AÇÃO</span>
-      <h2>Pronto para entrar em cena?</h2><p>Crie sua conta, escolha um perfil e descubra o catálogo.</p>
-      <button type="button" (click)="scrollToPlans()">Ver perfis de acesso</button>
-    </section>
   </main>
 
-  <footer class="site-footer"><span>HANKS+</span><span>Projeto acadêmico · RBAC baseado em permissões reais</span></footer>
-
-  @if (selectedPlanForModal()) {
-    <div class="modal-overlay" (click)="closePlanModal()">
-      <section class="plan-modal" (click)="$event.stopPropagation()" [style.--modal-accent]="selectedPlanForModal()!.accent">
-        <button class="modal-close" type="button" (click)="closePlanModal()" aria-label="Fechar">×</button>
-        <span class="modal-kicker">{{ selectedPlanForModal()!.serialNumber }} · {{ selectedPlanForModal()!.badge }}</span>
-        <h2>{{ selectedPlanForModal()!.name }}</h2><p class="modal-description">{{ selectedPlanForModal()!.description }}</p>
-        <div class="modal-count"><strong>{{ selectedPlanForModal()!.permissionCount }}</strong><span>permissões incluídas neste perfil</span></div>
-        <ul>@for (feature of selectedPlanForModal()!.features; track feature) { <li><span>✓</span>{{ feature }}</li> }</ul>
-        <button class="modal-confirm" type="button" (click)="proceedWithPlan(selectedPlanForModal()!)">
-          @if (auth.isLoggedIn()) { Ir para o catálogo } @else { Criar conta com este perfil }
-        </button>
-        <small>Você poderá alterar seu perfil posteriormente por meio da administração.</small>
-      </section>
-    </div>
-  }
+  <footer class="rodape">Nivelo · diário de obra para pequenos empreiteiros</footer>
 </div>

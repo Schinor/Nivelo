@@ -45,15 +45,15 @@ def test_post_sem_token_retorna_401_ou_422():
 def test_post_com_token_retorna_202_e_grava_no_stream():
     main_mod, client = setup_log_service()
     resp = client.post(
-        "/eventos", json=_evento("favoritar", recurso="filme:13", ip="10.0.0.1"), headers={"X-Internal-Token": TOKEN}
+        "/eventos", json=_evento("diario_publicado", recurso="diario:13", ip="10.0.0.1"), headers={"X-Internal-Token": TOKEN}
     )
     assert resp.status_code == 202
 
     lista = client.get("/eventos", headers={"X-Internal-Token": TOKEN}).json()
     assert len(lista) == 1
-    assert lista[0]["acao"] == "favoritar"
+    assert lista[0]["acao"] == "diario_publicado"
     assert lista[0]["usuario_id"] == "1"
-    assert lista[0]["recurso"] == "filme:13"
+    assert lista[0]["recurso"] == "diario:13"
     assert lista[0]["ip"] == "10.0.0.1"
     assert "id" in lista[0]
 
@@ -61,14 +61,14 @@ def test_post_com_token_retorna_202_e_grava_no_stream():
 def test_get_ordena_do_mais_recente_para_o_mais_antigo_e_respeita_limit():
     _, client = setup_log_service()
     headers = {"X-Internal-Token": TOKEN}
-    for acao in ["login", "favoritar", "comentar", "logout"]:
+    for acao in ["login", "obra_criada", "diario_publicado", "logout"]:
         assert client.post("/eventos", json=_evento(acao), headers=headers).status_code == 202
 
     todos = client.get("/eventos", headers=headers).json()
-    assert [e["acao"] for e in todos] == ["logout", "comentar", "favoritar", "login"]
+    assert [e["acao"] for e in todos] == ["logout", "diario_publicado", "obra_criada", "login"]
 
     dois = client.get("/eventos?limit=2", headers=headers).json()
-    assert [e["acao"] for e in dois] == ["logout", "comentar"]
+    assert [e["acao"] for e in dois] == ["logout", "diario_publicado"]
 
 
 def test_get_exige_token_e_valida_limit():

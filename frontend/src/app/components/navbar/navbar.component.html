@@ -1,14 +1,11 @@
 @if (auth.isLoggedIn()) {
   <nav class="navbar">
     <div class="navbar-brand" routerLink="/">
-      <span class="brand-title">HANKS+</span>
-      <span class="brand-subtitle">Sua assinatura, seu papel na história</span>
+      <span class="brand-title">Nivelo</span>
+      <span class="brand-subtitle">Diário de obra</span>
     </div>
     <div class="navbar-links">
-      <a routerLink="/" [routerLinkActiveOptions]="{exact: true}" routerLinkActive="active">Planos</a>
-      <a routerLink="/catalogo" routerLinkActive="active">Catálogo</a>
-      <a *hasPermission="'listar:favoritos'" routerLink="/favoritos" routerLinkActive="active">Favoritos</a>
-      <a *hasPermission="'listar:comentarios'" routerLink="/comentarios" routerLinkActive="active">Comentários</a>
+      <a routerLink="/obras" routerLinkActive="active">Obras</a>
       <a routerLink="/perfil" routerLinkActive="active">Meu perfil</a>
       <a *hasPermission="'gerenciar:usuarios'" routerLink="/usuarios" routerLinkActive="active">Usuários</a>
     </div>

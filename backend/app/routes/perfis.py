@@ -1,4 +1,4 @@
-"""Perfil de usuário: nome, bio, foto (object storage) e favoritos.
+"""Perfil de usuário: nome, bio e foto (object storage).
 
 Requisito central: cada um só edita o PRÓPRIO perfil. O `{usuario_id}` da rota
 existe só para ser comparado com o id do JWT — nunca é a fonte da identidade.
@@ -34,7 +34,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies import current_user, negar_acesso
 from app.models.perfil import Perfil
-from app.repositories import favorito_repo, perfil_repo
+from app.repositories import perfil_repo
 from app.schemas.perfil import PerfilBioUpdate, PerfilOut
 from app.services import storage
 
@@ -98,7 +98,6 @@ async def _montar_perfil(db: Session, usuario_id: int, user: dict, perfil: Optio
         nome=conta.get("nome", ""),
         bio=perfil.bio if perfil else None,
         foto_url=foto_url,
-        favoritos=favorito_repo.list_by_user(db, usuario_id),
         pode_editar=usuario_id == user["id"],
         premium=bool(conta.get("premium")),
     )
@@ -188,7 +187,7 @@ async def meu_perfil(user: dict = Depends(current_user), db: Session = Depends(g
     responses={**UNAUTHORIZED, **NOT_FOUND_USER, **AUTH_SERVICE_INDISPONIVEL},
 )
 async def ver_perfil(usuario_id: int, user: dict = Depends(current_user), db: Session = Depends(get_db)):
-    """Perfil de qualquer usuário (leitura aberta a quem está logado, favoritos incluídos)."""
+    """Perfil de qualquer usuário (leitura aberta a quem está logado)."""
     return await _montar_perfil(db, usuario_id, user)
 
 

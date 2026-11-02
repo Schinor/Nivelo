@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from moto import mock_aws
 
-from test_backend_proxy import _capturar_eventos, _usuario, setup_catalogo_app
+from test_backend_proxy import _capturar_eventos, _usuario, setup_api_app
 
 BUCKET = "catalogo-avatares"
 USUARIOS = {1: "Ana", 2: "Beto", 9: "Admin"}
@@ -29,7 +29,7 @@ def ctx(monkeypatch):
         import boto3
         from fastapi import HTTPException
 
-        app, SessionLocal, current_user, TestClient = setup_catalogo_app()
+        app, SessionLocal, current_user, TestClient = setup_api_app()
         from app.services import storage
 
         from botocore.config import Config
@@ -93,7 +93,7 @@ def _enviar(ctx, uid, dados, nome="foto.png", tipo="image/png"):
 # ── storage.py ────────────────────────────────────────────────────────────────
 
 def test_calcular_expiracao_tempo_mais_margem_com_teto_e_piso(monkeypatch):
-    setup_catalogo_app()
+    setup_api_app()
     from app.core.config import settings
     from app.services import storage
 
@@ -127,15 +127,8 @@ def test_get_perfil_inexistente_retorna_404(ctx):
     assert ctx.client.get("/api/perfis/404").status_code == 404
 
 
-def test_get_perfil_sem_linha_lista_favoritos_e_pode_editar_so_para_o_dono(ctx):
-    from app.models.favoritos import Favorito
-
-    db = ctx.SessionLocal()
-    db.add(Favorito(usuario_id=2, tmdb_movie_id=8358, titulo="Náufrago", poster_path="/n.jpg"))
-    db.commit()
-    db.close()
-
-    # Usuário 1 vê o perfil do 2 sem precisar de 'listar:favoritos'
+def test_get_perfil_sem_linha_e_pode_editar_so_para_o_dono(ctx):
+    # Usuário 1 vê o perfil do 2
     ctx.logar(1)
     resp = ctx.client.get("/api/perfis/2")
     assert resp.status_code == 200
@@ -144,7 +137,6 @@ def test_get_perfil_sem_linha_lista_favoritos_e_pode_editar_so_para_o_dono(ctx):
         "nome": "Beto",
         "bio": None,
         "foto_url": None,
-        "favoritos": [{"tmdb_movie_id": 8358, "titulo": "Náufrago", "poster_path": "/n.jpg"}],
         "pode_editar": False,
         "premium": False,
     }

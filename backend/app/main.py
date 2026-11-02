@@ -25,9 +25,6 @@ from app.dependencies import auditar_acesso_negado
 import app.models  # noqa: F401 — força o registro dos models no metadata
 
 from app.routes.auth import router as auth_router
-from app.routes.filmes import router as filmes_router
-from app.routes.favoritos import router as favoritos_router
-from app.routes.comentarios import router as comentarios_router
 from app.routes.logs import router as logs_router
 from app.routes.observability_proxy import router as observability_router
 from app.routes.perfis import router as perfis_router
@@ -45,7 +42,7 @@ logging.getLogger("catalogo").setLevel(logging.INFO)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Catálogo de Filmes — Tom Hanks",
+    title="Nivelo API",
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
@@ -61,9 +58,6 @@ app.add_middleware(
 
 # Rotas da API
 app.include_router(auth_router)
-app.include_router(filmes_router)
-app.include_router(favoritos_router)
-app.include_router(comentarios_router)
 app.include_router(logs_router)
 app.include_router(perfis_router)
 app.include_router(premium_router)
@@ -138,7 +132,7 @@ if os.path.isdir(STATIC_DIR):
         if full_path and os.path.isfile(target):
             return FileResponse(target)
 
-        # Para qualquer rota do cliente (ex: /reset-password, /login, /catalogo), serve o index.html
+        # Para qualquer rota do cliente (ex: /reset-password, /login), serve o index.html
         index_file = os.path.join(STATIC_DIR, "index.html")
         if os.path.isfile(index_file):
             return FileResponse(index_file)

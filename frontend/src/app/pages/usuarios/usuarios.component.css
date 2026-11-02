@@ -1,6 +1,6 @@
 .usuarios-container { max-width: 1280px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
 
-/* Cabeçalho (mesmo padrão das páginas de catálogo/comentários) */
+/* Cabeçalho */
 .usuarios-header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
 .kicker-tag { display: flex; align-items: center; gap: .5rem; margin-bottom: .8rem; color: var(--accent); font-family: var(--font-display); font-size: .88rem; letter-spacing: 2px; }
 .kicker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
@@ -16,10 +16,10 @@
 
 /* Tiers por plano: cada classe define --tier / --tier-soft usados pelos componentes abaixo */
 .tier-admin { --tier: var(--tier-admin); --tier-soft: var(--tier-admin-soft); }
-.tier-phillips { --tier: var(--tier-phillips); --tier-soft: var(--tier-phillips-soft); }
-.tier-apollo { --tier: var(--tier-apollo); --tier-soft: var(--tier-apollo-soft); }
-.tier-terminal { --tier: var(--tier-terminal); --tier-soft: var(--tier-terminal-soft); }
-.tier-wilson { --tier: var(--tier-wilson); --tier-soft: var(--tier-wilson-soft); }
+.tier-dono { --tier: var(--tier-dono); --tier-soft: var(--tier-dono-soft); }
+.tier-neutro { --tier: var(--tier-neutro); --tier-soft: var(--tier-neutro-soft); }
+.tier-encarregado { --tier: var(--tier-encarregado); --tier-soft: var(--tier-encarregado-soft); }
+.tier-cliente { --tier: var(--tier-cliente); --tier-soft: var(--tier-cliente-soft); }
 
 /* Barra de busca e filtros */
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; }

@@ -6,11 +6,11 @@ from app.core.database import Base
 
 
 class Perfil(Base):
-    """Dados "sociais" do usuário no catálogo (a conta em si fica no auth-service).
+    """Dados de perfil do usuário na API (a conta em si fica no auth-service).
 
     A linha é criada sob demanda na primeira edição; sem linha = bio vazia e sem foto.
-    Sem FK para `usuarios`: a tabela pertence ao auth-service (mesmo critério de
-    favoritos/comentários); a limpeza na remoção do usuário é feita pela rota de exclusão.
+    Sem FK para `usuarios`: a tabela pertence ao auth-service (um contexto não lê as
+    tabelas de outro); a limpeza na remoção do usuário é feita pela rota de exclusão.
     """
 
     __tablename__ = "perfis"

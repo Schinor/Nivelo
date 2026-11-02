@@ -27,10 +27,9 @@ interface EdicaoPermissoes {
 
 const TIER_POR_PAPEL: Record<string, string> = {
   admin: 'tier-admin',
-  'capitao-hanks': 'tier-phillips',
-  'houston-temos-acesso': 'tier-apollo',
-  'preso-no-terminal': 'tier-terminal',
-  'amigo-do-wilson': 'tier-wilson',
+  dono: 'tier-dono',
+  encarregado: 'tier-encarregado',
+  cliente: 'tier-cliente',
 };
 
 @Component({
@@ -112,7 +111,7 @@ export class UsuariosComponent implements OnInit {
   }
 
   tier(slug: string): string {
-    return TIER_POR_PAPEL[slug] || 'tier-wilson';
+    return TIER_POR_PAPEL[slug] || 'tier-cliente';
   }
 
   nomePlano(slug: string): string {
@@ -257,7 +256,7 @@ export class UsuariosComponent implements OnInit {
   confirmarRemocao(u: UsuarioAdmin) {
     this.confirmacao.set({
       titulo: `Remover ${u.nome}?`,
-      mensagem: `A conta ${u.email} será apagada junto com os favoritos e comentários dela. Essa ação não pode ser desfeita.`,
+      mensagem: `A conta ${u.email} será apagada junto com o perfil e a foto dela. Essa ação não pode ser desfeita.`,
       botao: 'Remover usuário',
       perigo: true,
       acao: () => this.remover(u),

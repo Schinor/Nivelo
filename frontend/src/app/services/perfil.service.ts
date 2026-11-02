@@ -2,22 +2,15 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export interface FavoritoPerfil {
-  tmdb_movie_id: number;
-  titulo: string;
-  poster_path: string | null;
-}
-
 export interface Perfil {
   usuario_id: number;
   nome: string;
   bio: string | null;
   /** URL relativa (/storage/...), pré-assinada e com expiração; null sem foto */
   foto_url: string | null;
-  favoritos: FavoritoPerfil[];
   /** Só para a UI: quem garante a regra de dono é o backend */
   pode_editar: boolean;
-  /** Selo visual; o benefício (favoritos ilimitados) é garantido pelo backend */
+  /** Selo visual; os limites do plano são garantidos pelo backend */
   premium: boolean;
 }
 

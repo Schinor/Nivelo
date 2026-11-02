@@ -16,8 +16,8 @@ export function permissionGuard(requiredPermission: string): CanActivateFn {
       return true;
     }
 
-    // Se logado mas sem permissão específica para a rota, redireciona para o catálogo
-    router.navigate(['/catalogo']);
+    // Se logado mas sem permissão específica para a rota, redireciona para as obras
+    router.navigate(['/obras']);
     return false;
   };
 }

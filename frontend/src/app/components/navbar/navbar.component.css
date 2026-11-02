@@ -14,10 +14,10 @@
 .user-role-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 10px; border-radius: var(--radius-full); font-size: .58rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; border: 0; }
 .user-role-badge i { width: 8px; height: 8px; flex: none; border-radius: var(--radius-full); background: currentColor; }
 .badge-admin { background: var(--tier-admin-soft); color: var(--tier-admin); }
-.badge-capitao { background: var(--tier-phillips-soft); color: var(--tier-phillips); }
-.badge-houston { background: var(--tier-apollo-soft); color: var(--tier-apollo); }
-.badge-terminal { background: var(--tier-terminal-soft); color: var(--tier-terminal); }
-.badge-wilson { background: var(--tier-wilson-soft); color: var(--tier-wilson); }
+.badge-dono { background: var(--tier-dono-soft); color: var(--tier-dono); }
+.badge-neutro { background: var(--tier-neutro-soft); color: var(--tier-neutro); }
+.badge-encarregado { background: var(--tier-encarregado-soft); color: var(--tier-encarregado); }
+.badge-cliente { background: var(--tier-cliente-soft); color: var(--tier-cliente); }
 .btn-logout { padding: .55rem .9rem; border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: transparent; color: var(--paper-muted); font-family: var(--font); font-size: .72rem; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; transition: all .2s ease; }
 .btn-logout:hover { border-color: #e50914; color: #ff6b6b; }
 @media (max-width: 860px) {

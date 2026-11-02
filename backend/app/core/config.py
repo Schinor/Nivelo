@@ -4,8 +4,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    TMDB_BASE_URL: str
-    TMDB_API_KEY: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
@@ -33,7 +31,6 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID: str = ""
     # Para onde o Stripe devolve o usuário depois do checkout (a SPA é servida pelo próprio catálogo)
     FRONTEND_URL: str = "http://localhost:8000"
-    LIMITE_FAVORITOS_FREE: int = 5
     # Token compartilhado com o auth-service para as rotas /internal (gravar o status premium)
     AUTH_INTERNAL_TOKEN: str = ""
 

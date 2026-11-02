@@ -5,9 +5,6 @@ import { Observable } from 'rxjs';
 export interface PremiumStatus {
   premium: boolean;
   premium_desde: string | null;
-  favoritos: number;
-  /** null = sem limite (Premium) */
-  limite_favoritos: number | null;
 }
 
 @Injectable({ providedIn: 'root' })

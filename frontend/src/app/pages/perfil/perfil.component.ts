@@ -3,9 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { PerfilService, Perfil, FavoritoPerfil } from '../../services/perfil.service';
-import { FilmesService, Filme } from '../../services/filmes.service';
-import { MovieModalComponent } from '../../components/movie-modal/movie-modal.component';
+import { PerfilService, Perfil } from '../../services/perfil.service';
 import { PremiumCtaComponent } from '../../components/premium-cta/premium-cta.component';
 
 const BIO_MAX = 280;
@@ -14,13 +12,12 @@ const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 
 @Component({
   selector: 'app-perfil',
-  imports: [RouterLink, FormsModule, MovieModalComponent, PremiumCtaComponent],
+  imports: [RouterLink, FormsModule, PremiumCtaComponent],
   templateUrl: './perfil.component.html',
   styleUrl: './perfil.component.css',
 })
 export class PerfilComponent implements OnInit, OnDestroy {
   private perfilService = inject(PerfilService);
-  private filmesService = inject(FilmesService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private sub?: Subscription;
@@ -37,7 +34,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
   arquivo = signal<File | null>(null);
   preview = signal<string | null>(null);
   erroEdicao = signal<string | null>(null);
-  filmeAberto = signal<Filme | null>(null);
 
   inicial = computed(() => (this.perfil()?.nome || '?').trim().charAt(0).toUpperCase());
 
@@ -192,25 +188,5 @@ export class PerfilComponent implements OnInit, OnDestroy {
     const url = this.preview();
     if (url) URL.revokeObjectURL(url);
     this.preview.set(null);
-  }
-
-  abrirFilme(fav: FavoritoPerfil) {
-    this.filmesService.detalhe(fav.tmdb_movie_id).subscribe({
-      next: (f) => this.filmeAberto.set(f),
-      error: () =>
-        this.filmeAberto.set({
-          id: fav.tmdb_movie_id,
-          titulo: fav.titulo,
-          sinopse: '',
-          poster_path: fav.poster_path,
-          poster_url: fav.poster_path ? `https://image.tmdb.org/t/p/w500${fav.poster_path}` : null,
-          data_lancamento: '',
-          popularidade: 0,
-        }),
-    });
-  }
-
-  fecharModal() {
-    this.filmeAberto.set(null);
   }
 }
