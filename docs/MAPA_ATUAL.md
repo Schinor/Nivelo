@@ -1,7 +1,7 @@
 # Mapa atual — o HANK+ antes da troca para o Nivelo
 
 > Retrato do repositório em 02/11/2026 (commit `9ff7a38`), feito na Fase 0 do roteiro, sem alterar código de aplicação.
-> Serve de base para as Fases 1 a 9. Quando o código mudar, este documento vira histórico.
+> Serve de base para as Fases 1 a 9. **Na Fase 1** o domínio antigo saiu do código; aqui os nomes dele foram trocados por descrições (regra 8), e a seção 13 resume o que mudou.
 
 ## 1. Respostas da verificação
 
@@ -16,19 +16,19 @@
 
 | Serviço (compose) | Container | Imagem GHCR | Porta | Responsabilidade |
 |---|---|---|---|---|
-| `catalogo` | `catalogo-filmes-schinor` | `ghcr.io/schinor/catalogo-filmes` | `${PORT:-8000}:8000` — **única publicada** | FastAPI + SPA Angular embutida; API de filmes, favoritos, comentários, perfis, premium e logs; ponte para auth, Garage, Grafana e Prometheus |
+| `catalogo` | (nome antigo do container) | `ghcr.io/schinor/catalogo-*` | `${PORT:-8000}:8000` — **única publicada** | FastAPI + SPA Angular embutida; API do catálogo, favoritos, comentários, perfis, premium e logs; ponte para auth, Garage, Grafana e Prometheus |
 | `auth-service` | `auth-service-schinor` | `ghcr.io/schinor/auth-service` | `expose: 8001` | Usuários, JWT, RBAC, reset de senha, status premium |
 | `log-service` | `log-service-schinor` | `ghcr.io/schinor/log-service` | `expose: 8002` | Recebe e lista eventos de auditoria (Redis Stream) |
 | `redis` | (automático) | `redis:7-alpine` | nenhuma | Stream `audit:events` (AOF ligado) |
 | `garage` | `garage-schinor` | `ghcr.io/schinor/garage` | `expose: 3900` | Object storage S3 |
 | `prometheus` | (automático) | `ghcr.io/schinor/prometheus` | `expose: 9090` | Scrape de `/metrics` dos 3 serviços Python |
-| `grafana` | (automático) | `ghcr.io/schinor/grafana` | `expose: 3000` | Painel `hanks-plus` |
+| `grafana` | (automático) | `ghcr.io/schinor/grafana` | `expose: 3000` | Painel do projeto anterior |
 
-- Rede: `filmes-network`, bridge com sub-rede fixa `10.20.30.0/28` (o pool do host compartilhado está esgotado).
+- Rede: (nome antigo, temático), bridge com sub-rede fixa `10.20.30.0/28` (o pool do host compartilhado está esgotado).
 - Volumes: `redis-data`, `grafana-data`, `garage-meta`, `garage-data`.
 - **Nenhum container tem `mem_limit`.** A regra de 1 GB por container (Fase 6) ainda precisa entrar no compose.
 - Health checks: `catalogo`, `auth-service`, `log-service`, `redis` e `garage` têm; `prometheus` e `grafana` não.
-- Compose de dev (`docker-compose.dev.yml`): build local, rede `filmes-network-dev`, publica 9090 e 3000, e tem a `stripe-cli` atrás do profile `stripe`.
+- Compose de dev (`docker-compose.dev.yml`): build local, rede de dev própria, publica 9090 e 3000, e tem a `stripe-cli` atrás do profile `stripe`.
 - Compose de CI (`docker-compose.ci.yml`): SQLite descartável em cada serviço, segredos gerados no workflow.
 
 ## 3. Variáveis de ambiente
@@ -39,7 +39,7 @@
 | `SECRET_KEY`, `ALGORITHM` | ✅ | ✅ | | | JWT HS256 compartilhado |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | ✅ | ✅ | | | Hoje **1440** (24 h); o roteiro pede 15 min |
 | `PORT` | ✅ | | | | Porta publicada no host |
-| `TMDB_BASE_URL`, `TMDB_API_KEY` | ✅ | | | | **Sai na Fase 1**; `TMDB_API_KEY` é obrigatória no `Settings` hoje |
+| URL e chave da API externa do catálogo | ✅ | | | | **Saíram na Fase 1** |
 | `AUTH_SERVICE_URL` | ✅ | | | | Fixa no compose: `http://auth-service-schinor:8001` |
 | `LOG_SERVICE_URL`, `LOG_INTERNAL_TOKEN` | ✅ | | ✅ | | Token interno catálogo → log |
 | `GRAFANA_INTERNAL_URL`, `PROMETHEUS_INTERNAL_URL`, `PROMETHEUS_PROXY_PASSWORD` | ✅ | | | | Pontes de observabilidade |
@@ -49,7 +49,7 @@
 | `FRONTEND_URL` | ✅ | | | | Retorno do checkout |
 | `LIMITE_FAVORITOS_FREE` | ✅ | | | | Limite do Free do HANK+ (5 favoritos) |
 | `AUTH_INTERNAL_TOKEN` | ✅ | ✅ | | | Token catálogo → `/internal/premium` |
-| `MAILTRAP_*` (`HOST`, `PORT`, `USERNAME`, `PASSWORD`, `FROM_EMAIL`, `FROM_NAME`) | | ✅ | | | Remetente padrão ainda é "Tom Hanks Filmes" |
+| `MAILTRAP_*` (`HOST`, `PORT`, `USERNAME`, `PASSWORD`, `FROM_EMAIL`, `FROM_NAME`) | | ✅ | | | Remetente padrão era o do projeto anterior (trocado na Fase 1) |
 | `CATALOGO_URL` | | ✅ | | grafana | Link do e-mail de reset e `GF_SERVER_ROOT_URL` |
 | `RESET_TOKEN_EXPIRE_MINUTES`, `RESET_REQUEST_LIMIT`, `RESET_REQUEST_WINDOW_MINUTES`, `EMAIL_LOG_LINK_WITHOUT_SMTP` | | ✅ | | | Reset de senha |
 | `REDIS_URL` | | | ✅ | | Fixa no compose |
@@ -72,8 +72,8 @@ Todas no mesmo MariaDB. **IDs são `INT AUTO_INCREMENT`** (o roteiro pede UUID n
 | `user_permissions` | auth | `usuario_id`, `permission_id`, `concedida` (concessão ou revogação individual) |
 | `reset_tokens` | auth | `id`, `token` (128, **guardado em claro**), `usuario_id`, `criado_em`, `expira_em`, `usado` |
 | `stripe_eventos_processados` | auth | `event_id` PK, `tipo`, `processado_em` |
-| `favoritos` | catalogo | `id`, `usuario_id`, `tmdb_movie_id`, `titulo`, `poster_path`, `criado_em` |
-| `comentarios` | catalogo | `id`, `usuario_id`, `tmdb_movie_id`, `texto`, `criado_em` |
+| `favoritos` | catalogo | `id`, `usuario_id`, id do item externo, `titulo`, imagem, `criado_em` (**removida na Fase 1**) |
+| `comentarios` | catalogo | `id`, `usuario_id`, id do item externo, `texto`, `criado_em` (**removida na Fase 1**) |
 | `perfis` | catalogo | `usuario_id` PK, `bio`, `foto_key`, `foto_bytes`, `atualizado_em` |
 
 **Como o esquema é criado hoje:**
@@ -89,9 +89,9 @@ Todas no mesmo MariaDB. **IDs são `INT AUTO_INCREMENT`** (o roteiro pede UUID n
 |---|---|---|
 | Auth (ponte) | `POST /api/auth/cadastro`, `/login`, `/logout`, `GET /me`, `POST /forgot-password`, `GET /validate-reset-token/{token}`, `POST /reset-password` | pública, exceto `logout` e `me` |
 | Admin (ponte) | `GET /api/auth/users`, `PUT /users/{id}/role`, `PUT /users/{id}/permissions`, `DELETE /users/{id}`, `GET/POST /roles`, `GET /permissions`, `GET /admin/status`, `GET /users/{id}/role` | JWT + permissão |
-| Filmes | `GET /api/filmes`, `GET /api/filmes/{movie_id}` | pública |
-| Favoritos | `GET/POST /api/favoritos`, `DELETE /api/favoritos/{tmdb_movie_id}` | JWT + permissão |
-| Comentários | `GET /api/comentarios`, `GET /api/comentarios/{tmdb_movie_id}`, `POST`, `DELETE /{id}` | JWT + permissão |
+| Catálogo | listagem e detalhe dos itens da API externa | pública (**removidas na Fase 1**) |
+| Favoritos | `GET/POST /api/favoritos`, `DELETE /api/favoritos/{id}` | JWT + permissão (**removidas na Fase 1**) |
+| Comentários | `GET /api/comentarios`, `GET /api/comentarios/{id}`, `POST`, `DELETE /{id}` | JWT + permissão (**removidas na Fase 1**) |
 | Perfis | `GET /api/perfis/me`, `GET/PUT /api/perfis/{id}`, `PUT/DELETE /api/perfis/{id}/foto` | JWT |
 | Premium | `GET /api/premium/status`, `POST /api/premium/checkout` | JWT |
 | Webhook | `POST /webhooks/stripe` | `Stripe-Signature` |
@@ -118,7 +118,7 @@ O `/health` do catálogo já é de prontidão (banco + auth + Garage, 503 se alg
 5. **Não há refresh token.** O logout só registra o evento (JWT stateless).
 6. Não há `empresa_id` nem conceito de tenant.
 
-**RBAC atual:** granular por permissão, com papéis temáticos de filmes (`amigo-do-wilson`, `preso-no-terminal`, `houston-temos-acesso`, `capitao-hanks` e `admin`) criados pelo `rbac_seed.py` a cada boot. O papel padrão do cadastro é `amigo-do-wilson`. Sai na Fase 1, e os papéis `admin`, `dono`, `encarregado` e `cliente` entram na Fase 3.
+**RBAC atual:** granular por permissão, com quatro papéis temáticos do projeto anterior e o `admin` criados pelo `rbac_seed.py` a cada boot. O papel padrão do cadastro é `amigo-do-wilson`. Sai na Fase 1, e os papéis `admin`, `dono`, `encarregado` e `cliente` entram na Fase 3.
 
 **Auditoria:**
 - O catálogo chama `log_client.registrar(acao, ...)`, que faz `POST /eventos` no log-service com timeout de 1,5 s, quase sempre como `BackgroundTask`. Se falhar, só gera um warning e **o evento se perde** (é o problema que o outbox da Parte A.4 resolve).
@@ -143,7 +143,7 @@ O `/health` do catálogo já é de prontidão (banco + auth + Garage, 503 se alg
 
 ## 8. Deploy
 
-- **GitHub Actions** (`.github/workflows/ci-cd.yml`): no push para `main` e em PR, roda o `pytest -q` (102 testes passando hoje) e sobe o `docker-compose.ci.yml` com `--wait`, mais 4 `curl` (health, login 401, `/metrics`, `/storage` 403). Só no push para `main`, publica 6 imagens no GHCR (`catalogo-filmes`, `auth-service`, `log-service`, `prometheus`, `grafana`, `garage`) com as tags `sha-<7>` e `latest`.
+- **GitHub Actions** (`.github/workflows/ci-cd.yml`): no push para `main` e em PR, roda o `pytest -q` (102 testes passando hoje) e sobe o `docker-compose.ci.yml` com `--wait`, mais 4 `curl` (health, login 401, `/metrics`, `/storage` 403). Só no push para `main`, publica 6 imagens no GHCR (a da API, `auth-service`, `log-service`, `prometheus`, `grafana`, `garage`) com as tags `sha-<7>` e `latest`.
 - **Portainer:** a stack vem do repositório Git (`docker-compose.yml`) e **puxa as imagens do GHCR**. Não faz build no servidor. Os segredos são variáveis da stack.
 - **Domínio:** `marcio-mazega-isw055.lapps.studio`, atrás do proxy HTTPS (Cloudflare) da infra do professor, que encaminha para a porta `${PORT}` do host.
 - O banco não está na stack; é fornecido pela infra.
@@ -153,40 +153,14 @@ O `/health` do catálogo já é de prontidão (banco + auth + Garage, 503 se alg
 Angular 21, componentes standalone com `loadComponent` (lazy) em `app.routes.ts`, build `npx ng build --configuration production` dentro do `Dockerfile` raiz. O resultado é copiado para `backend/static` e servido pelo FastAPI.
 
 - Páginas: `landing` (`/` e `/planos`), `login`, `reset-password`, `catalogo`, `favoritos`, `comentarios`, `perfil` e `perfil/:id`, `usuarios` (admin), `premium/sucesso`, `premium/cancelado`.
-- Componentes: `movie-card`, `movie-modal`, `navbar`, `premium-cta`.
+- Componentes: cartão e modal do item do catálogo, `navbar`, `premium-cta`.
 - Infra do front: `auth.guard`, `permission.guard`, a diretiva `has-permission` e o `auth.interceptor`. Ainda não tem interceptor de erro nem cliente gerado do OpenAPI.
 
-## 10. Ocorrências de `hanks|filme|tmdb|movie|poster`
+## 10. Ocorrências de termos do domínio antigo
 
-`git grep -ciE "hanks|filme|tmdb|movie|poster"`: **689 ocorrências em 77 arquivos** (fora do `docs/historico/`, que ainda não existe).
+Na Fase 0, a busca pelos termos do domínio antigo (`scripts/checar_dominio_antigo.sh`) encontrou **689 ocorrências em 77 arquivos**. As maiores concentrações estavam no material da P1 (fonte e PDF da prova), na documentação do sistema anterior, nas telas e serviços do catálogo no front, na integração com a API externa no back e nos testes. Também havia arquivos com nome temático (assets, painel do Grafana, componentes do front) e nomes temáticos na rede e nas imagens do compose.
 
-| Arquivo | Ocorrências |
-|---|---|
-| `docs/p1/P1_ISW055_Marcio_Mazega.pdf` | 60 |
-| `docs/p1/P1_ISW055.typ` | 47 |
-| `docs/ARQUITETURA.md` | 39 |
-| `DOCUMENTACAO.md` | 34 |
-| `frontend/src/app/pages/comentarios/comentarios.component.ts` | 32 |
-| `backend/app/services/tmdb_service.py` | 32 |
-| `tests/test_backend_proxy.py` | 26 |
-| `frontend/src/app/pages/comentarios/comentarios.component.html` | 20 |
-| `frontend/src/app/pages/favoritos/favoritos.component.ts` | 18 |
-| `frontend/src/app/pages/comentarios/comentarios.component.css` | 18 |
-| `frontend/src/app/pages/catalogo/catalogo.component.ts` | 17 |
-| `docs/hanks-plus-design-system.md` | 17 |
-| `frontend/src/app/components/movie-modal/movie-modal.component.ts` | 15 |
-| `frontend/src/app/pages/catalogo/catalogo.component.html` | 14 |
-| `docker-compose.yml`, `docker-compose.dev.yml` | 14 cada |
-| `backend/app/routes/filmes.py` | 14 |
-| `frontend/src/app/pages/perfil/perfil.component.ts`, `auth-service/app/core/rbac_seed.py` | 13 cada |
-| `tests/test_premium.py` | 12 |
-| `frontend/src/app/pages/favoritos/favoritos.component.html`, `backend/app/routes/favoritos.py` | 11 cada |
-| `frontend/src/app/pages/landing/landing.component.ts` | 10 |
-| 56 arquivos restantes | 1 a 9 cada |
-
-**Arquivos com nome temático** (o `git grep` não olha nomes, mas eles saem igual): `assets/SitePosterSinopse.png`, `docs/hanks-plus-design-system.md`, `grafana/dashboards/hanks-plus.json`, `components/movie-card/*`, `components/movie-modal/*`, `services/filmes.service.ts`, `routes/filmes.py`, `services/tmdb_service.py`. A rede `filmes-network` e a imagem `catalogo-filmes` também mudam.
-
-**Proposta para a Fase 1:** mover `docs/p1/`, `docs/ARQUITETURA.md`, `DOCUMENTACAO.md`, `docs/relatorio_*.md`, `docs/PERFIS.md`, `docs/STYLE_GUIDE.md`, `docs/hanks-plus-design-system.md` e os prints do HANK+ em `assets/` para `docs/historico/` (fica fora do grep, como prevê a regra 8), em vez de reescrever o histórico da disciplina.
+Na Fase 1, tudo isso saiu: o código foi removido ou renomeado, e o material da P1 e a documentação anterior foram apagados (ADR 007). A busca volta vazia e roda no CI e no pre-commit.
 
 ## 11. Como o layout real se encaixa na Parte A.2
 
@@ -201,7 +175,7 @@ backend/app/
   clients/      → shared/infrastructure/ (auth_client, log_client)
   core/         → shared/infrastructure/ (config, database) e shared/api/ (api_responses, security)
   routes/       → perfis, auth (ponte), logs, observabilidade e storage continuam como "api" de shared/ ou de seus contextos
-  models|repositories|schemas/  → somem com filmes; perfis vira infraestrutura do contexto de conta
+  models|repositories|schemas/  → somem com o domínio antigo; perfis vira infraestrutura do contexto de conta
   main.py
 backend/tests/ (ou tests/) → unit/ e integration/
 db/NNN_*.sql   # novo, na raiz, montado na imagem da API
@@ -215,8 +189,17 @@ db/NNN_*.sql   # novo, na raiz, montado na imagem da API
 
 1. `ACCESS_TOKEN_EXPIRE_MINUTES=1440` e não há refresh token. Baixar para 15 min sem refresh derruba o usuário a cada 15 min; a Fase 3 precisa de refresh token ou de um valor intermediário (ADR 005).
 2. O `reset_tokens.token` é guardado em claro. O convite (Fase 3) deve guardar só o hash; vale corrigir o reset junto.
-3. O remetente padrão do Mailtrap é `nao-responda@tomhanksfilmes.com`. É variável da stack: precisa ser trocado no Portainer também.
-4. `TMDB_API_KEY` é obrigatória no `Settings`: removê-la do compose antes do código faz a API não subir.
+3. O remetente padrão do Mailtrap era o do projeto anterior. É variável da stack (`MAILTRAP_FROM_EMAIL`, `MAILTRAP_FROM_NAME`): precisa ser trocado no Portainer também.
+4. A chave da API externa era obrigatória no `Settings`: removê-la da stack antes de publicar o código novo fazia a API não subir. Resolvido na Fase 1 (o código não lê mais a variável).
 5. O Free do HANK+ limita favoritos (`LIMITE_FAVORITOS_FREE`). O limite do Nivelo (obras ativas) só entra na Fase 8; entre a Fase 1 e a 8 não há limite.
-6. **O cadastro aceita o papel vindo do corpo** (`payload.role`, só `admin` é recusado): qualquer pessoa se cadastra com `capitao-hanks`. Na Fase 3, o cadastro público cria sempre `dono` e ignora qualquer papel enviado.
+6. **O cadastro aceita o papel vindo do corpo** (`payload.role`, só `admin` é recusado): qualquer pessoa se cadastrava com o papel de mais privilégio. **Corrigido na Fase 1:** o cadastro público cria sempre `dono` e ignora qualquer papel enviado.
 7. O ambiente local tem Python 3.14, e as dependências fixadas (`pydantic-core`, `Pillow`) não compilam nele. Os testes rodam com `uv` em Python 3.12 (ver Comandos no `CLAUDE.md`).
+
+## 13. O que mudou na Fase 1
+
+- Serviço `catalogo` virou `api`; imagens `ghcr.io/schinor/nivelo-*`; rede `nivelo-network`; containers `nivelo-*-schinor`.
+- Domínio antigo removido do back, do front, dos testes, das variáveis e do banco (revisão `api_002_remove_catalogo`, exportada em `db/000_remove_catalogo.sql`).
+- Papéis `admin`, `dono`, `encarregado` e `cliente`; cadastro público sempre cria `dono`.
+- `alembic upgrade head` no boot da API e do auth-service; a API tem tabela de versão própria (`alembic_version_api`).
+- Esqueleto hexagonal em `backend/app/` (`shared`, `obras`, `assinaturas`, `admin`), Request ID, Problem Details e `/health/live` e `/health/ready`.
+- ruff, mypy, import-linter e pre-commit no CI.

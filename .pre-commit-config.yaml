@@ -27,7 +27,7 @@ repos:
         files: ^backend/app/
       - id: nada-de-dominio-antigo
         name: nenhuma referência ao domínio antigo
-        entry: sh -c '! git grep -niE "hanks|filme|tmdb|movie|poster"'
+        entry: scripts/checar_dominio_antigo.sh
         language: system
         pass_filenames: false
         always_run: true

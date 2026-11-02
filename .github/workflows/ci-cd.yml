@@ -42,7 +42,7 @@ jobs:
         run: PYTHONPATH=backend lint-imports
 
       - name: Nenhuma referência ao domínio antigo
-        run: "! git grep -niE 'hanks|filme|tmdb|movie|poster'"
+        run: scripts/checar_dominio_antigo.sh
 
       - name: Testes (pytest)
         run: pytest -q

@@ -7,7 +7,7 @@ gh label create "atividade-10" --color 1D76DB --description "Negócio no ar" 2>/
 gh label create "atividade-11" --color 5319E7 --description "Assinatura com Stripe" 2>/dev/null || true
 
 gh issue create --label atividade-10 --title "Modelar as tabelas de empresas, obras, diários e fotos" \
-  --body "Criar empresas, obras, diarios, diario_fotos, ocorrencias e obra_clientes no MariaDB, com empresa_id em todas as tabelas do domínio. Remover favoritos/comentários de filmes."
+  --body "Criar empresas, obras, diarios, diario_fotos, ocorrencias e obra_clientes no MariaDB, com empresa_id em todas as tabelas do domínio. Remover favoritos/comentários do domínio antigo."
 
 gh issue create --label atividade-10 --title "Multi-tenancy: isolar dados por empresa_id" \
   --body "empresa_id vem do JWT, nunca do corpo ou da URL. Teste: usuário da empresa A recebe 404 ao pedir obra da empresa B."
