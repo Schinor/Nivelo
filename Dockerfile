@@ -34,5 +34,5 @@ COPY --from=frontend-builder /frontend/dist/frontend/browser ./static
 # Expõe a porta (configurada via ENV PORT)
 EXPOSE ${PORT:-8000}
 
-# Comando de inicialização
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Migrações antes de aceitar tráfego: se o alembic falhar, o container não sobe
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

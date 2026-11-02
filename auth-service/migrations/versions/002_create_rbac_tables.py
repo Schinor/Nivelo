@@ -54,10 +54,9 @@ def upgrade() -> None:
     if "usuarios" in tables:
         columns = [col["name"] for col in inspector.get_columns("usuarios")]
         if "role_id" not in columns:
-            op.add_column(
-                "usuarios",
-                sa.Column("role_id", sa.Integer(), sa.ForeignKey("roles.id", ondelete="SET NULL"), nullable=True),
-            )
+            # SQLite (CI e testes) não aceita ALTER com constraint: lá a coluna entra sem a FK
+            fk = [] if conn.dialect.name == "sqlite" else [sa.ForeignKey("roles.id", ondelete="SET NULL")]
+            op.add_column("usuarios", sa.Column("role_id", sa.Integer(), *fk, nullable=True))
 
 
 def downgrade() -> None:

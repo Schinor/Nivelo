@@ -11,8 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import CollectorRegistry
 from prometheus_fastapi_instrumentator import Instrumentator
-from sqlalchemy import text, inspect
-from app.core.database import Base, engine, SessionLocal
+from sqlalchemy import text
+from app.core.database import engine, SessionLocal
 import app.models  # força o registro dos models no metadata
 from app.core.rbac_seed import seed_rbac
 
@@ -30,40 +30,8 @@ logging.getLogger("auth-service").setLevel(logging.INFO)
 
 
 def init_db():
-    # Cria tabelas não existentes (permissions, roles, role_permissions, usuarios, reset_tokens)
-    Base.metadata.create_all(bind=engine)
-
-    # Executa verificação e migração automática de colunas para bancos pré-existentes
-    try:
-        with engine.connect() as conn:
-            inspector = inspect(engine)
-            if "usuarios" in inspector.get_table_names():
-                columns = [c["name"] for c in inspector.get_columns("usuarios")]
-                if "role" not in columns:
-                    conn.execute(
-                        text("ALTER TABLE usuarios ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'cliente'")
-                    )
-                    conn.commit()
-                if "role_id" not in columns:
-                    conn.execute(
-                        text("ALTER TABLE usuarios ADD COLUMN role_id INT NULL")
-                    )
-                    conn.commit()
-                # Plano Premium (atividade 7) — mesmo DDL da migração 004
-                colunas_premium = {
-                    "premium": "BOOLEAN NOT NULL DEFAULT FALSE",
-                    "stripe_customer_id": "VARCHAR(255) NULL",
-                    "stripe_subscription_id": "VARCHAR(255) NULL",
-                    "premium_desde": "DATETIME NULL",
-                }
-                for coluna, ddl in colunas_premium.items():
-                    if coluna not in columns:
-                        conn.execute(text(f"ALTER TABLE usuarios ADD COLUMN {coluna} {ddl}"))
-                        conn.commit()
-    except Exception as e:
-        print(f"[auth-service] Aviso ao verificar schema do banco: {e}")
-
-    # Executa o seed de papéis e permissões
+    # O esquema vem das migrações Alembic (alembic upgrade head roda antes do uvicorn; ver Dockerfile).
+    # Aqui só sincroniza a matriz de papéis e permissões.
     try:
         db = SessionLocal()
         seed_rbac(db)

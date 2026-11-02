@@ -20,7 +20,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import engine
 from app.dependencies import auditar_acesso_negado
 import app.models  # noqa: F401 — força o registro dos models no metadata
 
@@ -38,8 +38,7 @@ _log_handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(mes
 logging.getLogger("nivelo.api").addHandler(_log_handler)
 logging.getLogger("nivelo.api").setLevel(logging.INFO)
 
-# Cria as tabelas (idempotente se já existirem)
-Base.metadata.create_all(bind=engine)
+# O esquema vem das migrações Alembic (alembic upgrade head roda antes do uvicorn; ver Dockerfile)
 
 app = FastAPI(
     title="Nivelo API",

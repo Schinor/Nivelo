@@ -17,4 +17,5 @@ COPY . .
 # Expõe a porta interna (configurada via ENV PORT, padrão 8001)
 EXPOSE ${PORT:-8001}
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
+# Migrações antes de aceitar tráfego: se o alembic falhar, o container não sobe
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
