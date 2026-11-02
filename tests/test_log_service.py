@@ -29,7 +29,7 @@ def _evento(acao, usuario_id=1, **extra):
     return {
         "usuario_id": usuario_id,
         "acao": acao,
-        "origem": "catalogo",
+        "origem": "api",
         "timestamp": "2026-09-19T12:00:00+00:00",
         **extra,
     }
@@ -79,7 +79,7 @@ def test_get_exige_token_e_valida_limit():
 
 def test_evento_invalido_e_rejeitado():
     _, client = setup_log_service()
-    sem_acao = {"origem": "catalogo", "timestamp": "2026-09-19T12:00:00+00:00"}
+    sem_acao = {"origem": "api", "timestamp": "2026-09-19T12:00:00+00:00"}
     assert client.post("/eventos", json=sem_acao, headers={"X-Internal-Token": TOKEN}).status_code == 422
 
 

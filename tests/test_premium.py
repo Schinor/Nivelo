@@ -1,4 +1,4 @@
-"""Atividade 7 — Plano Premium com Stripe (lado do catálogo).
+"""Plano Premium com Stripe (lado da API).
 
 A assinatura do webhook é gerada de verdade (HMAC-SHA256, mesmo esquema do Stripe),
 então a validação real de stripe.Webhook.construct_event é exercitada. O auth-service

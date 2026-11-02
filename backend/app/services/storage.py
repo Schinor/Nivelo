@@ -1,10 +1,10 @@
-"""Acesso ao object storage do catálogo (Garage, via API S3 com boto3).
+"""Acesso ao object storage da API (Garage, via API S3 com boto3).
 
 O banco guarda só a CHAVE do objeto (ex.: "avatares/42/9f1c....webp").
 A URL é montada na hora de exibir, pré-assinada e com expiração.
 
 Assinamos com o host INTERNO (garage:3900) e devolvemos a URL com o prefixo
-/storage do catálogo. A rota /storage (app.routes.storage_proxy) repassa a
+/storage da API. A rota /storage (app.routes.storage_proxy) repassa a
 requisição intacta ao Garage, que é quem valida assinatura e expiração.
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ def apagar_objeto(chave: str) -> None:
 
 
 def url_assinada(chave: str, tamanho_bytes: int) -> str:
-    """URL RELATIVA ao catálogo:
+    """URL RELATIVA à API:
     /storage/catalogo-avatares/avatares/42/abc.webp?X-Amz-Algorithm=...&X-Amz-Signature=...
     """
     url = get_client().generate_presigned_url(

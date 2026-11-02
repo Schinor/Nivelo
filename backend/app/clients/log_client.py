@@ -7,7 +7,7 @@ from fastapi import Request
 
 from app.core.config import settings
 
-logger = logging.getLogger("catalogo.log_client")
+logger = logging.getLogger("nivelo.api.log_client")
 
 
 async def registrar(
@@ -24,7 +24,7 @@ async def registrar(
     payload = {
         "usuario_id": usuario_id,
         "acao": acao,
-        "origem": "catalogo",
+        "origem": "api",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "recurso": recurso,
         "detalhes": detalhes,

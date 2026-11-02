@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from app.config import settings
 
 app = FastAPI(
-    title="Serviço de Auditoria — Filmes Tom Hanks",
+    title="Nivelo — Auditoria",
     description="Serviço interno: recebe eventos de auditoria e os grava em um Redis Stream.",
     version="1.0.0",
 )

@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     MAILTRAP_PORT: int = 2525
     MAILTRAP_USERNAME: str = ""
     MAILTRAP_PASSWORD: str = ""
-    MAILTRAP_FROM_EMAIL: str = "nao-responda@tomhanksfilmes.com"
-    MAILTRAP_FROM_NAME: str = "Tom Hanks Filmes"
+    MAILTRAP_FROM_EMAIL: str = "nao-responda@nivelo.app"
+    MAILTRAP_FROM_NAME: str = "Nivelo"
 
-    # URL base pública do catálogo para geração do link no e-mail
+    # URL base pública da aplicação para geração do link no e-mail
     CATALOGO_URL: str = "http://localhost:8000"
 
     # Expiração do token de redefinição de senha em minutos (30 minutos)
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # Somente desenvolvimento: sem credenciais SMTP, registra o link no log em vez de falhar
     EMAIL_LOG_LINK_WITHOUT_SMTP: bool = False
 
-    # Token compartilhado com o catálogo para as rotas /internal (webhook do Stripe já validado).
+    # Token compartilhado com a API para as rotas /internal (webhook do Stripe já validado).
     # Vazio = rotas internas desligadas (503).
     AUTH_INTERNAL_TOKEN: str = ""
 

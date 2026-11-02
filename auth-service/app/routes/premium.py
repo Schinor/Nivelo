@@ -1,6 +1,6 @@
 """Rotas internas do Plano Premium (atividade 7).
 
-Quem fala com o Stripe é o catálogo (único serviço exposto): ele valida a assinatura
+Quem fala com o Stripe é a API (único serviço exposto): ele valida a assinatura
 do webhook e repassa aqui só os IDs do evento. Este serviço é o dono da tabela
 `usuarios`, então é aqui que `premium` muda — junto com o registro do evento, na
 mesma transação (idempotência).

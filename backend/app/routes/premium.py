@@ -22,7 +22,7 @@ from app.core.database import get_db
 from app.dependencies import current_user
 from app.services import pagamentos
 
-logger = logging.getLogger("catalogo.premium")
+logger = logging.getLogger("nivelo.api.premium")
 
 router = APIRouter(prefix="/api/premium", tags=["premium"])
 webhook_router = APIRouter(tags=["premium"])

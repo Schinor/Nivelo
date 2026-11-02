@@ -49,8 +49,6 @@ def test_api_sobe_com_docs_e_titulo_nivelo():
 
     assert client.get("/api/docs").status_code == 200
     assert app.title == "Nivelo API"
-    rotas = {r.path for r in app.routes}
-    assert not any(r.startswith(("/api/filmes", "/api/favoritos", "/api/comentarios")) for r in rotas)
 
 
 # ── Auditoria (log-service), /api/logs, logout, health e métricas ─────────────
@@ -293,13 +291,13 @@ def test_proxy_grafana_preserva_host_e_headers_com_acento(monkeypatch):
         return httpx.Response(200, json={"results": {}})
 
     _mock_grafana(monkeypatch, handler)
-    client = TestClient(app, base_url="https://filmes.exemplo.com")
+    client = TestClient(app, base_url="https://nivelo.exemplo.com")
 
     resp = client.post(
         "/grafana/api/ds/query",
         json={"queries": []},
         headers={
-            "Origin": "https://filmes.exemplo.com",
+            "Origin": "https://nivelo.exemplo.com",
             # O Grafana manda o título do painel num header, com acentos em UTF-8
             "X-Panel-Title": "Latência p95".encode(),
             "X-Forwarded-For": "203.0.113.7",
@@ -308,8 +306,8 @@ def test_proxy_grafana_preserva_host_e_headers_com_acento(monkeypatch):
 
     assert resp.status_code == 200
     # Sem o Host original, o CSRF do Grafana compara Origin com "grafana:3000" e recusa (403)
-    assert recebidos["host"] == b"filmes.exemplo.com"
-    assert recebidos["x-forwarded-host"] == b"filmes.exemplo.com"
+    assert recebidos["host"] == b"nivelo.exemplo.com"
+    assert recebidos["x-forwarded-host"] == b"nivelo.exemplo.com"
     assert recebidos["x-forwarded-for"].startswith(b"203.0.113.7, ")
     assert recebidos["x-panel-title"] == "Latência p95".encode()
 

@@ -1,4 +1,4 @@
-"""Proxy reverso para Grafana e Prometheus através do ponto de entrada público do catálogo.
+"""Proxy reverso para Grafana e Prometheus através do ponto de entrada público da API.
 
 Existe porque, em produção (Portainer), o domínio público passa por um proxy
 (Cloudflare) que só encaminha um conjunto fixo de portas HTTP — as portas dedicadas

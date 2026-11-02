@@ -25,11 +25,11 @@ class Settings(BaseSettings):
     STORAGE_EXPIRACAO_MAX_SEGUNDOS: int = 3600
     PERFIL_FOTO_MAX_BYTES: int = 2 * 1024 * 1024
     # Plano Premium (Stripe, SEMPRE em modo de teste). Sem as chaves, checkout e webhook respondem 503
-    # e o resto do catálogo segue funcionando (CI e deploys antigos não têm Stripe).
+    # e o resto da API segue funcionando (CI e deploys antigos não têm Stripe).
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PRICE_ID: str = ""
-    # Para onde o Stripe devolve o usuário depois do checkout (a SPA é servida pelo próprio catálogo)
+    # Para onde o Stripe devolve o usuário depois do checkout (a SPA é servida pela própria API)
     FRONTEND_URL: str = "http://localhost:8000"
     # Token compartilhado com o auth-service para as rotas /internal (gravar o status premium)
     AUTH_INTERNAL_TOKEN: str = ""

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 
 class PremiumEventoIn(BaseModel):
-    """Recorte de um evento do Stripe cuja assinatura JÁ foi validada pelo catálogo.
+    """Recorte de um evento do Stripe cuja assinatura JÁ foi validada pela API.
 
     Só IDs: o payload completo do Stripe não trafega nem é gravado.
     """

@@ -31,12 +31,12 @@ from app.routes.perfis import router as perfis_router
 from app.routes.premium import router as premium_router, webhook_router as stripe_webhook_router
 from app.routes.storage_proxy import router as storage_router
 
-# Loggers "catalogo.*" em INFO no stdout (ex.: event.id/tipo/usuario_id do webhook do Stripe).
+# Loggers "nivelo.api.*" em INFO no stdout (ex.: event.id/tipo/usuario_id do webhook do Stripe).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.
 _log_handler = logging.StreamHandler()
 _log_handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
-logging.getLogger("catalogo").addHandler(_log_handler)
-logging.getLogger("catalogo").setLevel(logging.INFO)
+logging.getLogger("nivelo.api").addHandler(_log_handler)
+logging.getLogger("nivelo.api").setLevel(logging.INFO)
 
 # Cria as tabelas (idempotente se já existirem)
 Base.metadata.create_all(bind=engine)

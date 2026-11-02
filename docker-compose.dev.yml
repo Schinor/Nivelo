@@ -80,8 +80,8 @@ services:
       - MAILTRAP_PORT=${MAILTRAP_PORT:-2525}
       - MAILTRAP_USERNAME=${MAILTRAP_USERNAME:-}
       - MAILTRAP_PASSWORD=${MAILTRAP_PASSWORD:-}
-      - MAILTRAP_FROM_EMAIL=${MAILTRAP_FROM_EMAIL:-nao-responda@tomhanksfilmes.com}
-      - MAILTRAP_FROM_NAME=${MAILTRAP_FROM_NAME:-Tom Hanks Filmes}
+      - MAILTRAP_FROM_EMAIL=${MAILTRAP_FROM_EMAIL:-nao-responda@nivelo.app}
+      - MAILTRAP_FROM_NAME=${MAILTRAP_FROM_NAME:-Nivelo}
       - CATALOGO_URL=${CATALOGO_URL:-http://localhost:8000}
       - RESET_TOKEN_EXPIRE_MINUTES=${RESET_TOKEN_EXPIRE_MINUTES:-30}
       - RESET_REQUEST_LIMIT=${RESET_REQUEST_LIMIT:-3}
@@ -167,8 +167,8 @@ services:
     restart: unless-stopped
 
   # Stripe CLI (só dev): escuta os eventos da conta de TESTE e encaminha para o webhook
-  # do catálogo pela rede interna. Ao subir, imprime "Ready! Your webhook signing secret
-  # is whsec_..." — esse valor vai em STRIPE_WEBHOOK_SECRET (e o catálogo precisa ser
+  # da API pela rede interna. Ao subir, imprime "Ready! Your webhook signing secret
+  # is whsec_..." — esse valor vai em STRIPE_WEBHOOK_SECRET (e a API precisa ser
   # recriado para ler o novo valor). Fica atrás do profile "stripe" para não subir
   # em loop de erro quando não há chave configurada.
   stripe-cli:

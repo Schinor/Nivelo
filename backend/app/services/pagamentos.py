@@ -1,7 +1,7 @@
 """Integração com o Stripe (Plano Premium, sempre em modo de teste).
 
 O cartão é digitado SÓ na página hospedada do Stripe (Checkout): nenhum dado de
-cartão passa pelo catálogo. Daqui saem e chegam apenas IDs (cus_..., sub_..., evt_...).
+cartão passa pela API. Daqui saem e chegam apenas IDs (cus_..., sub_..., evt_...).
 """
 import json
 

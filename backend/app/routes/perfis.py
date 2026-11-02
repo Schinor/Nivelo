@@ -38,7 +38,7 @@ from app.repositories import perfil_repo
 from app.schemas.perfil import PerfilBioUpdate, PerfilOut
 from app.services import storage
 
-logger = logging.getLogger("catalogo.perfis")
+logger = logging.getLogger("nivelo.api.perfis")
 
 router = APIRouter(prefix="/api/perfis", tags=["perfis"])
 

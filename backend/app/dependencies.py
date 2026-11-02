@@ -37,7 +37,7 @@ def negar_acesso(request: Request, usuario_id: Optional[int], recurso: str, deta
     """Monta o 403 e anota quem/o quê para a auditoria.
 
     Quem registra o evento 'acesso_negado' é o handler global de 403 (app.main),
-    que vale para TODA resposta 403 do catálogo — inclusive as repassadas do auth-service.
+    que vale para TODA resposta 403 da API — inclusive as repassadas do auth-service.
     """
     request.state.acesso_negado = {"usuario_id": usuario_id, "recurso": recurso}
     return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)

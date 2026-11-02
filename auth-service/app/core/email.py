@@ -15,13 +15,13 @@ class EmailNotConfiguredError(RuntimeError):
 def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuário") -> bool:
     """
     Envia e-mail real com link de redefinição de senha via SMTP (Mailtrap).
-    O link aponta sempre para a rota pública do Catálogo (porta pública),
+    O link aponta sempre para a rota pública da API (porta pública),
     garantindo que o auth-service permaneça isolado na rede interna Docker.
     """
     catalogo_url = (settings.CATALOGO_URL or "http://localhost:8000").strip(' "\'').rstrip('/')
     reset_url = f"{catalogo_url}/reset-password?token={token}"
     safe_name = html.escape(user_name)
-    subject = "Redefinição de Senha — Catálogo Tom Hanks"
+    subject = "Redefinição de senha — Nivelo"
 
     smtp_host = (settings.MAILTRAP_HOST or "sandbox.smtp.mailtrap.io").strip(' "\'')
     try:
@@ -31,8 +31,8 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
 
     smtp_user = (settings.MAILTRAP_USERNAME or "").strip(' "\'')
     smtp_pass = (settings.MAILTRAP_PASSWORD or "").strip(' "\'')
-    from_email = (settings.MAILTRAP_FROM_EMAIL or "nao-responda@tomhanksfilmes.com").strip(' "\'')
-    from_name = (settings.MAILTRAP_FROM_NAME or "Tom Hanks Filmes").strip(' "\'')
+    from_email = (settings.MAILTRAP_FROM_EMAIL or "nao-responda@nivelo.app").strip(' "\'')
+    from_name = (settings.MAILTRAP_FROM_NAME or "Nivelo").strip(' "\'')
 
     html_content = f"""
     <!DOCTYPE html>
@@ -109,9 +109,9 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
     </head>
     <body>
       <div class="card">
-        <div class="logo">🎬 Catálogo Tom Hanks</div>
+        <div class="logo">Nivelo</div>
         <h2>Olá, {safe_name}!</h2>
-        <p>Recebemos uma solicitação para redefinir a sua senha de acesso ao <strong>Catálogo de Filmes Tom Hanks</strong>.</p>
+        <p>Recebemos uma solicitação para redefinir a sua senha de acesso ao <strong>Nivelo</strong>.</p>
         <p>Clique no botão abaixo para escolher uma nova senha. <strong>Atenção: este link expira em {settings.RESET_TOKEN_EXPIRE_MINUTES} minutos</strong> e só pode ser utilizado uma única vez.</p>
         
         <div class="btn-container">
@@ -123,7 +123,7 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
 
         <div class="footer">
           <p>Se você não solicitou a redefinição de senha, nenhuma ação é necessária. Sua senha atual permanecerá segura.</p>
-          <p>© 2026 Catálogo de Filmes Tom Hanks — Microsserviço de Autenticação</p>
+          <p>© 2026 Nivelo — diário de obra</p>
         </div>
       </div>
     </body>
@@ -132,7 +132,7 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
 
     text_content = (
         f"Olá, {user_name}!\n\n"
-        f"Recebemos uma solicitação para redefinir sua senha no Catálogo de Filmes Tom Hanks.\n"
+        f"Recebemos uma solicitação para redefinir sua senha no Nivelo.\n"
         f"Acesse o link a seguir para criar uma nova senha (válido por {settings.RESET_TOKEN_EXPIRE_MINUTES} minutos):\n"
         f"{reset_url}\n\n"
         f"Se você não solicitou esta alteração, ignore este e-mail.\n"

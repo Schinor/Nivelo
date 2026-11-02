@@ -6,7 +6,7 @@ class PerfilOut(BaseModel):
     usuario_id: int
     nome: str
     bio: Optional[str] = None
-    # URL relativa ao catálogo (/storage/...), pré-assinada e com expiração; null sem foto
+    # URL relativa à API (/storage/...), pré-assinada e com expiração; null sem foto
     foto_url: Optional[str] = None
     # Selo "Premium" (visual); os limites do plano são checados no backend
     premium: bool = False

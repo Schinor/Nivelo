@@ -1,6 +1,6 @@
 {
-  "uid": "hanks-plus-servicos",
-  "title": "HANKS+ — Serviços",
+  "uid": "nivelo-servicos",
+  "title": "Nivelo — Serviços",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "15s",
@@ -9,7 +9,7 @@
     "to": "now"
   },
   "tags": [
-    "hanks-plus"
+    "nivelo"
   ],
   "panels": [
     {

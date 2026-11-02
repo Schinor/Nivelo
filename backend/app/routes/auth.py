@@ -36,7 +36,7 @@ from app.schemas.usuario import (
     PermissaoOut,
 )
 
-logger = logging.getLogger("catalogo.auth")
+logger = logging.getLogger("nivelo.api.auth")
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

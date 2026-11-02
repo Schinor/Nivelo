@@ -75,7 +75,7 @@ def init_db():
 init_db()
 
 app = FastAPI(
-    title="Microsserviço de Autenticação — Filmes Tom Hanks",
+    title="Nivelo — Identidade e Acesso",
     description="Serviço interno de autenticação, usuários e recuperação de senha com RBAC granular.",
     version="2.0.0",
     docs_url="/docs",

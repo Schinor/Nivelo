@@ -1,6 +1,6 @@
 """Rota /storage/* — ponte entre o navegador e o Garage (sem porta pública).
 
-O catálogo NÃO valida a assinatura: repassa caminho e query exatamente como
+A API NÃO valida a assinatura: repassa caminho e query exatamente como
 chegaram, e o Garage confere assinatura + expiração. Funciona porque a URL foi
 assinada com o mesmo host que o httpx envia aqui (garage:3900).
 
