@@ -11,7 +11,7 @@ class Usuario(Base):
     nome: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(150), unique=True, nullable=False, index=True)
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(50), nullable=False, default="amigo-do-wilson")
+    role: Mapped[str] = mapped_column(String(50), nullable=False, default="cliente")
     role_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 

@@ -23,7 +23,7 @@ async def current_user(authorization: Optional[str] = Header(default=None)) -> d
                 "id": int(user_id),
                 "nome": payload.get("nome", ""),
                 "email": payload.get("email", ""),
-                "role": payload.get("role", "amigo-do-wilson"),
+                "role": payload.get("role", "cliente"),
                 "permissions": payload.get("permissions", []),
             }
     except Exception:

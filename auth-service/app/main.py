@@ -41,7 +41,7 @@ def init_db():
                 columns = [c["name"] for c in inspector.get_columns("usuarios")]
                 if "role" not in columns:
                     conn.execute(
-                        text("ALTER TABLE usuarios ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'amigo-do-wilson'")
+                        text("ALTER TABLE usuarios ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'cliente'")
                     )
                     conn.commit()
                 if "role_id" not in columns:

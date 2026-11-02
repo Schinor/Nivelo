@@ -46,7 +46,7 @@ def cadastro(payload: UsuarioCreate, db: Session = Depends(get_db)):
     if usuario_repo.get_by_email(db, payload.email):
         raise HTTPException(status_code=400, detail="E-mail já cadastrado")
 
-    requested_role = (payload.role or "amigo-do-wilson").strip().lower()
+    requested_role = (payload.role or "cliente").strip().lower()
     if requested_role == "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

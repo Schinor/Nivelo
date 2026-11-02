@@ -38,14 +38,14 @@ class UsuarioCreate(BaseModel):
     nome: str
     email: EmailStr
     senha: str
-    role: Optional[str] = "amigo-do-wilson"
+    role: Optional[str] = None
 
 
 class UsuarioOut(BaseModel):
     id: int
     nome: str
     email: str
-    role: str = "amigo-do-wilson"
+    role: str = "cliente"
     role_id: Optional[int] = None
     permissions: List[str] = []
     criado_em: Optional[datetime] = None

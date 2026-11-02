@@ -13,7 +13,7 @@ class CurrentUser:
     id: int
     nome: str = ""
     email: str = ""
-    role: str = "amigo-do-wilson"
+    role: str = "cliente"
     permissions: List[str] = field(default_factory=list)
 
 
@@ -49,6 +49,6 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Cur
         id=int(user_id),
         nome=payload.get("nome", ""),
         email=payload.get("email", ""),
-        role=payload.get("role", "amigo-do-wilson"),
+        role=payload.get("role", "cliente"),
         permissions=payload.get("permissions", []),
     )

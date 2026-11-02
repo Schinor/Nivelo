@@ -6,10 +6,7 @@ from app.models.permissao import Permissao
 from app.models.usuario_permissao import UsuarioPermissao
 from app.core.security import hash_password
 
-LEGACY_ROLE_MAP = {
-    "usuario": "amigo-do-wilson",
-    "admin": "admin",
-}
+from app.core.rbac_seed import LEGACY_ROLE_MAP, PAPEL_PADRAO
 
 
 def get_by_id(db: Session, user_id: int) -> Optional[Usuario]:
@@ -24,16 +21,16 @@ def list_all(db: Session) -> List[Usuario]:
     return db.query(Usuario).order_by(Usuario.id.asc()).all()
 
 
-def create(db: Session, nome: str, email: str, senha: str, role: str = "amigo-do-wilson") -> Usuario:
-    raw_role = role.strip().lower() if role else "amigo-do-wilson"
+def create(db: Session, nome: str, email: str, senha: str, role: str = PAPEL_PADRAO) -> Usuario:
+    raw_role = role.strip().lower() if role else PAPEL_PADRAO
     slug = LEGACY_ROLE_MAP.get(raw_role, raw_role)
 
     # Localiza o papel no banco
     papel = db.query(Papel).filter(Papel.slug == slug).first()
     if not papel:
-        # Fallback para amigo-do-wilson
-        papel = db.query(Papel).filter(Papel.slug == "amigo-do-wilson").first()
-        slug = papel.slug if papel else "amigo-do-wilson"
+        # Papel desconhecido: cai no de menor privilégio
+        papel = db.query(Papel).filter(Papel.slug == PAPEL_PADRAO).first()
+        slug = papel.slug if papel else PAPEL_PADRAO
 
     user = Usuario(
         nome=nome.strip(),

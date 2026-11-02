@@ -92,8 +92,8 @@ def test_cadastro_e_login_usuario():
     cad_data = cad_resp.json()
     assert cad_data["nome"] == "Allan Schinor"
     assert cad_data["email"] == "allan@exemplo.com"
-    assert cad_data["role"] == "amigo-do-wilson"
-    assert "assistir:catalogo" in cad_data["permissions"]
+    assert cad_data["role"] == "cliente"
+    assert cad_data["permissions"] == []
     user_id = cad_data["id"]
 
     # Cadastro duplicado deve falhar
@@ -118,34 +118,52 @@ def test_cadastro_e_login_usuario():
     me_resp = client.get("/me", headers={"Authorization": f"Bearer {token}"})
     assert me_resp.status_code == 200
     assert me_resp.json()["email"] == "allan@exemplo.com"
-    assert "assistir:catalogo" in me_resp.json()["permissions"]
+    assert me_resp.json()["permissions"] == []
 
     # 4. /users/{id}/role
     role_resp = client.get(f"/users/{user_id}/role")
     assert role_resp.status_code == 200
-    assert role_resp.json()["role"] == "amigo-do-wilson"
+    assert role_resp.json()["role"] == "cliente"
 
 
-def test_roles_e_matriz_permissoes():
-    # Cria usuários com cada um dos 4 papéis disponíveis no cadastro público
-    papeis = [
-        ("wilson@exemplo.com", "amigo-do-wilson", "assistir:catalogo", "listar:favoritos"),
-        ("terminal@exemplo.com", "preso-no-terminal", "listar:favoritos", "criar:comentarios"),
-        ("houston@exemplo.com", "houston-temos-acesso", "criar:comentarios", "assistir:catalogo-premium"),
-        ("capitao@exemplo.com", "capitao-hanks", "assistir:catalogo-premium", "administrar:sistema"),
-    ]
+def test_matriz_de_papeis_do_nivelo():
+    from app.core.rbac_seed import PAPEIS_DEFINICAO
 
-    for email, role_slug, perm_esperada, perm_nao_esperada in papeis:
-        resp = client.post(
-            "/cadastro",
-            json={"nome": f"User {role_slug}", "email": email, "senha": "password123", "role": role_slug},
-        )
-        assert resp.status_code == 201
-        data = resp.json()
-        assert data["role"] == role_slug
-        assert perm_esperada in data["permissions"]
-        if perm_nao_esperada:
-            assert perm_nao_esperada not in data["permissions"]
+    slugs = {r["slug"] for r in client.get("/roles").json()}
+    assert slugs == {"admin", "dono", "encarregado", "cliente"}
+    assert slugs == {p["slug"] for p in PAPEIS_DEFINICAO}
+
+    # Os papéis de negócio ainda não têm permissões granulares (a autorização deles vem na Fase 3)
+    papeis = {r["slug"]: r for r in client.get("/roles").json()}
+    for slug in ("dono", "encarregado", "cliente"):
+        assert papeis[slug]["permissoes"] == []
+    admin_perms = {f"{p['action']}:{p['resource']}" for p in papeis["admin"]["permissoes"]}
+    assert "administrar:sistema" in admin_perms and "visualizar:logs" in admin_perms
+
+
+def test_seed_converte_papeis_antigos_e_remove_os_que_sairam_da_matriz():
+    from app.core.rbac_seed import seed_rbac
+    from app.models.papel import Papel
+    from app.models.permissao import Permissao
+    from app.models.usuario import Usuario
+
+    db = TestingSessionLocal()
+    antigo = Papel(name="Papel antigo", slug="papel-antigo", description="fora da matriz")
+    perm_antiga = Permissao(action="ver", resource="coisa-antiga", description="fora da matriz")
+    antigo.permissoes = [perm_antiga]
+    db.add_all([antigo, perm_antiga])
+    db.flush()
+    usuario = usuario_repo.create(db, nome="Legado", email="legado@exemplo.com", senha="password123")
+    usuario.role, usuario.role_id = "papel-antigo", antigo.id
+    db.commit()
+
+    seed_rbac(db)
+
+    assert db.query(Papel).filter_by(slug="papel-antigo").count() == 0
+    assert db.query(Permissao).filter_by(resource="coisa-antiga").count() == 0
+    convertido = db.get(Usuario, usuario.id)
+    assert convertido.role == "cliente" and convertido.papel.slug == "cliente"
+    db.close()
 
 
 def test_cadastro_publico_nao_permite_admin():
@@ -169,7 +187,7 @@ def test_permissao_exclusiva_admin():
     # 1. Usuário comum tentando acessar endpoint de admin status -> 403
     user_resp = client.post(
         "/cadastro",
-        json={"nome": "Comum", "email": "comum@exemplo.com", "senha": "password123", "role": "capitao-hanks"},
+        json={"nome": "Comum", "email": "comum@exemplo.com", "senha": "password123", "role": "dono"},
     )
     user_token = client.post(
         "/login",
@@ -397,7 +415,7 @@ def test_permissao_visualizar_logs_somente_no_papel_admin():
 
     resp = client.post(
         "/cadastro",
-        json={"nome": "Comum", "email": "comum-logs@exemplo.com", "senha": "password123", "role": "capitao-hanks"},
+        json={"nome": "Comum", "email": "comum-logs@exemplo.com", "senha": "password123", "role": "dono"},
     )
     assert "visualizar:logs" not in resp.json()["permissions"]
 
@@ -412,8 +430,8 @@ def _criar_e_logar(email, role, senha="password123"):
 
 
 def test_gestao_de_usuarios_exige_admin():
-    alvo_id, _ = _criar_e_logar("alvo@exemplo.com", "amigo-do-wilson")
-    _, comum = _criar_e_logar("capitao-gestao@exemplo.com", "capitao-hanks")
+    alvo_id, _ = _criar_e_logar("alvo@exemplo.com", "cliente")
+    _, comum = _criar_e_logar("dono-gestao@exemplo.com", "dono")
 
     assert client.get("/users", headers=comum).status_code == 403
     assert client.put(f"/users/{alvo_id}/role", json={"role": "admin"}, headers=comum).status_code == 403
@@ -424,47 +442,37 @@ def test_gestao_de_usuarios_exige_admin():
     assert client.delete(f"/users/{alvo_id}").status_code == 401
 
 
-def test_admin_altera_plano_e_descarta_ajustes_individuais():
-    alvo_id, _ = _criar_e_logar("plano@exemplo.com", "amigo-do-wilson")
+def test_admin_altera_papel_e_descarta_ajustes_individuais():
+    alvo_id, _ = _criar_e_logar("plano@exemplo.com", "cliente")
     _, admin = _criar_e_logar("admin-plano@exemplo.com", "admin")
 
-    ajuste = client.put(
-        f"/users/{alvo_id}/permissions",
-        json={"permissions": ["assistir:catalogo", "criar:comentarios"]},
-        headers=admin,
-    )
+    ajuste = client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["visualizar:logs"]}, headers=admin)
     assert ajuste.status_code == 200
+    assert ajuste.json()["permissions"] == ["visualizar:logs"]
 
-    resp = client.put(f"/users/{alvo_id}/role", json={"role": "preso-no-terminal"}, headers=admin)
+    resp = client.put(f"/users/{alvo_id}/role", json={"role": "encarregado"}, headers=admin)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["role"] == "preso-no-terminal"
-    assert "adicionar:favoritos" in data["permissions"]
-    # Trocar de plano volta às permissões padrão do novo plano
-    assert "criar:comentarios" not in data["permissions"]
+    assert data["role"] == "encarregado"
+    # Trocar de papel volta às permissões padrão do novo papel
+    assert data["permissions"] == []
 
-    invalido = client.put(f"/users/{alvo_id}/role", json={"role": "plano-fantasma"}, headers=admin)
+    invalido = client.put(f"/users/{alvo_id}/role", json={"role": "papel-fantasma"}, headers=admin)
     assert invalido.status_code == 400
 
 
-def test_admin_concede_e_revoga_permissoes_individuais():
-    alvo_id, _ = _criar_e_logar("perms@exemplo.com", "amigo-do-wilson")
+def test_admin_concede_permissoes_individuais():
+    alvo_id, _ = _criar_e_logar("perms@exemplo.com", "cliente")
     _, admin = _criar_e_logar("admin-perms@exemplo.com", "admin")
 
-    resp = client.put(
-        f"/users/{alvo_id}/permissions",
-        json={"permissions": ["assistir:catalogo", "listar:comentarios", "listar:favoritos"]},
-        headers=admin,
-    )
+    resp = client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["visualizar:logs"]}, headers=admin)
     assert resp.status_code == 200
-    perms = resp.json()["permissions"]
-    assert "listar:favoritos" in perms  # concedida além do plano
-    assert "detalhes:filmes" not in perms  # revogada do plano
-    assert resp.json()["role"] == "amigo-do-wilson"
+    assert resp.json()["permissions"] == ["visualizar:logs"]  # concedida além do papel
+    assert resp.json()["role"] == "cliente"
 
     # O login seguinte já carrega as permissões efetivas no JWT
     login = client.post("/login", data={"username": "perms@exemplo.com", "password": "password123"})
-    assert set(login.json()["user"]["permissions"]) == {"assistir:catalogo", "listar:comentarios", "listar:favoritos"}
+    assert set(login.json()["user"]["permissions"]) == {"visualizar:logs"}
 
     desconhecida = client.put(
         f"/users/{alvo_id}/permissions", json={"permissions": ["voar:nave"]}, headers=admin
@@ -474,25 +482,25 @@ def test_admin_concede_e_revoga_permissoes_individuais():
 
 
 def test_admin_remove_usuario_e_nao_age_sobre_si_mesmo(emails_enviados):
-    alvo_id, _ = _criar_e_logar("remover@exemplo.com", "houston-temos-acesso")
+    alvo_id, _ = _criar_e_logar("remover@exemplo.com", "encarregado")
     admin_id, admin = _criar_e_logar("admin-remove@exemplo.com", "admin")
 
     # Token de recuperação pendente e ajuste individual não impedem a remoção
     client.post("/forgot-password", json={"email": "remover@exemplo.com"})
-    client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["assistir:catalogo"]}, headers=admin)
+    client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["visualizar:logs"]}, headers=admin)
 
     assert client.delete(f"/users/{alvo_id}", headers=admin).status_code == 204
     assert client.get(f"/users/{alvo_id}").status_code == 404
     assert client.delete(f"/users/{alvo_id}", headers=admin).status_code == 404
 
     assert client.delete(f"/users/{admin_id}", headers=admin).status_code == 400
-    assert client.put(f"/users/{admin_id}/role", json={"role": "amigo-do-wilson"}, headers=admin).status_code == 400
+    assert client.put(f"/users/{admin_id}/role", json={"role": "cliente"}, headers=admin).status_code == 400
 
     ids = [u["id"] for u in client.get("/users", headers=admin).json()]
     assert alvo_id not in ids and admin_id in ids
 
 
-# ── Atividade 7: Plano Premium (rotas internas chamadas pelo webhook do catálogo) ──
+# ── Plano Premium (rotas internas chamadas pelo webhook da API) ──
 
 TOKEN_INTERNO = "token-interno-de-teste"
 
@@ -524,7 +532,7 @@ def _usuario_no_banco(user_id):
 
 
 def test_usuario_novo_nao_e_premium():
-    user_id, headers = _criar_e_logar("free@exemplo.com", "preso-no-terminal")
+    user_id, headers = _criar_e_logar("free@exemplo.com", "dono")
     assert client.get("/me", headers=headers).json()["premium"] is False
     assert client.get(f"/users/{user_id}").json()["premium"] is False
 
@@ -541,7 +549,7 @@ def test_rota_interna_exige_token(monkeypatch, interno):
 
 
 def test_checkout_concluido_ativa_premium_e_guarda_so_ids(interno):
-    user_id, headers = _criar_e_logar("assinante@exemplo.com", "preso-no-terminal")
+    user_id, headers = _criar_e_logar("assinante@exemplo.com", "dono")
 
     resp = client.post(
         "/internal/premium/eventos",
@@ -559,7 +567,7 @@ def test_checkout_concluido_ativa_premium_e_guarda_so_ids(interno):
 
 
 def test_evento_repetido_e_processado_uma_vez(interno):
-    user_id, _ = _criar_e_logar("repetido@exemplo.com", "preso-no-terminal")
+    user_id, _ = _criar_e_logar("repetido@exemplo.com", "dono")
     corpo = _evento("evt_dup", usuario_id=user_id, customer_id="cus_d", subscription_id="sub_d")
 
     assert client.post("/internal/premium/eventos", json=corpo, headers=interno).json()["aplicado"] is True
@@ -576,7 +584,7 @@ def test_evento_repetido_e_processado_uma_vez(interno):
 
 
 def test_assinatura_cancelada_remove_premium(interno):
-    user_id, _ = _criar_e_logar("cancela@exemplo.com", "preso-no-terminal")
+    user_id, _ = _criar_e_logar("cancela@exemplo.com", "dono")
     client.post(
         "/internal/premium/eventos",
         json=_evento("evt_a", usuario_id=user_id, customer_id="cus_c", subscription_id="sub_c"),
