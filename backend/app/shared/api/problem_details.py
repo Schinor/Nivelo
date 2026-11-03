@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.shared.api.request_id import obter_request_id
-from app.shared.domain.erros import ErroDeDominio, RecursoNaoEncontrado
+from app.shared.domain.erros import ErroDeDominio
 
 logger = logging.getLogger("nivelo.api.erros")
 
@@ -34,6 +34,7 @@ TYPE_POR_STATUS = {
     413: "conteudo-grande-demais",
     415: "tipo-de-midia-nao-suportado",
     422: "validacao",
+    428: "precondicao-obrigatoria",
     429: "muitas-requisicoes",
     500: "erro-interno",
     502: "servico-externo-falhou",
@@ -53,11 +54,13 @@ def problema(
     *,
     type_: str | None = None,
     headers: dict[str, str] | None = None,
-    **extras: Any,
+    title: str | None = None,
+    extras: dict[str, object] | None = None,
+    **campos: Any,
 ) -> JSONResponse:
     corpo: dict[str, Any] = {
         "type": type_ or type_para_status(status),
-        "title": HTTPStatus(status).phrase,
+        "title": title or HTTPStatus(status).phrase,
         "status": status,
         "detail": detail,
         "instance": request.url.path,
@@ -65,15 +68,22 @@ def problema(
     request_id = obter_request_id()
     if request_id:
         corpo["request_id"] = request_id
-    corpo.update(extras)
+    corpo.update(extras or {})
+    corpo.update(campos)
     return JSONResponse(status_code=status, content=corpo, media_type=MEDIA_TYPE, headers=headers)
 
 
 AntesDoProblema = Callable[[Request, StarletteHTTPException], Awaitable[None]]
+AntesDoErroDeDominio = Callable[[Request, ErroDeDominio], Awaitable[None]]
 
 
-def registrar_handlers(app: FastAPI, antes_de_http: AntesDoProblema | None = None) -> None:
-    """Instala os handlers globais. `antes_de_http` roda antes de responder (ex.: auditar o 403)."""
+def registrar_handlers(
+    app: FastAPI,
+    antes_de_http: AntesDoProblema | None = None,
+    antes_de_dominio: AntesDoErroDeDominio | None = None,
+) -> None:
+    """Instala os handlers globais. Os ganchos rodam antes de responder (ex.: auditar o 403 e o
+    404 por tenancy)."""
 
     @app.exception_handler(StarletteHTTPException)
     async def http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
@@ -97,13 +107,14 @@ def registrar_handlers(app: FastAPI, antes_de_http: AntesDoProblema | None = Non
         resumo = "; ".join(f"{e['campo']}: {e['mensagem']}" if e["campo"] else e["mensagem"] for e in erros)
         return problema(request, 422, resumo or "Dados inválidos", errors=erros)
 
-    @app.exception_handler(RecursoNaoEncontrado)
-    async def nao_encontrado(request: Request, exc: RecursoNaoEncontrado) -> JSONResponse:
-        return problema(request, 404, exc.mensagem)
-
     @app.exception_handler(ErroDeDominio)
-    async def regra_de_negocio(request: Request, exc: ErroDeDominio) -> JSONResponse:
-        return problema(request, 422, exc.mensagem, type_=f"{BASE_TYPE}{exc.codigo}")
+    async def erro_de_dominio(request: Request, exc: ErroDeDominio) -> JSONResponse:
+        """Cada erro diz o status, o `type` (pelo `codigo`) e os campos extras. O 404 usa o
+        `type` genérico: obra de outra empresa e obra inexistente respondem igual."""
+        if antes_de_dominio is not None:
+            await antes_de_dominio(request, exc)
+        type_ = type_para_status(404) if exc.status == 404 else f"{BASE_TYPE}{exc.codigo}"
+        return problema(request, exc.status, exc.mensagem, type_=type_, title=exc.titulo, extras=exc.extras())
 
     @app.exception_handler(Exception)
     async def inesperado(request: Request, exc: Exception) -> JSONResponse:

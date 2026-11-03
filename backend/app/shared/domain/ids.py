@@ -54,3 +54,18 @@ class Identificador:
 @dataclass(frozen=True, slots=True)
 class EmpresaId(Identificador):
     """Identifica o tenant (a conta contratante)."""
+
+
+@dataclass(frozen=True, slots=True)
+class UsuarioId:
+    """Identifica o usuário global (auth-service). É inteiro porque a conta veio do projeto
+    anterior; nunca aparece sozinho numa URL de recurso de empresa."""
+
+    valor: int
+
+    def __post_init__(self) -> None:
+        if isinstance(self.valor, bool) or not isinstance(self.valor, int) or self.valor <= 0:
+            raise ValueError(f"UsuarioId inválido: {self.valor!r}")
+
+    def __str__(self) -> str:
+        return str(self.valor)
