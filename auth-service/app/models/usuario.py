@@ -24,11 +24,18 @@ class Usuario(Base):
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     premium_desde: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # Admin da plataforma: não pertence a empresa nenhuma e não lê dados de obras (ADR 004)
+    admin_plataforma: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+
     papel = relationship("Papel", back_populates="usuarios", lazy="joined")
     reset_tokens = relationship("ResetToken", back_populates="usuario", cascade="all, delete-orphan")
     ajustes_permissao = relationship(
         "UsuarioPermissao", back_populates="usuario", cascade="all, delete-orphan", lazy="selectin"
     )
+
+    @property
+    def admin(self) -> bool:
+        return bool(self.admin_plataforma)
 
     @property
     def permissions(self) -> list[str]:

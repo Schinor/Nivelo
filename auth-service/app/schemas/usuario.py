@@ -47,6 +47,7 @@ class UsuarioOut(BaseModel):
     id: int
     nome: str
     email: str
+    admin: bool = False
     role: str = "cliente"
     role_id: int | None = None
     permissions: list[str] = []

@@ -14,9 +14,12 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 
 import app.models  # força o registro dos models no metadata
+from app.core.admin import garantir_admin
+from app.core.config import settings
 from app.core.database import SessionLocal, engine
 from app.core.rbac_seed import seed_rbac
 from app.routes.auth import router as auth_router
+from app.routes.identidade import router as identidade_router
 from app.routes.premium import router as premium_router
 from app.routes.users import router as users_router
 
@@ -30,20 +33,21 @@ logging.getLogger("auth-service").setLevel(logging.INFO)
 
 def init_db():
     # O esquema vem das migrações Alembic (alembic upgrade head roda antes do uvicorn; ver Dockerfile).
-    # Aqui só sincroniza a matriz de papéis e permissões.
+    # Aqui só sincroniza a matriz de papéis e permissões e garante o admin da plataforma.
     try:
         db = SessionLocal()
         seed_rbac(db)
+        garantir_admin(db, settings.ADMIN_EMAIL, settings.ADMIN_SENHA_INICIAL)
         db.close()
     except Exception as e:
-        print(f"[auth-service] Aviso ao executar seed RBAC: {e}")
+        print(f"[auth-service] Aviso ao preparar o banco: {e}")
 
 
 init_db()
 
 app = FastAPI(
     title="Nivelo — Identidade e Acesso",
-    description="Serviço interno de autenticação, usuários e recuperação de senha com RBAC granular.",
+    description="Serviço interno de identidade: contas, empresas, vínculos, convites, senha e JWT.",
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -90,5 +94,6 @@ Instrumentator(registry=CollectorRegistry(), excluded_handlers=["/metrics", "/he
 
 # Rotas
 app.include_router(auth_router)
+app.include_router(identidade_router)
 app.include_router(users_router)
 app.include_router(premium_router)

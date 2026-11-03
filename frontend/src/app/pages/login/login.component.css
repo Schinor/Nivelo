@@ -335,6 +335,9 @@
 .link-forgot { color: var(--accent-light); }
 @media (max-width: 900px) { .login-bg::before { inset: 0; opacity: .18; } .login-card { margin-left: 0; } }
 
+.tipo-pessoa { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.tipo-pessoa label { display: flex; align-items: center; gap: .4rem; font-size: .9rem; }
+
 /* Nivelo */
 .login-card { border-radius: var(--radius-lg); background: var(--surface-200); }
 .auth-brand h1 { font-size: 2.4rem; color: var(--gold); }

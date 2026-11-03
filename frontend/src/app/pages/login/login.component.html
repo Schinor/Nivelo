@@ -101,6 +101,38 @@
           />
         </div>
         <div class="field">
+          <label for="cad-empresa">Nome da sua empresa ou seu nome profissional</label>
+          <input
+            id="cad-empresa"
+            type="text"
+            [(ngModel)]="empresaNome"
+            name="empresaNome"
+            required
+            autocomplete="organization"
+            [disabled]="carregando()"
+            placeholder="Ex.: Rocha Reformas"
+          />
+        </div>
+        <div class="field">
+          <span class="field-label">Você trabalha como</span>
+          <div class="tipo-pessoa" role="radiogroup" aria-label="Tipo de pessoa">
+            <label><input type="radio" name="tipoPessoa" value="PF" [(ngModel)]="tipoPessoa" [disabled]="carregando()" /> Autônomo (CPF)</label>
+            <label><input type="radio" name="tipoPessoa" value="PJ" [(ngModel)]="tipoPessoa" [disabled]="carregando()" /> Empresa (CNPJ)</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cad-documento">{{ tipoPessoa === 'PJ' ? 'CNPJ' : 'CPF' }} (opcional)</label>
+          <input
+            id="cad-documento"
+            type="text"
+            inputmode="numeric"
+            [(ngModel)]="documento"
+            name="documento"
+            [disabled]="carregando()"
+            [placeholder]="tipoPessoa === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'"
+          />
+        </div>
+        <div class="field">
           <label for="cad-email">E-mail</label>
           <input
             id="cad-email"

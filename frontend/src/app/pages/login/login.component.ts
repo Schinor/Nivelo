@@ -22,6 +22,9 @@ export class LoginComponent {
   email = '';
   senha = '';
   nome = '';
+  empresaNome = '';
+  tipoPessoa: 'PF' | 'PJ' = 'PF';
+  documento = '';
   emailRecuperacao = '';
 
   constructor() {
@@ -66,7 +69,7 @@ export class LoginComponent {
     const nomeTrimmed = this.nome.trim();
     const emailTrimmed = this.email.trim();
 
-    if (!nomeTrimmed || !emailTrimmed || !this.senha) {
+    if (!nomeTrimmed || !emailTrimmed || !this.senha || !this.empresaNome.trim()) {
       this.erro.set('Por favor, preencha todos os campos.');
       return;
     }
@@ -77,7 +80,16 @@ export class LoginComponent {
     }
 
     this.carregando.set(true);
-    this.auth.cadastrar(nomeTrimmed, emailTrimmed, this.senha).subscribe({
+    this.auth
+      .cadastrar({
+        nome: nomeTrimmed,
+        email: emailTrimmed,
+        senha: this.senha,
+        empresa_nome: this.empresaNome.trim(),
+        tipo_pessoa: this.tipoPessoa,
+        documento: this.documento.trim() || null,
+      })
+      .subscribe({
       next: () => {
         this.carregando.set(false);
         this.sucesso.set('Conta criada com sucesso! Entrando...');

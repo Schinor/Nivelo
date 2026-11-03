@@ -3,28 +3,30 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.api_responses import (
     CREDENCIAIS_INVALIDAS,
-    EMAIL_JA_CADASTRADO,
     RESET_TOKEN_INVALIDO,
     UNAUTHORIZED,
 )
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.email import send_password_reset_email
-from app.core.security import create_access_token, get_current_user, verify_password
-from app.repositories import reset_token_repo, usuario_repo
+from app.core.security import get_current_user, hash_password, verify_password
+from app.models.usuario import Usuario
+from app.repositories import identidade_repo, reset_token_repo, usuario_repo
+from app.routes.identidade import DOCUMENTO_EM_USO, resposta_de_token
 from app.schemas.auth import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
-    Token,
     ValidateTokenResponse,
 )
-from app.schemas.usuario import UsuarioCreate, UsuarioOut
+from app.schemas.identidade import CadastroIn, CadastroOut, TokenOut
+from app.schemas.usuario import UsuarioOut
 
 logger = logging.getLogger("auth-service.auth")
 
@@ -36,42 +38,56 @@ FORGOT_PASSWORD_MESSAGE = (
 )
 
 
+EMAIL_EM_USO = 'Este e-mail já tem conta. Entre com ele e crie a nova empresa em "Nova empresa" (POST /auth/empresas).'
+
+
 @router.post(
     "/cadastro",
-    response_model=UsuarioOut,
+    response_model=CadastroOut,
     status_code=status.HTTP_201_CREATED,
-    responses={**EMAIL_JA_CADASTRADO},
+    responses={409: {"description": "E-mail ou CPF/CNPJ já cadastrado"}},
 )
-def cadastro(payload: UsuarioCreate, db: Session = Depends(get_db)):
+def cadastro(payload: CadastroIn, db: Session = Depends(get_db)):
+    """Cria a empresa, o usuário e o vínculo `dono` numa transação só.
+
+    O papel nunca vem do corpo: quem se cadastra é sempre o dono da empresa que está criando.
+    """
     if usuario_repo.get_by_email(db, payload.email):
-        raise HTTPException(status_code=400, detail="E-mail já cadastrado")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=EMAIL_EM_USO)
+    if payload.documento and identidade_repo.documento_em_uso(db, payload.documento):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=DOCUMENTO_EM_USO)
 
-    # O papel nunca vem do corpo: o cadastro público sempre cria o dono da conta
-    return usuario_repo.create(db, nome=payload.nome, email=payload.email, senha=payload.senha, role="dono")
+    usuario = Usuario(
+        nome=payload.nome,
+        email=payload.email.strip().lower(),
+        senha_hash=hash_password(payload.senha),
+        role="dono",  # legado, sai com a coluna antiga (ADR 009)
+    )
+    try:
+        db.add(usuario)
+        db.flush()
+        vinculo = identidade_repo.criar_empresa_com_dono(
+            db, usuario.id, payload.empresa_nome, payload.tipo_pessoa, payload.documento
+        )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="E-mail ou CPF/CNPJ já cadastrado")
+    db.refresh(usuario)
+    return {"usuario": usuario, "empresa": vinculo.empresa, "papel": vinculo.papel}
 
 
-@router.post("/login", response_model=Token, responses={**CREDENCIAIS_INVALIDAS})
+@router.post("/login", response_model=TokenOut, responses={**CREDENCIAIS_INVALIDAS})
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Escolhe o vínculo ativo mais recente. Sem vínculo, o token sai sem tenant."""
     usuario = usuario_repo.get_by_email(db, form_data.username)
     if not usuario or not verify_password(form_data.password, usuario.senha_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha incorretos",
         )
-    token = create_access_token(
-        data={
-            "sub": str(usuario.id),
-            "email": usuario.email,
-            "nome": usuario.nome,
-            "role": usuario.role,
-            "permissions": usuario.permissions,
-        }
-    )
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": usuario,
-    }
+    vinculo = None if usuario.admin_plataforma else identidade_repo.vinculo_para_login(db, usuario.id)
+    return resposta_de_token(usuario, vinculo)
 
 
 @router.get("/me", response_model=UsuarioOut, responses={**UNAUTHORIZED})

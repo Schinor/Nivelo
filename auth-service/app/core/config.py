@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    # 2 h, sem refresh token até 13/11 (docs/adr/005)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
     PORT: int = 8001
 
     # Mailtrap / SMTP
@@ -32,6 +33,11 @@ class Settings(BaseSettings):
     # Token compartilhado com a API para as rotas /internal (webhook do Stripe já validado).
     # Vazio = rotas internas desligadas (503).
     AUTH_INTERNAL_TOKEN: str = ""
+
+    # Admin da plataforma criado no primeiro boot, nunca pelo cadastro público.
+    # Se o e-mail já existir, só garante a marca de admin (a senha não é trocada).
+    ADMIN_EMAIL: str = ""
+    ADMIN_SENHA_INICIAL: str = ""
 
     model_config = SettingsConfigDict(env_file=(".env", "../.env", "../../.env"), extra="ignore")
 

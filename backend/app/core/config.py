@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
     PORT: int = 8000
     AUTH_SERVICE_URL: str = "http://auth-service:8001"
     LOG_SERVICE_URL: str = "http://log-service:8002"

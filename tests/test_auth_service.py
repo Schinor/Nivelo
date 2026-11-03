@@ -5,7 +5,7 @@ import sys
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_12345678901234567890"
 os.environ["ALGORITHM"] = "HS256"
-os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "1440"
+os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "120"
 os.environ["RESET_TOKEN_EXPIRE_MINUTES"] = "30"
 
 # Adiciona caminhos
@@ -87,10 +87,17 @@ def test_cadastro_e_login_usuario():
     # 1. Cadastro
     cad_resp = client.post(
         "/cadastro",
-        json={"nome": "Allan Schinor", "email": "allan@exemplo.com", "senha": "senhaSegura123"},
+        json={
+            "nome": "Allan Schinor",
+            "email": "allan@exemplo.com",
+            "senha": "senhaSegura123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
     assert cad_resp.status_code == 201
-    cad_data = cad_resp.json()
+    cad_data = cad_resp.json()["usuario"]
+    assert cad_resp.json()["papel"] == "dono"
+    assert cad_resp.json()["empresa"]["nome"] == "Empresa Teste"
     assert cad_data["nome"] == "Allan Schinor"
     assert cad_data["email"] == "allan@exemplo.com"
     assert cad_data["role"] == "dono"
@@ -100,9 +107,14 @@ def test_cadastro_e_login_usuario():
     # Cadastro duplicado deve falhar
     dup_resp = client.post(
         "/cadastro",
-        json={"nome": "Allan 2", "email": "allan@exemplo.com", "senha": "senhaSegura123"},
+        json={
+            "nome": "Allan 2",
+            "email": "allan@exemplo.com",
+            "senha": "senhaSegura123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
-    assert dup_resp.status_code == 400
+    assert dup_resp.status_code == 409
 
     # 2. Login
     login_resp = client.post(
@@ -175,12 +187,13 @@ def test_cadastro_publico_ignora_papel_do_corpo_e_cria_dono(extras):
     email = f"cadastro-{abs(hash(str(extras)))}@exemplo.com"
     response = client.post(
         "/cadastro",
-        json={"nome": "Quem Tenta", "email": email, "senha": "password123", **extras},
+        json={"nome": "Quem Tenta", "email": email, "senha": "password123", "empresa_nome": "Empresa Teste", **extras},
     )
 
     assert response.status_code == 201
-    data = response.json()
-    assert data["role"] == "dono"
+    assert response.json()["papel"] == "dono"
+    data = response.json()["usuario"]
+    assert data["role"] == "dono" and data["admin"] is False
     assert "administrar:sistema" not in data["permissions"]
 
 
@@ -188,7 +201,13 @@ def test_permissao_exclusiva_admin():
     # 1. Usuário comum tentando acessar endpoint de admin status -> 403
     client.post(
         "/cadastro",
-        json={"nome": "Comum", "email": "comum@exemplo.com", "senha": "password123", "role": "dono"},
+        json={
+            "nome": "Comum",
+            "email": "comum@exemplo.com",
+            "senha": "password123",
+            "empresa_nome": "Empresa Teste",
+            "role": "dono",
+        },
     )
     user_token = client.post(
         "/login",
@@ -223,7 +242,12 @@ def test_fluxo_completo_esqueci_senha_e_redefinicao(emails_enviados):
     # 1. Cria usuário
     client.post(
         "/cadastro",
-        json={"nome": "Usuario Teste", "email": "recuperar@exemplo.com", "senha": "senhaAntiga123"},
+        json={
+            "nome": "Usuario Teste",
+            "email": "recuperar@exemplo.com",
+            "senha": "senhaAntiga123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
 
     # 2. Solicita recuperação para e-mail não cadastrado: resposta neutra e nenhum e-mail enviado
@@ -273,7 +297,12 @@ def test_fluxo_completo_esqueci_senha_e_redefinicao(emails_enviados):
 def test_negativo_reuso_de_token(emails_enviados):
     client.post(
         "/cadastro",
-        json={"nome": "Reuso Teste", "email": "reuso@exemplo.com", "senha": "senhaOriginal123"},
+        json={
+            "nome": "Reuso Teste",
+            "email": "reuso@exemplo.com",
+            "senha": "senhaOriginal123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
     client.post("/forgot-password", json={"email": "reuso@exemplo.com"})
     token = emails_enviados[0]["token"]
@@ -290,9 +319,14 @@ def test_negativo_token_expirado():
     db = TestingSessionLocal()
     cad_resp = client.post(
         "/cadastro",
-        json={"nome": "Expirado Teste", "email": "expirado@exemplo.com", "senha": "senhaOriginal123"},
+        json={
+            "nome": "Expirado Teste",
+            "email": "expirado@exemplo.com",
+            "senha": "senhaOriginal123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
-    user_id = cad_resp.json()["id"]
+    user_id = cad_resp.json()["usuario"]["id"]
 
     token_expirado_str = "token_expirado_de_teste_12345"
     db_token = ResetToken(
@@ -329,7 +363,12 @@ def test_negativo_token_inexistente():
 def test_forgot_password_falha_de_envio_mantem_resposta_neutra(monkeypatch):
     client.post(
         "/cadastro",
-        json={"nome": "Falha Smtp", "email": "falha@exemplo.com", "senha": "senhaOriginal123"},
+        json={
+            "nome": "Falha Smtp",
+            "email": "falha@exemplo.com",
+            "senha": "senhaOriginal123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
 
     def send_quebrado(*args, **kwargs):
@@ -347,7 +386,12 @@ def test_forgot_password_limita_solicitacoes_por_usuario(emails_enviados):
 
     client.post(
         "/cadastro",
-        json={"nome": "Spam Teste", "email": "spam@exemplo.com", "senha": "senhaOriginal123"},
+        json={
+            "nome": "Spam Teste",
+            "email": "spam@exemplo.com",
+            "senha": "senhaOriginal123",
+            "empresa_nome": "Empresa Teste",
+        },
     )
 
     for _ in range(settings.RESET_REQUEST_LIMIT + 2):
@@ -427,9 +471,15 @@ def test_permissao_visualizar_logs_somente_no_papel_admin():
 
     resp = client.post(
         "/cadastro",
-        json={"nome": "Comum", "email": "comum-logs@exemplo.com", "senha": "password123", "role": "dono"},
+        json={
+            "nome": "Comum",
+            "email": "comum-logs@exemplo.com",
+            "senha": "password123",
+            "empresa_nome": "Empresa Teste",
+            "role": "dono",
+        },
     )
-    assert "visualizar:logs" not in resp.json()["permissions"]
+    assert "visualizar:logs" not in resp.json()["usuario"]["permissions"]
 
 
 def _criar_e_logar(email, role, senha="password123"):
@@ -643,3 +693,202 @@ def test_evento_de_usuario_inexistente_e_registrado_sem_erro(interno):
 def test_rota_interna_recusa_tipo_de_evento_desconhecido(interno):
     resp = client.post("/internal/premium/eventos", json=_evento("evt_x", tipo="invoice.paid"), headers=interno)
     assert resp.status_code == 422
+
+
+# ── Identidade por vínculo (Fase 3, ADR 004) ─────────────────────────────────
+
+
+def _claims(token: str) -> dict:
+    from jose import jwt
+
+    return jwt.decode(token, os.environ["SECRET_KEY"], algorithms=["HS256"])
+
+
+def _cadastrar(email, empresa="Rocha Reformas", **extras):
+    corpo = {"nome": "Pessoa Teste", "email": email, "senha": "senha123", "empresa_nome": empresa, **extras}
+    return client.post("/cadastro", json=corpo)
+
+
+def _logar(email, senha="senha123"):
+    return client.post("/login", data={"username": email, "password": senha})
+
+
+def _auth(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_cadastro_cria_empresa_usuario_e_vinculo_dono_numa_transacao():
+    from app.models.empresa import Empresa, Vinculo
+
+    resp = _cadastrar("valdir@exemplo.com", "Rocha Reformas", tipo_pessoa="PJ", documento="12.345.678/0001-90")
+    assert resp.status_code == 201
+    corpo = resp.json()
+    assert corpo["empresa"]["nome"] == "Rocha Reformas"
+    assert corpo["empresa"]["tipo_pessoa"] == "PJ"
+    assert corpo["empresa"]["documento"] == "12345678000190"  # só os dígitos
+
+    db = TestingSessionLocal()
+    vinculo = db.query(Vinculo).one()
+    assert vinculo.usuario_id == corpo["usuario"]["id"] and vinculo.papel == "dono" and vinculo.ativo
+    assert str(vinculo.empresa_id) == corpo["empresa"]["id"]
+    assert db.query(Empresa).count() == 1
+    db.close()
+
+
+def test_cadastro_com_email_existente_orienta_a_criar_empresa_logado():
+    _cadastrar("repetido@exemplo.com")
+    resp = _cadastrar("repetido@exemplo.com", "Outra Empresa")
+    assert resp.status_code == 409
+    assert "/auth/empresas" in resp.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    "tipo, documento",
+    [("PF", "123"), ("PJ", "123.456.789-01"), ("PF", "12.345.678/0001-90")],
+)
+def test_documento_precisa_ter_os_digitos_do_tipo_de_pessoa(tipo, documento):
+    resp = _cadastrar(f"doc-{tipo}-{len(documento)}@exemplo.com", tipo_pessoa=tipo, documento=documento)
+    assert resp.status_code == 422
+
+
+def test_documento_repetido_e_recusado_sem_criar_usuario():
+    assert _cadastrar("a@exemplo.com", tipo_pessoa="PF", documento="123.456.789-01").status_code == 201
+    resp = _cadastrar("b@exemplo.com", tipo_pessoa="PF", documento="12345678901")
+    assert resp.status_code == 409
+    assert _logar("b@exemplo.com").status_code == 401  # nada ficou pela metade
+
+
+def test_login_traz_o_vinculo_no_token_e_no_contexto():
+    cad = _cadastrar("dono@exemplo.com", "Construtora Horizonte").json()
+    resp = _logar("dono@exemplo.com").json()
+
+    claims = _claims(resp["access_token"])
+    assert claims["sub"] == str(cad["usuario"]["id"])
+    assert claims["empresa_id"] == cad["empresa"]["id"]
+    assert claims["papel"] == "dono"
+    assert claims["admin"] is False
+    assert resp["contexto"] == {
+        "empresa_id": cad["empresa"]["id"],
+        "empresa_nome": "Construtora Horizonte",
+        "papel": "dono",
+    }
+
+
+def test_token_dura_duas_horas():
+    from datetime import datetime
+
+    _cadastrar("validade@exemplo.com")
+    claims = _claims(_logar("validade@exemplo.com").json()["access_token"])
+    duracao = datetime.fromtimestamp(claims["exp"], UTC) - datetime.now(UTC)
+    assert timedelta(minutes=115) < duracao <= timedelta(minutes=120)
+
+
+def _usuario_sem_vinculo(email="sem-vinculo@exemplo.com"):
+    db = TestingSessionLocal()
+    usuario_repo.create(db, nome="Sem Vínculo", email=email, senha="senha123")
+    db.close()
+    return _logar(email).json()
+
+
+def test_usuario_sem_vinculo_recebe_token_sem_tenant():
+    resp = _usuario_sem_vinculo()
+    claims = _claims(resp["access_token"])
+    assert claims["empresa_id"] is None and claims["papel"] is None
+    assert resp["contexto"] is None
+
+    token = resp["access_token"]
+    assert client.get("/vinculos", headers=_auth(token)).json() == []
+
+
+def test_token_sem_tenant_cria_empresa_e_recebe_token_com_ela_ativa():
+    token = _usuario_sem_vinculo()["access_token"]
+    resp = client.post("/empresas", json={"nome": "Minha Empresa", "tipo_pessoa": "PF"}, headers=_auth(token))
+
+    assert resp.status_code == 201
+    corpo = resp.json()
+    claims = _claims(corpo["access_token"])
+    assert claims["empresa_id"] == corpo["empresa"]["id"] and claims["papel"] == "dono"
+    vinculos = client.get("/vinculos", headers=_auth(corpo["access_token"])).json()
+    assert [(v["empresa_nome"], v["papel"], v["ativa"]) for v in vinculos] == [("Minha Empresa", "dono", True)]
+
+
+def test_empresa_ativa_troca_de_empresa_e_recusa_empresa_alheia():
+    cad = _cadastrar("multi@exemplo.com", "Empresa A").json()
+    token_a = _logar("multi@exemplo.com").json()["access_token"]
+    empresa_b = client.post("/empresas", json={"nome": "Empresa B"}, headers=_auth(token_a)).json()["empresa"]
+    outra = _cadastrar("alheio@exemplo.com", "Empresa de Outro").json()["empresa"]
+
+    troca = client.post("/empresa-ativa", json={"empresa_id": cad["empresa"]["id"]}, headers=_auth(token_a))
+    assert troca.status_code == 200
+    assert _claims(troca.json()["access_token"])["empresa_id"] == cad["empresa"]["id"]
+
+    troca_b = client.post("/empresa-ativa", json={"empresa_id": empresa_b["id"]}, headers=_auth(token_a))
+    assert _claims(troca_b.json()["access_token"])["empresa_id"] == empresa_b["id"]
+
+    # Sem vínculo: 404, sem revelar que a empresa existe
+    alheia = client.post("/empresa-ativa", json={"empresa_id": outra["id"]}, headers=_auth(token_a))
+    assert alheia.status_code == 404
+
+
+def test_login_escolhe_o_vinculo_mais_recente():
+    _cadastrar("recente@exemplo.com", "Primeira")
+    token = _logar("recente@exemplo.com").json()["access_token"]
+    segunda = client.post("/empresas", json={"nome": "Segunda"}, headers=_auth(token)).json()["empresa"]
+    assert _logar("recente@exemplo.com").json()["contexto"]["empresa_id"] == segunda["id"]
+
+
+def test_vinculo_desativado_some_do_login_e_da_troca():
+    from app.models.empresa import Vinculo
+
+    cad = _cadastrar("desligado@exemplo.com", "Empresa X").json()
+    token = _logar("desligado@exemplo.com").json()["access_token"]
+
+    db = TestingSessionLocal()
+    db.query(Vinculo).update({"ativo": False})
+    db.commit()
+    db.close()
+
+    assert _logar("desligado@exemplo.com").json()["contexto"] is None
+    assert client.get("/vinculos", headers=_auth(token)).json() == []
+    troca = client.post("/empresa-ativa", json={"empresa_id": cad["empresa"]["id"]}, headers=_auth(token))
+    assert troca.status_code == 403
+
+
+def test_admin_criado_por_variavel_de_ambiente_e_idempotente():
+    from app.core.admin import garantir_admin
+
+    db = TestingSessionLocal()
+    admin = garantir_admin(db, "Admin@Nivelo.app", "uma-senha-bem-longa")
+    assert admin.admin_plataforma is True and admin.email == "admin@nivelo.app"
+    # Reiniciar não troca a senha nem duplica
+    garantir_admin(db, "admin@nivelo.app", "outra-senha-qualquer")
+    db.close()
+    assert _logar("admin@nivelo.app", "uma-senha-bem-longa").status_code == 200
+    assert _logar("admin@nivelo.app", "outra-senha-qualquer").status_code == 401
+
+    resp = _logar("admin@nivelo.app", "uma-senha-bem-longa").json()
+    claims = _claims(resp["access_token"])
+    assert claims["admin"] is True and claims["empresa_id"] is None
+    assert resp["user"]["admin"] is True
+
+
+def test_admin_promove_usuario_existente_e_recusa_senha_curta():
+    from app.core.admin import garantir_admin
+
+    _cadastrar("vira-admin@exemplo.com")
+    db = TestingSessionLocal()
+    assert garantir_admin(db, "vira-admin@exemplo.com", "senha-ignorada-123").admin_plataforma is True
+    assert garantir_admin(db, "", "") is None
+    with pytest.raises(ValueError):
+        garantir_admin(db, "novo@exemplo.com", "curta")
+    db.close()
+
+
+def test_admin_da_plataforma_nao_cria_empresa():
+    from app.core.admin import garantir_admin
+
+    db = TestingSessionLocal()
+    garantir_admin(db, "admin2@nivelo.app", "uma-senha-bem-longa")
+    db.close()
+    token = _logar("admin2@nivelo.app", "uma-senha-bem-longa").json()["access_token"]
+    assert client.post("/empresas", json={"nome": "Indevida"}, headers=_auth(token)).status_code == 403

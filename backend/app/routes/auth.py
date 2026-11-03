@@ -19,6 +19,15 @@ from app.core.api_responses import (
 from app.core.database import get_db
 from app.dependencies import current_user, require_permission
 from app.models.perfil import Perfil
+from app.schemas.identidade import (
+    CadastroIn,
+    CadastroOut,
+    EmpresaAtivaIn,
+    EmpresaCriadaOut,
+    EmpresaIn,
+    TokenOut,
+    VinculoOut,
+)
 from app.schemas.usuario import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
@@ -27,11 +36,9 @@ from app.schemas.usuario import (
     PermissaoOut,
     ResetPasswordRequest,
     ResetPasswordResponse,
-    Token,
     UserPermissionsUpdate,
     UserRoleOut,
     UserRoleUpdate,
-    UsuarioCreate,
     UsuarioOut,
     ValidateTokenResponse,
 )
@@ -44,17 +51,54 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post(
     "/cadastro",
-    response_model=UsuarioOut,
+    response_model=CadastroOut,
     status_code=status.HTTP_201_CREATED,
     responses={**EMAIL_JA_CADASTRADO, **AUTH_SERVICE_INDISPONIVEL},
 )
-async def cadastro(payload: UsuarioCreate):
-    return await forward_request("POST", "/cadastro", json_data=payload.model_dump())
+async def cadastro(payload: CadastroIn):
+    """Cria a empresa, o usuário e o vínculo `dono`. O papel nunca vem do corpo."""
+    return await forward_request("POST", "/cadastro", json_data=payload.model_dump(mode="json"))
+
+
+def _repassar_token(request: Request) -> dict[str, str]:
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token não enviado", headers={"WWW-Authenticate": "Bearer"}
+        )
+    return {"authorization": auth_header}
+
+
+@router.get("/vinculos", response_model=list[VinculoOut], responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL})
+async def listar_vinculos(request: Request):
+    """Empresas do usuário e o papel em cada uma. Funciona com token sem tenant."""
+    return await forward_request("GET", "/vinculos", headers=_repassar_token(request))
+
+
+@router.post(
+    "/empresas",
+    response_model=EmpresaCriadaOut,
+    status_code=status.HTTP_201_CREATED,
+    responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL},
+)
+async def criar_empresa(payload: EmpresaIn, request: Request):
+    """Nova empresa com o usuário logado como dono. Funciona com token sem tenant."""
+    return await forward_request(
+        "POST", "/empresas", json_data=payload.model_dump(mode="json"), headers=_repassar_token(request)
+    )
+
+
+@router.post("/empresa-ativa", response_model=TokenOut, responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL})
+async def trocar_empresa_ativa(payload: EmpresaAtivaIn, request: Request):
+    """Troca a empresa ativa: confere o vínculo e devolve um token novo."""
+    return await forward_request(
+        "POST", "/empresa-ativa", json_data=payload.model_dump(mode="json"), headers=_repassar_token(request)
+    )
 
 
 @router.post(
     "/login",
-    response_model=Token,
+    response_model=TokenOut,
     responses={**CREDENCIAIS_INVALIDAS, **AUTH_SERVICE_INDISPONIVEL},
 )
 async def login(

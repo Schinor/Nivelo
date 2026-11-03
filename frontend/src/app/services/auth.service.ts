@@ -6,6 +6,7 @@ export interface Usuario {
   id: number;
   nome: string;
   email: string;
+  admin?: boolean;
   role?: string;
   role_id?: number;
   permissions?: string[];
@@ -13,10 +14,27 @@ export interface Usuario {
   premium_desde?: string | null;
 }
 
+/** Empresa ativa do token. null = token sem tenant (usuário ainda sem empresa). */
+export interface Contexto {
+  empresa_id: string;
+  empresa_nome: string;
+  papel: 'dono' | 'encarregado' | 'cliente';
+}
+
 export interface Token {
   access_token: string;
   token_type: string;
   user?: Usuario;
+  contexto?: Contexto | null;
+}
+
+export interface Cadastro {
+  nome: string;
+  email: string;
+  senha: string;
+  empresa_nome: string;
+  tipo_pessoa: 'PF' | 'PJ';
+  documento: string | null;
 }
 
 export interface ForgotPasswordResponse {
@@ -68,12 +86,9 @@ export class AuthService {
     return permissions.some((p) => this.hasPermission(p));
   }
 
-  cadastrar(nome: string, email: string, senha: string): Observable<Usuario> {
-    return this.http.post<Usuario>('/api/auth/cadastro', {
-      nome: nome.trim(),
-      email: email.trim(),
-      senha,
-    });
+  /** Cria a empresa, o usuário e o vínculo de dono. O papel nunca é enviado: é sempre dono. */
+  cadastrar(dados: Cadastro): Observable<unknown> {
+    return this.http.post('/api/auth/cadastro', dados);
   }
 
   login(email: string, senha: string): Observable<Token> {

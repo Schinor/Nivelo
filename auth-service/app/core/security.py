@@ -66,6 +66,40 @@ def get_current_user(token: str | None = Depends(oauth2_scheme), db: Session = D
     return user
 
 
+class SessaoAtual:
+    """Usuário do token e o contexto (empresa ativa e papel) que o token carrega."""
+
+    def __init__(self, usuario, claims: dict) -> None:
+        self.usuario = usuario
+        self.empresa_id: str | None = claims.get("empresa_id")
+        self.papel: str | None = claims.get("papel")
+
+
+def emitir_token(usuario, vinculo=None) -> str:
+    """JWT do Padrão B (ADR 005): sub, nome, email, admin e o contexto do vínculo ativo.
+
+    Sem vínculo (usuário que ainda não tem empresa, ou admin da plataforma), `empresa_id` e
+    `papel` vão nulos: é o token sem tenant, que só cria empresa e lista vínculos.
+    """
+    claims = {
+        "sub": str(usuario.id),
+        "nome": usuario.nome,
+        "email": usuario.email,
+        "admin": bool(usuario.admin_plataforma),
+        "empresa_id": str(vinculo.empresa_id) if vinculo else None,
+        "papel": vinculo.papel if vinculo else None,
+        # Legado, sai junto com a coluna antiga de papel (ADR 009)
+        "role": usuario.role,
+        "permissions": usuario.permissions,
+    }
+    return create_access_token(claims)
+
+
+def sessao_atual(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> SessaoAtual:
+    usuario = get_current_user(token, db)
+    return SessaoAtual(usuario, decode_access_token(token))
+
+
 def require_permission(permission: str) -> Callable:
     def dependency(current_user=Depends(get_current_user)):
         user_permissions = current_user.permissions_list

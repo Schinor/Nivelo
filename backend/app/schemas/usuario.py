@@ -34,19 +34,11 @@ class PapelCreate(BaseModel):
     permission_ids: list[int] = []
 
 
-class UsuarioCreate(BaseModel):
-    """Cadastro público. Sem campo de papel de propósito: quem se cadastra é sempre `dono`
-    (campos extras como `role` ou `papel` são ignorados)."""
-
-    nome: str
-    email: EmailStr
-    senha: str
-
-
 class UsuarioOut(BaseModel):
     id: int
     nome: str
     email: str
+    admin: bool = False
     role: str = "cliente"
     role_id: int | None = None
     permissions: list[str] = []
@@ -55,12 +47,6 @@ class UsuarioOut(BaseModel):
     premium_desde: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UsuarioOut | None = None
 
 
 class ForgotPasswordRequest(BaseModel):

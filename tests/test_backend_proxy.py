@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_12345678901234567890"
 os.environ["ALGORITHM"] = "HS256"
-os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "1440"
+os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "120"
 os.environ["AUTH_SERVICE_URL"] = "http://auth-service:8001"
 
 
