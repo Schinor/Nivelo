@@ -82,12 +82,34 @@ def test_contracao_downgrade_recria_estrutura_e_reconstroi_admin(banco):
         conn.execute(
             "INSERT INTO usuarios (nome, email, senha_hash, admin_plataforma) VALUES ('Admin', 'adm@x.com', 'h', 1)"
         )
-    alembic("auth", banco, "downgrade", "-1")
+    alembic("auth", banco, "downgrade", "005_identidade")
     assert {"roles", "permissions", "role_permissions", "user_permissions"} <= tabelas(banco)
     with conectar(banco) as conn:
         assert conn.execute("SELECT role FROM usuarios").fetchone()[0] == "admin"
     alembic("auth", banco, "upgrade", "head")
     assert "roles" not in tabelas(banco)
+
+
+def test_reset_token_vira_hash_e_invalida_os_tokens_antigos(banco):
+    alembic("auth", banco, "upgrade", "006_contrai_papel_antigo")
+    with conectar(banco) as conn:
+        conn.execute("INSERT INTO usuarios (nome, email, senha_hash) VALUES ('Ana', 'ana@x.com', 'h')")
+        conn.execute(
+            "INSERT INTO reset_tokens (token, usuario_id, expira_em, usado) "
+            "VALUES ('token-em-claro', 1, '2999-01-01 00:00:00', 0)"
+        )
+
+    alembic("auth", banco, "upgrade", "head")
+    with conectar(banco) as conn:
+        colunas = {r[1] for r in conn.execute("PRAGMA table_info(reset_tokens)")}
+        restantes = conn.execute("SELECT COUNT(*) FROM reset_tokens").fetchone()[0]
+    assert "token" not in colunas and "token_hash" in colunas
+    assert restantes == 0  # o token em claro emitido antes não vale mais
+
+    alembic("auth", banco, "downgrade", "-1")
+    with conectar(banco) as conn:
+        assert "token" in {r[1] for r in conn.execute("PRAGMA table_info(reset_tokens)")}
+    alembic("auth", banco, "upgrade", "head")
 
 
 def test_identidade_downgrade_e_upgrade_de_novo(banco):

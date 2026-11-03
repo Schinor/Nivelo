@@ -106,12 +106,12 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
         logger.warning("Limite de solicitações de redefinição atingido para o usuário id=%s", usuario.id)
         return {"message": FORGOT_PASSWORD_MESSAGE}
 
-    reset_token = reset_token_repo.create_reset_token(db, usuario.id)
+    _, token = reset_token_repo.create_reset_token(db, usuario.id)
 
     try:
         send_password_reset_email(
             to_email=usuario.email,
-            token=reset_token.token,
+            token=token,
             user_name=usuario.nome,
         )
     except Exception:
@@ -185,7 +185,12 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             detail="Usuário associado ao token não encontrado.",
         )
 
-    usuario_repo.update_password(db, usuario, payload.nova_senha)
-    reset_token_repo.mark_as_used(db, reset_token)
+    if not reset_token_repo.consumir(db, reset_token):
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Este link de recuperação já foi utilizado anteriormente.",
+        )
+    usuario_repo.update_password(db, usuario, payload.nova_senha)  # o commit grava os dois
 
     return {"message": "Senha redefinida com sucesso! Você já pode fazer login com a nova senha."}

@@ -1,7 +1,6 @@
 """Convites: o dono convida por e-mail para um papel (e uma obra); o aceite cria ou reaproveita a
 conta e cria o vínculo. Token guardado só como hash SHA-256, validade de 72 h, uso único."""
 
-import hashlib
 import logging
 import secrets
 import uuid
@@ -15,7 +14,7 @@ from app.core.api_responses import UNAUTHORIZED
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.email import send_convite_email
-from app.core.security import SessaoAtual, hash_password, sessao_atual
+from app.core.security import SessaoAtual, hash_de_token, hash_password, sessao_atual
 from app.models.convite import Convite
 from app.models.empresa import Vinculo
 from app.models.usuario import Usuario
@@ -27,10 +26,6 @@ logger = logging.getLogger("auth-service.convites")
 router = APIRouter(tags=["convites"])
 
 CONVITE_INVALIDO = "Convite inválido, já usado ou expirado. Peça um novo convite a quem convidou você."
-
-
-def hash_do_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def _agora() -> datetime:
@@ -65,7 +60,7 @@ def convidar(payload: ConviteIn, sessao: SessaoAtual = Depends(sessao_atual), db
         email=email,
         papel=payload.papel,
         obra_id=payload.obra_id,
-        token_hash=hash_do_token(token),
+        token_hash=hash_de_token(token),
         expira_em=_agora() + timedelta(hours=settings.CONVITE_VALIDADE_HORAS),
         criado_por=sessao.usuario.id,
     )
@@ -85,7 +80,7 @@ def convidar(payload: ConviteIn, sessao: SessaoAtual = Depends(sessao_atual), db
 @router.post("/convites/aceitar", response_model=AceiteOut, responses={400: {"description": CONVITE_INVALIDO}})
 def aceitar(payload: AceiteIn, db: Session = Depends(get_db)):
     """Aceita o convite: reaproveita a conta do e-mail ou cria uma nova, e cria o vínculo."""
-    convite = db.query(Convite).filter(Convite.token_hash == hash_do_token(payload.token)).first()
+    convite = db.query(Convite).filter(Convite.token_hash == hash_de_token(payload.token)).first()
     if convite is None or convite.usado_em is not None or convite.expira_em <= _agora():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, CONVITE_INVALIDO)
 

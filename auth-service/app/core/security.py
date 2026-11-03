@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -23,6 +24,11 @@ def hash_password(password: str) -> str:
     pwd_bytes = password.encode("utf-8")[:72]
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
+
+
+def hash_de_token(token: str) -> str:
+    """SHA-256 de um token de uso único (convite, redefinição de senha). Só o hash vai ao banco."""
+    return hashlib.sha256(token.strip().encode("utf-8")).hexdigest()
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

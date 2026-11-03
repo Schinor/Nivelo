@@ -278,6 +278,30 @@ def test_negativo_reuso_de_token(emails_enviados):
     assert "já foi utilizado" in r2.json()["detail"].lower()
 
 
+def test_reset_token_guardado_so_como_hash_sha256(emails_enviados):
+    client.post(
+        "/cadastro",
+        json={"nome": "Hash", "email": "hash@exemplo.com", "senha": "senhaOriginal123", "empresa_nome": "Empresa"},
+    )
+    client.post("/forgot-password", json={"email": "hash@exemplo.com"})
+    token = emails_enviados[0]["token"]
+
+    db = TestingSessionLocal()
+    try:
+        usuario = usuario_repo.get_by_email(db, "hash@exemplo.com")
+        registro = db.query(ResetToken).filter(ResetToken.usuario_id == usuario.id).one()
+        assert registro.token_hash == hashlib.sha256(token.encode()).hexdigest()
+        assert token not in registro.token_hash
+        assert not hasattr(registro, "token")
+    finally:
+        db.close()
+
+    # O próprio hash não serve como token: quem lê o banco não redefine a senha
+    roubado = client.post("/reset-password", json={"token": registro.token_hash, "nova_senha": "invasor123"})
+    assert roubado.status_code == 400
+    assert client.post("/reset-password", json={"token": token, "nova_senha": "novaSenha123"}).status_code == 200
+
+
 def test_negativo_token_expirado():
     db = TestingSessionLocal()
     cad_resp = client.post(
@@ -293,7 +317,7 @@ def test_negativo_token_expirado():
 
     token_expirado_str = "token_expirado_de_teste_12345"
     db_token = ResetToken(
-        token=token_expirado_str,
+        token_hash=hashlib.sha256(token_expirado_str.encode()).hexdigest(),
         usuario_id=user_id,
         criado_em=datetime.now(UTC) - timedelta(minutes=45),
         expira_em=datetime.now(UTC) - timedelta(minutes=15),
