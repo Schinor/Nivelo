@@ -991,3 +991,24 @@ def test_quem_ja_faz_parte_nao_e_convidado_de_novo(convites_enviados):
     client.post("/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Ana", "senha": "senha123"})
     resp = client.post("/convites", json={"email": "membro@exemplo.com", "papel": "encarregado"}, headers=dono)
     assert resp.status_code == 409
+
+
+# ── Equipe da empresa ativa (Fase 4a) ────────────────────────────────────────
+
+
+def test_dono_lista_a_equipe_da_empresa_ativa_e_mais_ninguem_ve(convites_enviados):
+    cad, dono = _dono("dono-eq@exemplo.com", "Rocha Reformas")
+    client.post("/convites", json={"email": "enc-eq@exemplo.com", "papel": "encarregado"}, headers=dono)
+    client.post("/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Zé", "senha": "senha123"})
+    _dono("dono-outra@exemplo.com", "Outra Empresa")  # equipe de outra empresa não aparece
+
+    resp = client.get("/equipe", headers=dono)
+    assert resp.status_code == 200
+    equipe = {(m["email"], m["papel"]) for m in resp.json()}
+    assert equipe == {("dono-eq@exemplo.com", "dono"), ("enc-eq@exemplo.com", "encarregado")}
+
+    encarregado = _auth(_logar("enc-eq@exemplo.com").json()["access_token"])
+    assert client.get("/equipe", headers=encarregado).status_code == 403
+    sem_tenant = _auth(_usuario_sem_vinculo("solto-eq@exemplo.com")["access_token"])
+    assert client.get("/equipe", headers=sem_tenant).status_code == 403
+    assert client.get("/equipe").status_code == 401

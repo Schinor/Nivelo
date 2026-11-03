@@ -19,6 +19,7 @@ from app.schemas.identidade import (
     EmpresaCriadaOut,
     EmpresaIn,
     EmpresaOut,
+    MembroDaEquipeOut,
     TokenOut,
     VinculoOut,
 )
@@ -96,3 +97,22 @@ def trocar_empresa_ativa(
     if not vinculo.ativo:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Seu vínculo com esta empresa foi desativado")
     return resposta_de_token(sessao.usuario, vinculo)
+
+
+@router.get(
+    "/equipe",
+    response_model=list[MembroDaEquipeOut],
+    responses={**UNAUTHORIZED, 403: {"description": "Só o dono da empresa ativa vê a equipe"}},
+)
+def listar_equipe(sessao: SessaoAtual = Depends(sessao_atual), db: Session = Depends(get_db)):
+    """Pessoas com vínculo ativo na empresa ativa do token. Só o dono, conferido no banco."""
+    if not sessao.empresa_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Escolha ou crie uma empresa para ver a equipe")
+    empresa_id = uuid.UUID(sessao.empresa_id)
+    meu = identidade_repo.vinculo(db, sessao.usuario.id, empresa_id)
+    if meu is None or not meu.ativo or meu.papel != "dono":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Só o dono da empresa vê a equipe")
+    return [
+        MembroDaEquipeOut(usuario_id=u.id, nome=u.nome, email=u.email, papel=v.papel, desde=v.criado_em)
+        for v, u in identidade_repo.equipe(db, empresa_id)
+    ]

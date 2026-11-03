@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.empresa import Empresa, Vinculo
+from app.models.usuario import Usuario
 
 
 def vinculos_ativos(db: Session, usuario_id: int) -> list[Vinculo]:
@@ -41,3 +42,14 @@ def criar_empresa_com_dono(db: Session, usuario_id: int, nome: str, tipo_pessoa:
     db.add(novo)
     db.flush()
     return novo
+
+
+def equipe(db: Session, empresa_id: uuid.UUID) -> list[tuple[Vinculo, Usuario]]:
+    """Vínculos ativos da empresa com o usuário de cada um, por papel e nome."""
+    consulta = (
+        select(Vinculo, Usuario)
+        .join(Usuario, Usuario.id == Vinculo.usuario_id)
+        .where(Vinculo.empresa_id == empresa_id, Vinculo.ativo.is_(True))
+        .order_by(Vinculo.papel, Usuario.nome)
+    )
+    return [(v, u) for v, u in db.execute(consulta).unique()]

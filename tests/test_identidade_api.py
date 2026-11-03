@@ -154,3 +154,27 @@ def test_falha_na_assinatura_nao_desfaz_o_cadastro(ctx, monkeypatch):
 
     monkeypatch.setattr("app.routes.auth.garantir_assinatura_free", quebra)
     assert ctx.client.post("/api/auth/cadastro", json=CADASTRO).status_code == 201
+
+
+def test_equipe_so_para_o_dono_e_repassa_o_token(ctx, monkeypatch):
+    from test_autenticacao_api import auth, token
+
+    async def fake_equipe(method, path, json_data=None, headers=None, **kw):
+        ctx.chamadas.append({"path": path, "headers": headers})
+        return [
+            {"usuario_id": 2, "nome": "Zé", "email": "ze@x.com", "papel": "encarregado", "desde": "2026-11-03T10:00:00"}
+        ]
+
+    monkeypatch.setattr("app.routes.auth.forward_request", fake_equipe)
+
+    empresa = "0190f3a0-0000-7000-8000-00000000000a"
+    dono = auth(token("1", empresa_id=empresa, papel="dono"))
+    assert ctx.client.get("/api/auth/equipe", headers=dono).status_code == 200
+    assert ctx.chamadas[-1]["path"] == "/equipe"
+    assert ctx.chamadas[-1]["headers"]["authorization"] == dono["Authorization"]
+
+    antes = len(ctx.chamadas)
+    encarregado = auth(token("2", empresa_id=empresa, papel="encarregado"))
+    assert ctx.client.get("/api/auth/equipe", headers=encarregado).status_code == 403
+    assert ctx.client.get("/api/auth/equipe", headers=auth(token("9", empresa_id=None, papel=None))).status_code == 403
+    assert len(ctx.chamadas) == antes  # o 403 sai da API, sem chamar o auth-service

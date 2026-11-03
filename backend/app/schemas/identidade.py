@@ -2,6 +2,7 @@
 
 import re
 import uuid
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
@@ -106,3 +107,11 @@ class VinculoOut(BaseModel):
 
 class EmpresaAtivaIn(BaseModel):
     empresa_id: uuid.UUID
+
+
+class MembroDaEquipeOut(BaseModel):
+    usuario_id: int
+    nome: str
+    email: str
+    papel: str = Field(description="Papel do vínculo: dono, encarregado ou cliente")
+    desde: datetime

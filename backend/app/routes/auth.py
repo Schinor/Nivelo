@@ -27,6 +27,7 @@ from app.schemas.identidade import (
     EmpresaAtivaIn,
     EmpresaCriadaOut,
     EmpresaIn,
+    MembroDaEquipeOut,
     TokenOut,
     VinculoOut,
 )
@@ -39,6 +40,8 @@ from app.schemas.usuario import (
     ValidateTokenResponse,
 )
 from app.services import storage
+from app.shared.api.autenticacao import requer_papel
+from app.shared.application.contexto import TenantContext
 from app.shared.domain.ids import EmpresaId
 
 logger = logging.getLogger("nivelo.api.auth")
@@ -86,6 +89,16 @@ def _repassar_token(request: Request) -> dict[str, str]:
 async def listar_vinculos(request: Request):
     """Empresas do usuário e o papel em cada uma. Funciona com token sem tenant."""
     return await forward_request("GET", "/vinculos", headers=_repassar_token(request))
+
+
+@router.get(
+    "/equipe",
+    response_model=list[MembroDaEquipeOut],
+    responses={**UNAUTHORIZED, 403: {"description": "Só o dono"}, **AUTH_SERVICE_INDISPONIVEL},
+)
+async def listar_equipe(request: Request, _ctx: TenantContext = Depends(requer_papel("dono"))):
+    """Quem tem vínculo ativo na empresa ativa (para escolher membros das obras). Só o dono."""
+    return await forward_request("GET", "/equipe", headers=_repassar_token(request))
 
 
 @router.post(
