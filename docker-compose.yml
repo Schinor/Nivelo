@@ -79,6 +79,9 @@ services:
       - RESET_REQUEST_WINDOW_MINUTES=${RESET_REQUEST_WINDOW_MINUTES:-15}
       - EMAIL_LOG_LINK_WITHOUT_SMTP=${EMAIL_LOG_LINK_WITHOUT_SMTP:-false}
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
+      # Admin da plataforma, criado no primeiro boot (nunca pelo cadastro público)
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_SENHA_INICIAL=${ADMIN_SENHA_INICIAL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
       interval: 10s
