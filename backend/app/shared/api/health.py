@@ -1,9 +1,12 @@
 """Health checks.
 
 - `/health/live`: o processo responde. Não consulta nada (reiniciar não resolve dependência fora).
-- `/health/ready`: pronto para tráfego. 200 só se banco, auth-service, auditoria (log-service,
-  que checa o Redis) e object storage responderem; senão 503 com o que caiu.
+- `/health/ready`: pronto para tráfego. 200 só se as dependências **obrigatórias** (banco,
+  auth-service e object storage) responderem; senão 503 com o que caiu.
 - `/health`: mesmo que o ready, mantido para o healthcheck do compose e o CI.
+- `/health/deps`: só informativo, sempre 200. Mostra todas as dependências, inclusive as
+  opcionais. A auditoria (log-service, que checa o Redis) é opcional de propósito: com a
+  outbox (ADR 003) a API grava o evento no banco e segue funcionando sem o log-service.
 """
 
 from __future__ import annotations
@@ -40,15 +43,25 @@ async def _http_ok(url: str, aceitar_qualquer_resposta: bool = False) -> bool:
     return resp.status_code < 500 if aceitar_qualquer_resposta else resp.status_code == 200
 
 
-async def checar_dependencias() -> dict[str, bool]:
-    banco, auth, auditoria, storage = await asyncio.gather(
-        asyncio.to_thread(_banco_ok),
-        _http_ok(f"{settings.AUTH_SERVICE_URL.rstrip('/')}/health"),
-        _http_ok(f"{settings.LOG_SERVICE_URL.rstrip('/')}/health"),
+OBRIGATORIAS = ("db", "auth_service", "storage")
+OPCIONAIS = ("auditoria",)
+
+
+async def checar_dependencias(*, incluir_opcionais: bool = False) -> dict[str, bool]:
+    verificacoes = {
+        "db": asyncio.to_thread(_banco_ok),
+        "auth_service": _http_ok(f"{settings.AUTH_SERVICE_URL.rstrip('/')}/health"),
         # Sem credenciais o Garage responde 403: o que importa aqui é ele estar de pé
-        _http_ok(settings.STORAGE_ENDPOINT, aceitar_qualquer_resposta=True),
-    )
-    return {"db": banco, "auth_service": auth, "auditoria": auditoria, "storage": storage}
+        "storage": _http_ok(settings.STORAGE_ENDPOINT, aceitar_qualquer_resposta=True),
+    }
+    if incluir_opcionais:
+        verificacoes["auditoria"] = _http_ok(f"{settings.LOG_SERVICE_URL.rstrip('/')}/health")
+    resultados = await asyncio.gather(*verificacoes.values())
+    return dict(zip(verificacoes, resultados, strict=True))
+
+
+def _rotular(estado: dict[str, bool]) -> dict[str, str]:
+    return {nome: "up" if ok else "down" for nome, ok in estado.items()}
 
 
 @router.get("/health/live")
@@ -60,7 +73,16 @@ async def live() -> dict[str, str]:
 @router.get("/health")
 async def ready() -> Any:
     estado = await checar_dependencias()
-    corpo = {nome: "up" if ok else "down" for nome, ok in estado.items()}
     if not all(estado.values()):
-        return JSONResponse(status_code=503, content={"status": "unhealthy", **corpo})
-    return {"status": "healthy", **corpo}
+        return JSONResponse(status_code=503, content={"status": "unhealthy", **_rotular(estado)})
+    return {"status": "healthy", **_rotular(estado)}
+
+
+@router.get("/health/deps")
+async def deps() -> dict[str, Any]:
+    estado = await checar_dependencias(incluir_opcionais=True)
+    return {
+        "obrigatorias": _rotular({k: estado[k] for k in OBRIGATORIAS}),
+        "opcionais": _rotular({k: estado[k] for k in OPCIONAIS}),
+        "pronto": all(estado[k] for k in OBRIGATORIAS),
+    }

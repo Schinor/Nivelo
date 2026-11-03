@@ -79,7 +79,8 @@ registrar_handlers(app, antes_de_http=auditar_403)
 # Registry próprio evita colisão de métricas quando mais de um app é importado no mesmo processo.
 # Registrado antes do fallback da SPA para que /metrics não caia no index.html.
 Instrumentator(
-    registry=CollectorRegistry(), excluded_handlers=["/metrics", "/health", "/health/live", "/health/ready"]
+    registry=CollectorRegistry(),
+    excluded_handlers=["/metrics", "/health", "/health/live", "/health/ready", "/health/deps"],
 ).instrument(app).expose(app, include_in_schema=False)
 
 # Serve o frontend Angular (SPA fallback para suporte a HTML5 pushState routing)

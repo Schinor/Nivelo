@@ -17,6 +17,7 @@ Hoje a API envia o evento de auditoria ao `log-service` por HTTP, em segundo pla
 ## Consequências
 
 - Se o dado foi gravado, o evento também foi. A publicação pode atrasar, mas não se perde.
+- O log-service não é dependência obrigatória da API: ele fica fora do `/health/ready` e aparece só no `/health/deps`, que é informativo.
 - A entrega é "pelo menos uma vez": o consumidor precisa ignorar `event_id` repetido.
 - O relay roda dentro da API; com mais de uma réplica, ele precisaria de trava (`SELECT ... FOR UPDATE SKIP LOCKED`). Hoje há uma réplica só.
 - Os eventos técnicos herdados (login, logout, `acesso_negado`) continuam pelo caminho direto até migrarem.

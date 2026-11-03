@@ -100,7 +100,7 @@ def _mock_dependencias_health(monkeypatch, auth_status=200, storage_status=403, 
     )
 
 
-SAUDAVEL = {"status": "healthy", "db": "up", "auth_service": "up", "auditoria": "up", "storage": "up"}
+SAUDAVEL = {"status": "healthy", "db": "up", "auth_service": "up", "storage": "up"}
 
 
 def test_health_e_metrics_da_api(monkeypatch):
@@ -128,6 +128,35 @@ def test_health_live_nao_depende_de_nada(monkeypatch):
 
     assert client.get("/health/live").status_code == 200
     assert client.get("/health/ready").status_code == 503
+
+
+def test_ready_ignora_o_log_service_e_deps_mostra_ele(monkeypatch):
+    """Com a outbox, a API funciona sem o log-service: ele não derruba o ready, só aparece no deps."""
+    app, _, _, TestClient = setup_api_app()
+    _mock_dependencias_health(monkeypatch, log_status=None)
+    client = TestClient(app)
+
+    ready = client.get("/health/ready")
+    assert ready.status_code == 200
+    assert ready.json() == SAUDAVEL
+
+    deps = client.get("/health/deps")
+    assert deps.status_code == 200
+    assert deps.json() == {
+        "obrigatorias": {"db": "up", "auth_service": "up", "storage": "up"},
+        "opcionais": {"auditoria": "down"},
+        "pronto": True,
+    }
+
+
+def test_deps_e_sempre_200_mesmo_com_obrigatoria_fora(monkeypatch):
+    app, _, _, TestClient = setup_api_app()
+    _mock_dependencias_health(monkeypatch, auth_status=None)
+    deps = TestClient(app).get("/health/deps")
+
+    assert deps.status_code == 200
+    assert deps.json()["obrigatorias"]["auth_service"] == "down"
+    assert deps.json()["pronto"] is False
 
 
 def test_health_retorna_503_quando_banco_cai(monkeypatch):
