@@ -12,6 +12,18 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      # Banco descartável só para verificar as migrações no mesmo motor da produção.
+      # A senha não é segredo: o container nasce e morre dentro do job, sem porta fora do runner.
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-descartavel
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=24
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +58,12 @@ jobs:
 
       - name: Testes (pytest)
         run: pytest -q
+
+      - name: Migrações no MariaDB 11.8 (Alembic, db/*.sql e seed)
+        env:
+          MARIADB_URL: mysql+pymysql://root:ci-descartavel@127.0.0.1:3306
+          PYTHON: python
+        run: scripts/verificar_migracoes.sh
 
       - name: Build e subida da stack (espera todos ficarem healthy)
         run: docker compose -f docker-compose.ci.yml up -d --build --wait --wait-timeout 240
