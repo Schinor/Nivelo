@@ -12,3 +12,5 @@ Uma página por decisão: contexto, decisão e consequências. Uma decisão nova
 | [006](006-402-para-limite-de-plano.md) | 402 Payment Required para limite de plano | Aceito |
 | [007](007-remocao-do-material-da-p1.md) | Remoção do material da P1 deste repositório | Aceito |
 | [008](008-alembic-com-sql-exportado.md) | Alembic por serviço, com SQL exportado em `db/` | Aceito |
+| [009](009-expandir-e-contrair-papel-antigo.md) | Expandir agora, contrair depois: a coluna antiga de papel | Aceito |
+| [010](010-esquema-do-dominio.md) | Esquema do domínio: UUID nativo, FK composta por empresa e soft delete | Aceito |
