@@ -80,6 +80,18 @@ if [ -f "$raiz/db/900_seed_dev.sql" ]; then
   for _ in 1 2; do
     (cd "$raiz/backend" && "$py" -m app.shared.infrastructure.scripts_sql "$MARIADB_URL/nivelo_sql" "$raiz/db/900_seed_dev.sql")
   done
+  "$py" - "$MARIADB_URL/nivelo_sql" <<'PY'
+import sys
+from sqlalchemy import create_engine
+esperado = {"empresas": 2, "usuarios": 6, "vinculos": 6, "assinaturas": 2, "obras": 2,
+            "obra_membros": 4, "diarios": 3, "ocorrencias": 1, "comentarios": 1}
+with create_engine(sys.argv[1]).connect() as conn:
+    contagem = {t: conn.exec_driver_sql(f"SELECT COUNT(*) FROM {t}").scalar() for t in esperado}
+print("  linhas:", contagem)
+if contagem != esperado:
+    print(f"ERRO: esperado {esperado}")
+    sys.exit(1)
+PY
 fi
 
 passo "OK: migrações verificadas"

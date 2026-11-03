@@ -25,8 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o código do backend
+# Copia o código do backend e os scripts SQL (o seed de desenvolvimento é lido de /app/db)
 COPY backend/ .
+COPY db/ ./db/
 
 # Copia os arquivos estáticos do Angular para o diretório que o FastAPI vai servir
 COPY --from=frontend-builder /frontend/dist/frontend/browser ./static
@@ -35,4 +36,5 @@ COPY --from=frontend-builder /frontend/dist/frontend/browser ./static
 EXPOSE ${PORT:-8000}
 
 # Migrações antes de aceitar tráfego: se o alembic falhar, o container não sobe
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# O seed só age com SEED=true (dados de desenvolvimento; nunca em produção)
+CMD ["sh", "-c", "alembic upgrade head && python -m app.shared.infrastructure.seed && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -32,6 +32,8 @@ services:
       - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8000}
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
+      # Dados de desenvolvimento (db/900_seed_dev.sql). Nunca true em produção.
+      - SEED=${SEED:-false}
     depends_on:
       auth-service:
         condition: service_healthy
