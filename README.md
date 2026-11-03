@@ -110,6 +110,34 @@ A assinatura pertence à **empresa** (o tenant). Quem assina é o usuário com p
 | Observabilidade (Prometheus/Grafana) | Mantida, mais métricas de negócio: diários por dia, assinantes, MRR |
 | Portainer, MariaDB, Redis, Garage, subdomínio | Mesma stack e mesmo subdomínio; a troca para este repositório é a Atividade 10 |
 
-## 9. Backlog
+## 9. Papéis e permissões
+
+O usuário é um só (um e-mail, uma senha), e o papel de negócio vem do **vínculo** com cada empresa. A mesma pessoa pode ser encarregada numa construtora e cliente de outro empreiteiro. O token carrega a **empresa ativa** e o papel nela, e a troca de empresa emite um token novo.
+
+| Ação | admin | dono | encarregado | cliente |
+|---|---|---|---|---|
+| Ver painel admin e log global | ✅ | ❌ | ❌ | ❌ |
+| Criar, editar, remover obra | ❌ | ✅ | ❌ | ❌ |
+| Adicionar ou remover membro da obra, convidar pessoas | ❌ | ✅ | ❌ | ❌ |
+| Ver obras | ❌ | todas da empresa | as que é membro | as que é membro |
+| Registrar, editar, publicar diário | ❌ | ✅ | nas suas obras | ❌ |
+| Revisar diário publicado (com motivo) | ❌ | ✅ | só os próprios | ❌ |
+| Remover diário | ❌ | só rascunho | ❌ | ❌ |
+| Anexar ou remover foto | ❌ | ✅ | nas suas obras | ❌ |
+| Comentar em diário publicado | ❌ | ✅ | ✅ | ✅ |
+| Assinar ou gerenciar o plano | ❌ | ✅ | ❌ | ❌ |
+| Ver o log da própria empresa | ❌ | ✅ | ❌ | ❌ |
+
+Regras que valem para todas as linhas:
+
+- **Quem decide é a API.** A tela esconder um botão é só conforto: ação proibida para o papel responde **403** e gera o evento de auditoria `acesso.negado`.
+- **A empresa vem só do token.** Um recurso de outra empresa responde **404**, sem revelar que existe. Uma rede de segurança no banco faz qualquer consulta sem empresa definida falhar.
+- **Quem ainda não tem empresa** (token sem tenant) só consegue criar a primeira empresa e listar os próprios vínculos; o resto responde 403.
+- **O admin é da plataforma**, criado por variável de ambiente no primeiro boot, nunca pelo cadastro público. Ele não pertence a empresa nenhuma e não lê dados de obras.
+- **O cadastro público** cria sempre a empresa e o seu dono; qualquer papel enviado no corpo é ignorado. Encarregados e clientes entram por **convite** do dono, com link de uso único que vale 72 horas.
+
+Decisões e trade-offs: [ADR 004](docs/adr/004-tenancy-por-coluna-e-vinculos.md) (tenancy e vínculos) e [ADR 005](docs/adr/005-jwt-padrao-b-validade-2h.md) (token).
+
+## 10. Backlog
 
 As próximas entregas estão nas [issues](../../issues) deste repositório.
