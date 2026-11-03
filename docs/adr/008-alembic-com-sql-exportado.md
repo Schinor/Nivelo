@@ -12,7 +12,8 @@ O sistema herdado criava as tabelas com `create_all` no boot e corrigia colunas 
 - **Alembic continua sendo a ferramenta**, com uma árvore por serviço dono das tabelas: `auth-service/migrations/` (Identidade) e `backend/migrations/` (Gestão de Obras, Assinaturas e infraestrutura da API).
 - Os dois serviços dividem o banco, então cada árvore tem a sua tabela de versão: `alembic_version` (auth) e `alembic_version_api` (API).
 - `alembic upgrade head` roda no `CMD` de cada imagem, antes do `uvicorn`. Se a migração falhar, o container não sobe e o deploy quebra na hora.
-- `scripts/exportar_sql.sh` gera o SQL das revisões em modo offline, no dialeto do MariaDB, para `db/NNN_descricao.sql`. Migrações que precisam inspecionar o banco tratam o modo offline.
+- `scripts/exportar_sql.sh` gera o SQL das revisões em modo offline, no dialeto do MariaDB, para `db/NNN_descricao.sql`. Um arquivo pode juntar intervalos dos dois serviços. Migrações que precisam inspecionar o banco tratam o modo offline, descrevendo o estado que as revisões anteriores deixam num banco vazio.
+- Os `db/0NN_*.sql` aplicados em ordem num banco vazio dão o mesmo esquema do Alembic. O `scripts/verificar_migracoes.sh` confere isso num MariaDB, localmente e no CI.
 - As migrações são idempotentes para o banco de produção, que já tem as tabelas mas não tem tabela de versão.
 
 ## Consequências

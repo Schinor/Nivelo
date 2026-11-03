@@ -7,9 +7,10 @@ Create Date: 2026-08-27 21:30:00.000000
 """
 
 from collections.abc import Sequence
+from typing import Any
 
 import sqlalchemy as sa
-from alembic import op
+from alembic import context, op
 from sqlalchemy.engine.reflection import Inspector
 
 revision: str = "001_auth_service"
@@ -18,9 +19,28 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+class _EstadoOffline:
+    """No modo offline (exportar SQL) não há banco para inspecionar: o estado é o que as
+    revisões anteriores deixam num banco vazio. No modo online nada muda."""
+
+    def __init__(self, tabelas: dict[str, list[str]]) -> None:
+        self._tabelas = tabelas
+
+    def get_table_names(self) -> list[str]:
+        return list(self._tabelas)
+
+    def get_columns(self, tabela: str) -> list[dict[str, str]]:
+        return [{"name": c} for c in self._tabelas.get(tabela, [])]
+
+
+def _inspetor(estado_offline: dict[str, list[str]]) -> Any:
+    if context.is_offline_mode():
+        return _EstadoOffline(estado_offline)
+    return Inspector.from_engine(op.get_bind())
+
+
 def upgrade() -> None:
-    conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = _inspetor({})
     tables = inspector.get_table_names()
 
     # 1. Se a tabela usuarios existir, adiciona a coluna role caso ainda nao exista
@@ -57,8 +77,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = _inspetor({})
     tables = inspector.get_table_names()
 
     if "reset_tokens" in tables:
