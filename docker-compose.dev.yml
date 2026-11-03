@@ -45,6 +45,7 @@ services:
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
       # Dados de desenvolvimento (db/900_seed_dev.sql). Nunca true em produção.
       - SEED=${SEED:-false}
+      - APP_ENV=${APP_ENV:-development}
     depends_on:
       auth-service:
         condition: service_healthy

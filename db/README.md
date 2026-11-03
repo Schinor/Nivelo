@@ -22,7 +22,7 @@ Os arquivos são para banco **vazio**. Num banco que já existe (produção), qu
 
 ## Seed de desenvolvimento
 
-A API aplica o `900_seed_dev.sql` no boot quando `SEED=true` (depois das migrações). O seed é idempotente: rodar de novo não duplica nada. A senha de todos os usuários do seed é `nivelo-dev-123`.
+A API aplica o `900_seed_dev.sql` no boot quando `SEED=true` (depois das migrações). Com `APP_ENV=production`, o seed se recusa a rodar e o container não sobe. O seed é idempotente: rodar de novo não duplica nada. A senha de todos os usuários do seed é `nivelo-dev-123`.
 
 ## Conferir tudo
 
