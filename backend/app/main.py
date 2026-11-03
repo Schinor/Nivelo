@@ -10,7 +10,6 @@ import logging
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from prometheus_client import CollectorRegistry
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -27,6 +26,7 @@ from app.routes.storage_proxy import router as storage_router
 from app.shared.api.health import router as health_router
 from app.shared.api.problem_details import registrar_handlers
 from app.shared.api.request_id import RequestIdMiddleware
+from app.shared.api.spa import registrar_spa
 
 # Loggers "nivelo.api.*" em INFO no stdout (ex.: event.id/tipo/usuario_id do webhook do Stripe).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.
@@ -88,16 +88,4 @@ if not os.path.isdir(STATIC_DIR):
     STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 if os.path.isdir(STATIC_DIR):
-
-    @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_spa(full_path: str):
-        # Se for um arquivo estático existente (JS, CSS, PNG, ICO, etc.)
-        target = os.path.join(STATIC_DIR, full_path)
-        if full_path and os.path.isfile(target):
-            return FileResponse(target)
-
-        # Para qualquer rota do cliente (ex: /reset-password, /login), serve o index.html
-        index_file = os.path.join(STATIC_DIR, "index.html")
-        if os.path.isfile(index_file):
-            return FileResponse(index_file)
-        return FileResponse(target)
+    registrar_spa(app, STATIC_DIR)
