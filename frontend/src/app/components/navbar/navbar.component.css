@@ -27,3 +27,4 @@
   .user-name { display: none; }
 }
 @media (max-width: 480px) { .user-role-badge { display: none; } }
+.empresa-ativa { font-size: .75rem; color: var(--ink-muted); }

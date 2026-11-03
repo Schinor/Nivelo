@@ -17,7 +17,7 @@ from app.core.api_responses import (
     gestao_usuario_invalida,
 )
 from app.core.database import get_db
-from app.dependencies import current_user, require_permission
+from app.dependencies import current_user, exigir_admin
 from app.models.perfil import Perfil
 from app.schemas.identidade import (
     CadastroIn,
@@ -31,14 +31,8 @@ from app.schemas.identidade import (
 from app.schemas.usuario import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
-    PapelCreate,
-    PapelOut,
-    PermissaoOut,
     ResetPasswordRequest,
     ResetPasswordResponse,
-    UserPermissionsUpdate,
-    UserRoleOut,
-    UserRoleUpdate,
     UsuarioOut,
     ValidateTokenResponse,
 )
@@ -186,96 +180,12 @@ async def reset_password(payload: ResetPasswordRequest):
 
 
 @router.get(
-    "/users/{user_id}/role",
-    response_model=UserRoleOut,
-    responses={**NOT_FOUND_USER, **AUTH_SERVICE_INDISPONIVEL},
-)
-async def get_user_role(user_id: int):
-    return await forward_request("GET", f"/users/{user_id}/role")
-
-
-@router.get(
     "/users",
     response_model=list[UsuarioOut],
-    responses={**UNAUTHORIZED, **forbidden("gerenciar:usuarios"), **AUTH_SERVICE_INDISPONIVEL},
+    responses={**UNAUTHORIZED, **forbidden("admin da plataforma"), **AUTH_SERVICE_INDISPONIVEL},
 )
-async def list_users(request: Request):
-    auth_header = request.headers.get("authorization")
-    return await forward_request(
-        "GET",
-        "/users",
-        headers={"authorization": auth_header} if auth_header else None,
-    )
-
-
-@router.put(
-    "/users/{user_id}/role",
-    response_model=UsuarioOut,
-    responses={
-        **gestao_usuario_invalida(plano_inexistente="Plano inexistente"),
-        **UNAUTHORIZED,
-        **forbidden("gerenciar:usuarios"),
-        **NOT_FOUND_USER,
-        **AUTH_SERVICE_INDISPONIVEL,
-    },
-)
-async def update_user_role(
-    user_id: int,
-    payload: UserRoleUpdate,
-    request: Request,
-    background: BackgroundTasks,
-    admin: dict = Depends(require_permission("gerenciar:usuarios")),
-):
-    resposta = await forward_request(
-        "PUT",
-        f"/users/{user_id}/role",
-        json_data=payload.model_dump(),
-        headers={"authorization": request.headers.get("authorization")},
-    )
-    background.add_task(
-        log_client.registrar,
-        "usuario_plano_alterado",
-        request,
-        usuario_id=admin["id"],
-        recurso=f"usuario:{user_id}",
-        detalhes=f"plano:{resposta.get('role')}",
-    )
-    return resposta
-
-
-@router.put(
-    "/users/{user_id}/permissions",
-    response_model=UsuarioOut,
-    responses={
-        **gestao_usuario_invalida(permissao_inexistente="Permissões inexistentes: voar:nave"),
-        **UNAUTHORIZED,
-        **forbidden("gerenciar:usuarios"),
-        **NOT_FOUND_USER,
-        **AUTH_SERVICE_INDISPONIVEL,
-    },
-)
-async def update_user_permissions(
-    user_id: int,
-    payload: UserPermissionsUpdate,
-    request: Request,
-    background: BackgroundTasks,
-    admin: dict = Depends(require_permission("gerenciar:usuarios")),
-):
-    resposta = await forward_request(
-        "PUT",
-        f"/users/{user_id}/permissions",
-        json_data=payload.model_dump(),
-        headers={"authorization": request.headers.get("authorization")},
-    )
-    background.add_task(
-        log_client.registrar,
-        "usuario_permissoes_alteradas",
-        request,
-        usuario_id=admin["id"],
-        recurso=f"usuario:{user_id}",
-        detalhes=",".join(resposta.get("permissions", []))[:500],
-    )
-    return resposta
+async def list_users(request: Request, _admin: dict = Depends(exigir_admin)):
+    return await forward_request("GET", "/users", headers={"authorization": request.headers.get("authorization")})
 
 
 def _apagar_foto_best_effort(chave: str) -> None:
@@ -291,7 +201,7 @@ def _apagar_foto_best_effort(chave: str) -> None:
     responses={
         **gestao_usuario_invalida(),
         **UNAUTHORIZED,
-        **forbidden("gerenciar:usuarios"),
+        **forbidden("admin da plataforma"),
         **NOT_FOUND_USER,
         **AUTH_SERVICE_INDISPONIVEL,
     },
@@ -301,7 +211,7 @@ async def delete_user(
     request: Request,
     background: BackgroundTasks,
     db: Session = Depends(get_db),
-    admin: dict = Depends(require_permission("gerenciar:usuarios")),
+    admin: dict = Depends(exigir_admin),
 ):
     """Remove o perfil (com a foto) na API e, em seguida, a conta no auth-service.
 
@@ -313,7 +223,7 @@ async def delete_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Você não pode alterar ou remover a sua própria conta por aqui",
         )
-    await forward_request("GET", f"/users/{user_id}")  # 404 se não existir
+    await forward_request("GET", f"/users/{user_id}", interno=True)  # 404 se não existir
 
     perfil = db.get(Perfil, user_id)
     foto_key = perfil.foto_key if perfil else None
@@ -340,49 +250,11 @@ async def delete_user(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/roles", response_model=list[PapelOut], responses={**AUTH_SERVICE_INDISPONIVEL})
-async def list_roles():
-    return await forward_request("GET", "/roles")
-
-
-@router.post(
-    "/roles",
-    response_model=PapelOut,
-    status_code=status.HTTP_201_CREATED,
-    responses={**UNAUTHORIZED, **forbidden("gerenciar:papeis"), **AUTH_SERVICE_INDISPONIVEL},
-)
-async def create_or_update_role(payload: PapelCreate, request: Request):
-    auth_header = request.headers.get("authorization")
-    return await forward_request(
-        "POST",
-        "/roles",
-        json_data=payload.model_dump(),
-        headers={"authorization": auth_header} if auth_header else None,
-    )
-
-
-@router.get(
-    "/permissions",
-    response_model=list[PermissaoOut],
-    responses={**UNAUTHORIZED, **forbidden("gerenciar:permissoes"), **AUTH_SERVICE_INDISPONIVEL},
-)
-async def list_permissions(request: Request):
-    auth_header = request.headers.get("authorization")
-    return await forward_request(
-        "GET",
-        "/permissions",
-        headers={"authorization": auth_header} if auth_header else None,
-    )
-
-
 @router.get(
     "/admin/status",
-    responses={**UNAUTHORIZED, **forbidden("administrar:sistema"), **AUTH_SERVICE_INDISPONIVEL},
+    responses={**UNAUTHORIZED, **forbidden("admin da plataforma"), **AUTH_SERVICE_INDISPONIVEL},
 )
-async def admin_status(request: Request):
-    auth_header = request.headers.get("authorization")
+async def admin_status(request: Request, _admin: dict = Depends(exigir_admin)):
     return await forward_request(
-        "GET",
-        "/admin/status",
-        headers={"authorization": auth_header} if auth_header else None,
+        "GET", "/admin/status", headers={"authorization": request.headers.get("authorization")}
     )

@@ -7,9 +7,6 @@ export interface Usuario {
   nome: string;
   email: string;
   admin?: boolean;
-  role?: string;
-  role_id?: number;
-  permissions?: string[];
   premium?: boolean;
   premium_desde?: string | null;
 }
@@ -26,6 +23,20 @@ export interface Token {
   token_type: string;
   user?: Usuario;
   contexto?: Contexto | null;
+}
+
+export interface Vinculo {
+  empresa_id: string;
+  empresa_nome: string;
+  tipo_pessoa: 'PF' | 'PJ';
+  papel: 'dono' | 'encarregado' | 'cliente';
+  ativa: boolean;
+}
+
+export interface NovaEmpresa {
+  nome: string;
+  tipo_pessoa: 'PF' | 'PJ';
+  documento: string | null;
 }
 
 export interface Cadastro {
@@ -55,17 +66,25 @@ export interface ValidateTokenResponse {
 export class AuthService {
   private readonly TOKEN_KEY = 'nivelo_token';
   private readonly USER_KEY = 'nivelo_user';
+  private readonly CONTEXTO_KEY = 'nivelo_contexto';
 
   private _token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY));
   private _user = signal<Usuario | null>(
     JSON.parse(localStorage.getItem(this.USER_KEY) || 'null')
   );
+  private _contexto = signal<Contexto | null>(
+    JSON.parse(localStorage.getItem(this.CONTEXTO_KEY) || 'null')
+  );
 
   readonly token = this._token.asReadonly();
   readonly user = this._user.asReadonly();
   readonly isLoggedIn = computed(() => !!this._token());
-  readonly isAdmin = computed(() => this._user()?.role === 'admin' || this.hasPermission('administrar:sistema'));
-  readonly permissions = computed(() => this._user()?.permissions || []);
+  /** Empresa ativa do token. null = token sem tenant (só cria empresa e lista vínculos). */
+  readonly contexto = this._contexto.asReadonly();
+  readonly papel = computed(() => this._contexto()?.papel ?? null);
+  /** Só conforto de tela: quem decide é a API (403). */
+  readonly isAdmin = computed(() => !!this._user()?.admin);
+  readonly semEmpresa = computed(() => this.isLoggedIn() && !this.isAdmin() && !this._contexto());
 
   constructor(private http: HttpClient) {
     if (this._token()) {
@@ -73,17 +92,6 @@ export class AuthService {
       // construtor gera NG0200 (dependência circular), o que apagava a sessão a cada F5
       queueMicrotask(() => this.carregarPerfil());
     }
-  }
-
-  hasPermission(permission: string): boolean {
-    const user = this._user();
-    if (!user) return false;
-    const perms = user.permissions || [];
-    return perms.includes(permission) || perms.includes('administrar:sistema');
-  }
-
-  hasAnyPermission(permissions: string[]): boolean {
-    return permissions.some((p) => this.hasPermission(p));
   }
 
   /** Cria a empresa, o usuário e o vínculo de dono. O papel nunca é enviado: é sempre dono. */
@@ -100,18 +108,38 @@ export class AuthService {
       .post<Token>('/api/auth/login', body.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
-      .pipe(
-        tap((res) => {
-          this._token.set(res.access_token);
-          localStorage.setItem(this.TOKEN_KEY, res.access_token);
-          if (res.user) {
-            this._user.set(res.user);
-            localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
-          } else {
-            this.carregarPerfil();
-          }
-        })
-      );
+      .pipe(tap((res) => this.guardarSessao(res)));
+  }
+
+  /** Empresas em que o usuário tem vínculo ativo. */
+  vinculos(): Observable<Vinculo[]> {
+    return this.http.get<Vinculo[]>('/api/auth/vinculos');
+  }
+
+  /** Cria uma empresa com o usuário como dono; o token devolvido já vem com ela ativa. */
+  criarEmpresa(dados: NovaEmpresa): Observable<Token> {
+    return this.http.post<Token>('/api/auth/empresas', dados).pipe(tap((res) => this.guardarSessao(res)));
+  }
+
+  /** Troca a empresa ativa (a API confere o vínculo e emite um token novo). */
+  trocarEmpresa(empresaId: string): Observable<Token> {
+    return this.http
+      .post<Token>('/api/auth/empresa-ativa', { empresa_id: empresaId })
+      .pipe(tap((res) => this.guardarSessao(res)));
+  }
+
+  private guardarSessao(res: Token): void {
+    this._token.set(res.access_token);
+    localStorage.setItem(this.TOKEN_KEY, res.access_token);
+    const contexto = res.contexto ?? null;
+    this._contexto.set(contexto);
+    localStorage.setItem(this.CONTEXTO_KEY, JSON.stringify(contexto));
+    if (res.user) {
+      this._user.set(res.user);
+      localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+    } else {
+      this.carregarPerfil();
+    }
   }
 
   carregarPerfil(): void {
@@ -159,7 +187,9 @@ export class AuthService {
   limparSessao(): void {
     this._token.set(null);
     this._user.set(null);
+    this._contexto.set(null);
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
+    localStorage.removeItem(this.CONTEXTO_KEY);
   }
 }

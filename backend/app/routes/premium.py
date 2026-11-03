@@ -19,7 +19,7 @@ from app.clients.auth_client import forward_request
 from app.core.api_responses import AUTH_SERVICE_INDISPONIVEL, STRIPE_NAO_CONFIGURADO, UNAUTHORIZED
 from app.core.config import settings
 from app.core.database import get_db
-from app.dependencies import current_user
+from app.dependencies import usuario_com_empresa
 from app.services import pagamentos
 
 logger = logging.getLogger("nivelo.api.premium")
@@ -48,9 +48,9 @@ def _exigir_stripe() -> None:
 
 
 @router.get("/status", response_model=PremiumStatusOut, responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL})
-async def status_premium(user: dict = Depends(current_user), db: Session = Depends(get_db)):
+async def status_premium(user: dict = Depends(usuario_com_empresa), db: Session = Depends(get_db)):
     """Plano do usuário logado, lido do banco (não do JWT)."""
-    usuario = await forward_request("GET", f"/users/{user['id']}")
+    usuario = await forward_request("GET", f"/users/{user['id']}", interno=True)
     premium = bool(usuario.get("premium"))
     return PremiumStatusOut(
         premium=premium,
@@ -74,10 +74,10 @@ async def status_premium(user: dict = Depends(current_user), db: Session = Depen
         **STRIPE_NAO_CONFIGURADO,
     },
 )
-async def criar_checkout(request: Request, background: BackgroundTasks, user: dict = Depends(current_user)):
+async def criar_checkout(request: Request, background: BackgroundTasks, user: dict = Depends(usuario_com_empresa)):
     """Cria a sessão de checkout e devolve a URL do Stripe; o Angular redireciona para ela."""
     _exigir_stripe()
-    usuario = await forward_request("GET", f"/users/{user['id']}")
+    usuario = await forward_request("GET", f"/users/{user['id']}", interno=True)
     if usuario.get("premium"):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Você já é Premium")
 

@@ -16,6 +16,7 @@ async def registrar(
     usuario_id: int | None = None,
     recurso: str | None = None,
     detalhes: str | None = None,
+    empresa_id: str | None = None,
 ) -> None:
     """Envia um evento de auditoria ao log-service.
 
@@ -30,6 +31,7 @@ async def registrar(
         "detalhes": detalhes,
         "ip": request.client.host if request and request.client else None,
         "request_id": obter_request_id(),
+        "empresa_id": empresa_id,
     }
     try:
         async with httpx.AsyncClient(timeout=1.5) as client:

@@ -78,7 +78,7 @@ def ctx(monkeypatch):
     c.app, c.settings, c.SessionLocal = app, settings, SessionLocal
     c.eventos = _capturar_eventos(monkeypatch)
     c.client = TestClient(app)
-    app.dependency_overrides[current_user] = lambda: _usuario(1, "dono", [])
+    app.dependency_overrides[current_user] = lambda: _usuario(1, "dono")
 
     def webhook(evento, assinatura=None):
         corpo = json.dumps(evento).encode()
@@ -239,9 +239,10 @@ def test_webhook_com_auth_service_fora_retorna_500_para_o_stripe_reenviar(ctx, m
 
 def test_status_vem_do_banco_e_nao_do_jwt(ctx):
     """Mesmo com um JWT que diga premium=true, o status consulta o auth-service (banco)."""
-    from app.dependencies import current_user
+    from app.shared.api.autenticacao import identidade as current_user
 
-    ctx.app.dependency_overrides[current_user] = lambda: {**_usuario(1, "dono", []), "premium": True}
+    # O JWT não carrega o plano: mesmo o dono recém-promovido segue Free até o banco dizer outra coisa
+    ctx.app.dependency_overrides[current_user] = lambda: _usuario(1, "dono")
     assert ctx.client.get("/api/premium/status").json() == {"premium": False, "premium_desde": None}
 
 

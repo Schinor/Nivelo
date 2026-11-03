@@ -17,7 +17,6 @@ import app.models  # força o registro dos models no metadata
 from app.core.admin import garantir_admin
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
-from app.core.rbac_seed import seed_rbac
 from app.routes.auth import router as auth_router
 from app.routes.identidade import router as identidade_router
 from app.routes.premium import router as premium_router
@@ -33,10 +32,9 @@ logging.getLogger("auth-service").setLevel(logging.INFO)
 
 def init_db():
     # O esquema vem das migrações Alembic (alembic upgrade head roda antes do uvicorn; ver Dockerfile).
-    # Aqui só sincroniza a matriz de papéis e permissões e garante o admin da plataforma.
+    # Aqui só garante o admin da plataforma.
     try:
         db = SessionLocal()
-        seed_rbac(db)
         garantir_admin(db, settings.ADMIN_EMAIL, settings.ADMIN_SENHA_INICIAL)
         db.close()
     except Exception as e:

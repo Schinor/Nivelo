@@ -21,7 +21,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
-from app.core.rbac_seed import seed_rbac
 from app.main import app
 from app.models.reset_token import ResetToken
 from app.models.usuario import Usuario
@@ -50,6 +49,22 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
+# A suíte mistura os pacotes `app` da API e do auth-service no mesmo processo. Guardamos os
+# módulos do auth-service agora e os recolocamos antes de cada teste, para que a ordem dos
+# arquivos de teste não importe.
+_MODULOS_DO_AUTH = {nome: mod for nome, mod in sys.modules.items() if nome == "app" or nome.startswith("app.")}
+_RAIZ_AUTH = os.path.abspath("auth-service")
+
+
+@pytest.fixture(autouse=True)
+def _pacote_app_do_auth_service():
+    for nome in [n for n in sys.modules if n == "app" or n.startswith("app.")]:
+        del sys.modules[nome]
+    sys.modules.update(_MODULOS_DO_AUTH)
+    if sys.path[0] != _RAIZ_AUTH:
+        sys.path.insert(0, _RAIZ_AUTH)
+    yield
+
 
 @pytest.fixture
 def emails_enviados(monkeypatch):
@@ -67,9 +82,6 @@ def emails_enviados(monkeypatch):
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine_test)
-    db = TestingSessionLocal()
-    seed_rbac(db)
-    db.close()
     yield
     Base.metadata.drop_all(bind=engine_test)
 
@@ -100,8 +112,8 @@ def test_cadastro_e_login_usuario():
     assert cad_resp.json()["empresa"]["nome"] == "Empresa Teste"
     assert cad_data["nome"] == "Allan Schinor"
     assert cad_data["email"] == "allan@exemplo.com"
-    assert cad_data["role"] == "dono"
-    assert cad_data["permissions"] == []
+    assert cad_data["admin"] is False
+    assert "role" not in cad_data and "permissions" not in cad_data
     user_id = cad_data["id"]
 
     # Cadastro duplicado deve falhar
@@ -131,52 +143,8 @@ def test_cadastro_e_login_usuario():
     me_resp = client.get("/me", headers={"Authorization": f"Bearer {token}"})
     assert me_resp.status_code == 200
     assert me_resp.json()["email"] == "allan@exemplo.com"
-    assert me_resp.json()["permissions"] == []
-
-    # 4. /users/{id}/role
-    role_resp = client.get(f"/users/{user_id}/role")
-    assert role_resp.status_code == 200
-    assert role_resp.json()["role"] == "dono"
-
-
-def test_matriz_de_papeis_do_nivelo():
-    from app.core.rbac_seed import PAPEIS_DEFINICAO
-
-    slugs = {r["slug"] for r in client.get("/roles").json()}
-    assert slugs == {"admin", "dono", "encarregado", "cliente"}
-    assert slugs == {p["slug"] for p in PAPEIS_DEFINICAO}
-
-    # Os papéis de negócio ainda não têm permissões granulares (a autorização deles vem na Fase 3)
-    papeis = {r["slug"]: r for r in client.get("/roles").json()}
-    for slug in ("dono", "encarregado", "cliente"):
-        assert papeis[slug]["permissoes"] == []
-    admin_perms = {f"{p['action']}:{p['resource']}" for p in papeis["admin"]["permissoes"]}
-    assert "administrar:sistema" in admin_perms and "visualizar:logs" in admin_perms
-
-
-def test_seed_converte_papeis_antigos_e_remove_os_que_sairam_da_matriz():
-    from app.core.rbac_seed import seed_rbac
-    from app.models.papel import Papel
-    from app.models.permissao import Permissao
-    from app.models.usuario import Usuario
-
-    db = TestingSessionLocal()
-    antigo = Papel(name="Papel antigo", slug="papel-antigo", description="fora da matriz")
-    perm_antiga = Permissao(action="ver", resource="coisa-antiga", description="fora da matriz")
-    antigo.permissoes = [perm_antiga]
-    db.add_all([antigo, perm_antiga])
-    db.flush()
-    usuario = usuario_repo.create(db, nome="Legado", email="legado@exemplo.com", senha="password123")
-    usuario.role, usuario.role_id = "papel-antigo", antigo.id
-    db.commit()
-
-    seed_rbac(db)
-
-    assert db.query(Papel).filter_by(slug="papel-antigo").count() == 0
-    assert db.query(Permissao).filter_by(resource="coisa-antiga").count() == 0
-    convertido = db.get(Usuario, usuario.id)
-    assert convertido.role == "cliente" and convertido.papel.slug == "cliente"
-    db.close()
+    assert me_resp.json()["admin"] is False
+    assert user_id == me_resp.json()["id"]
 
 
 @pytest.mark.parametrize(
@@ -193,8 +161,7 @@ def test_cadastro_publico_ignora_papel_do_corpo_e_cria_dono(extras):
     assert response.status_code == 201
     assert response.json()["papel"] == "dono"
     data = response.json()["usuario"]
-    assert data["role"] == "dono" and data["admin"] is False
-    assert "administrar:sistema" not in data["permissions"]
+    assert data["admin"] is False
 
 
 def test_permissao_exclusiva_admin():
@@ -206,7 +173,6 @@ def test_permissao_exclusiva_admin():
             "email": "comum@exemplo.com",
             "senha": "password123",
             "empresa_nome": "Empresa Teste",
-            "role": "dono",
         },
     )
     user_token = client.post(
@@ -219,14 +185,10 @@ def test_permissao_exclusiva_admin():
 
     # 2. Admin acessando endpoint exclusivo -> 200
     # Administradores são provisionados internamente, nunca pelo cadastro público.
+    from app.core.admin import garantir_admin
+
     db = TestingSessionLocal()
-    usuario_repo.create(
-        db,
-        nome="Siriani Admin",
-        email="admin@exemplo.com",
-        senha="adminSecret123",
-        role="admin",
-    )
+    garantir_admin(db, "admin@exemplo.com", "adminSecret123")
     db.close()
     admin_token = client.post(
         "/login",
@@ -452,39 +414,12 @@ def test_email_escapa_html_no_nome_do_usuario(monkeypatch):
     assert "<script>" not in corpo
 
 
-def test_permissao_visualizar_logs_somente_no_papel_admin():
-    from app.core.rbac_seed import PAPEIS_DEFINICAO, PERMISSOES_DEFINICAO
-
-    assert {"action": "visualizar", "resource": "logs"}.items() <= next(
-        p for p in PERMISSOES_DEFINICAO if p["resource"] == "logs"
-    ).items()
-
-    com_permissao = [p["slug"] for p in PAPEIS_DEFINICAO if "visualizar:logs" in p["permissoes"]]
-    assert com_permissao == ["admin"]
-
-    # O seed grava a permissão no banco e um usuário comum não a recebe no cadastro
+def _criar_e_logar(email, admin=False, senha="password123"):
     db = TestingSessionLocal()
-    from app.models.permissao import Permissao
-
-    assert db.query(Permissao).filter_by(action="visualizar", resource="logs").count() == 1
-    db.close()
-
-    resp = client.post(
-        "/cadastro",
-        json={
-            "nome": "Comum",
-            "email": "comum-logs@exemplo.com",
-            "senha": "password123",
-            "empresa_nome": "Empresa Teste",
-            "role": "dono",
-        },
-    )
-    assert "visualizar:logs" not in resp.json()["usuario"]["permissions"]
-
-
-def _criar_e_logar(email, role, senha="password123"):
-    db = TestingSessionLocal()
-    user = usuario_repo.create(db, nome=f"User {role}", email=email, senha=senha, role=role)
+    user = usuario_repo.create(db, nome="User Teste", email=email, senha=senha)
+    if admin:
+        user.admin_plataforma = True
+        db.commit()
     user_id = user.id
     db.close()
     token = client.post("/login", data={"username": email, "password": senha}).json()["access_token"]
@@ -492,72 +427,26 @@ def _criar_e_logar(email, role, senha="password123"):
 
 
 def test_gestao_de_usuarios_exige_admin():
-    alvo_id, _ = _criar_e_logar("alvo@exemplo.com", "cliente")
-    _, comum = _criar_e_logar("dono-gestao@exemplo.com", "dono")
+    alvo_id, _ = _criar_e_logar("alvo@exemplo.com")
+    _, comum = _criar_e_logar("dono-gestao@exemplo.com")
 
     assert client.get("/users", headers=comum).status_code == 403
-    assert client.put(f"/users/{alvo_id}/role", json={"role": "admin"}, headers=comum).status_code == 403
-    assert (
-        client.put(
-            f"/users/{alvo_id}/permissions", json={"permissions": ["administrar:sistema"]}, headers=comum
-        ).status_code
-        == 403
-    )
     assert client.delete(f"/users/{alvo_id}", headers=comum).status_code == 403
     assert client.delete(f"/users/{alvo_id}").status_code == 401
 
 
-def test_admin_altera_papel_e_descarta_ajustes_individuais():
-    alvo_id, _ = _criar_e_logar("plano@exemplo.com", "cliente")
-    _, admin = _criar_e_logar("admin-plano@exemplo.com", "admin")
-
-    ajuste = client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["visualizar:logs"]}, headers=admin)
-    assert ajuste.status_code == 200
-    assert ajuste.json()["permissions"] == ["visualizar:logs"]
-
-    resp = client.put(f"/users/{alvo_id}/role", json={"role": "encarregado"}, headers=admin)
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["role"] == "encarregado"
-    # Trocar de papel volta às permissões padrão do novo papel
-    assert data["permissions"] == []
-
-    invalido = client.put(f"/users/{alvo_id}/role", json={"role": "papel-fantasma"}, headers=admin)
-    assert invalido.status_code == 400
-
-
-def test_admin_concede_permissoes_individuais():
-    alvo_id, _ = _criar_e_logar("perms@exemplo.com", "cliente")
-    _, admin = _criar_e_logar("admin-perms@exemplo.com", "admin")
-
-    resp = client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["visualizar:logs"]}, headers=admin)
-    assert resp.status_code == 200
-    assert resp.json()["permissions"] == ["visualizar:logs"]  # concedida além do papel
-    assert resp.json()["role"] == "cliente"
-
-    # O login seguinte já carrega as permissões efetivas no JWT
-    login = client.post("/login", data={"username": "perms@exemplo.com", "password": "password123"})
-    assert set(login.json()["user"]["permissions"]) == {"visualizar:logs"}
-
-    desconhecida = client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["voar:nave"]}, headers=admin)
-    assert desconhecida.status_code == 400
-    assert "voar:nave" in desconhecida.json()["detail"]
-
-
 def test_admin_remove_usuario_e_nao_age_sobre_si_mesmo(emails_enviados):
-    alvo_id, _ = _criar_e_logar("remover@exemplo.com", "encarregado")
-    admin_id, admin = _criar_e_logar("admin-remove@exemplo.com", "admin")
+    alvo_id, _ = _criar_e_logar("remover@exemplo.com")
+    admin_id, admin = _criar_e_logar("admin-remove@exemplo.com", admin=True)
 
     # Token de recuperação pendente e ajuste individual não impedem a remoção
     client.post("/forgot-password", json={"email": "remover@exemplo.com"})
-    client.put(f"/users/{alvo_id}/permissions", json={"permissions": ["visualizar:logs"]}, headers=admin)
 
     assert client.delete(f"/users/{alvo_id}", headers=admin).status_code == 204
-    assert client.get(f"/users/{alvo_id}").status_code == 404
+    assert client.get(f"/users/{alvo_id}", headers=admin).status_code == 404
     assert client.delete(f"/users/{alvo_id}", headers=admin).status_code == 404
 
     assert client.delete(f"/users/{admin_id}", headers=admin).status_code == 400
-    assert client.put(f"/users/{admin_id}/role", json={"role": "cliente"}, headers=admin).status_code == 400
 
     ids = [u["id"] for u in client.get("/users", headers=admin).json()]
     assert alvo_id not in ids and admin_id in ids
@@ -595,9 +484,9 @@ def _usuario_no_banco(user_id):
 
 
 def test_usuario_novo_nao_e_premium():
-    user_id, headers = _criar_e_logar("free@exemplo.com", "dono")
+    user_id, headers = _criar_e_logar("free@exemplo.com")
     assert client.get("/me", headers=headers).json()["premium"] is False
-    assert client.get(f"/users/{user_id}").json()["premium"] is False
+    assert _usuario_no_banco(user_id)["premium"] is False
 
 
 def test_rota_interna_exige_token(monkeypatch, interno):
@@ -614,7 +503,7 @@ def test_rota_interna_exige_token(monkeypatch, interno):
 
 
 def test_checkout_concluido_ativa_premium_e_guarda_so_ids(interno):
-    user_id, headers = _criar_e_logar("assinante@exemplo.com", "dono")
+    user_id, headers = _criar_e_logar("assinante@exemplo.com")
 
     resp = client.post(
         "/internal/premium/eventos",
@@ -632,7 +521,7 @@ def test_checkout_concluido_ativa_premium_e_guarda_so_ids(interno):
 
 
 def test_evento_repetido_e_processado_uma_vez(interno):
-    user_id, _ = _criar_e_logar("repetido@exemplo.com", "dono")
+    user_id, _ = _criar_e_logar("repetido@exemplo.com")
     corpo = _evento("evt_dup", usuario_id=user_id, customer_id="cus_d", subscription_id="sub_d")
 
     assert client.post("/internal/premium/eventos", json=corpo, headers=interno).json()["aplicado"] is True
@@ -649,7 +538,7 @@ def test_evento_repetido_e_processado_uma_vez(interno):
 
 
 def test_assinatura_cancelada_remove_premium(interno):
-    user_id, _ = _criar_e_logar("cancela@exemplo.com", "dono")
+    user_id, _ = _criar_e_logar("cancela@exemplo.com")
     client.post(
         "/internal/premium/eventos",
         json=_evento("evt_a", usuario_id=user_id, customer_id="cus_c", subscription_id="sub_c"),
@@ -892,3 +781,36 @@ def test_admin_da_plataforma_nao_cria_empresa():
     db.close()
     token = _logar("admin2@nivelo.app", "uma-senha-bem-longa").json()["access_token"]
     assert client.post("/empresas", json={"nome": "Indevida"}, headers=_auth(token)).status_code == 403
+
+
+def test_conta_de_outro_usuario_so_para_admin_ou_api(monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "AUTH_INTERNAL_TOKEN", "token-interno-de-teste")
+    alvo_id, comum = _criar_e_logar("alvo-conta@exemplo.com")
+    _, admin = _criar_e_logar("admin-conta@exemplo.com", admin=True)
+
+    assert client.get(f"/users/{alvo_id}").status_code == 401
+    assert client.get(f"/users/{alvo_id}", headers=comum).status_code == 403
+    assert client.get(f"/users/{alvo_id}", headers=admin).status_code == 200
+    assert client.get(f"/users/{alvo_id}", headers={"X-Internal-Token": "token-interno-de-teste"}).status_code == 200
+    assert client.get(f"/users/{alvo_id}", headers={"X-Internal-Token": "errado"}).status_code == 401
+
+
+def test_remover_usuario_leva_os_vinculos_junto():
+    from app.models.empresa import Vinculo
+
+    cad = _cadastrar("sai@exemplo.com").json()
+    _, admin = _criar_e_logar("admin-sai@exemplo.com", admin=True)
+    assert client.delete(f"/users/{cad['usuario']['id']}", headers=admin).status_code == 204
+
+    db = TestingSessionLocal()
+    assert db.query(Vinculo).count() == 0
+    db.close()
+
+
+def test_rotas_do_rbac_antigo_nao_existem_mais():
+    _, admin = _criar_e_logar("admin-rbac@exemplo.com", admin=True)
+    assert client.get("/roles").status_code == 404
+    assert client.get("/permissions", headers=admin).status_code == 404
+    assert client.put("/users/1/role", json={"role": "admin"}, headers=admin).status_code in (404, 405)

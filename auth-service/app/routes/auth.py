@@ -61,7 +61,6 @@ def cadastro(payload: CadastroIn, db: Session = Depends(get_db)):
         nome=payload.nome,
         email=payload.email.strip().lower(),
         senha_hash=hash_password(payload.senha),
-        role="dono",  # legado, sai com a coluna antiga (ADR 009)
     )
     try:
         db.add(usuario)

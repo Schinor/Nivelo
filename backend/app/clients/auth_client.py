@@ -60,17 +60,7 @@ async def forward_request(
             )
 
 
-async def get_authenticated_user(authorization: str | None) -> dict[str, Any]:
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token não enviado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return await forward_request("GET", "/me", headers={"authorization": authorization})
-
-
 async def usuario_premium(usuario_id: int) -> bool:
     """Status premium lido do BANCO (via auth-service), nunca da claim do JWT, que pode estar velha."""
-    usuario = await forward_request("GET", f"/users/{usuario_id}")
+    usuario = await forward_request("GET", f"/users/{usuario_id}", interno=True)
     return bool(usuario.get("premium"))

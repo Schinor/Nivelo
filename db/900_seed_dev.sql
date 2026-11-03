@@ -13,13 +13,13 @@ INSERT IGNORE INTO empresas (id, nome, tipo_pessoa, documento) VALUES
   ('0190f3a0-0000-7000-8000-00000000000a', 'Rocha Reformas', 'PF', NULL),
   ('0190f3a0-0000-7000-8000-00000000000b', 'Construtora Horizonte', 'PJ', NULL);
 
-INSERT IGNORE INTO usuarios (nome, email, senha_hash, role) VALUES
-  ('Valdir Rocha', 'dono.a@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm', 'dono'),
-  ('José Carlos', 'encarregado.a@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm', 'encarregado'),
-  ('Jorge Lima', 'cliente.a@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm', 'cliente'),
-  ('Helena Prado', 'dono.b@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm', 'dono'),
-  ('Marcos Souza', 'encarregado.b@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm', 'encarregado'),
-  ('Lúcia Alves', 'cliente.b@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm', 'cliente');
+INSERT IGNORE INTO usuarios (nome, email, senha_hash) VALUES
+  ('Valdir Rocha', 'dono.a@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm'),
+  ('José Carlos', 'encarregado.a@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm'),
+  ('Jorge Lima', 'cliente.a@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm'),
+  ('Helena Prado', 'dono.b@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm'),
+  ('Marcos Souza', 'encarregado.b@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm'),
+  ('Lúcia Alves', 'cliente.b@example.com', '$2b$12$Utzq6LgTN34IB5tX9ygnWeNMqX301LeBob2bXr6atN3ILkzmGjNPm');
 
 INSERT IGNORE INTO vinculos (usuario_id, empresa_id, papel)
   SELECT u.id, v.empresa_id, v.papel FROM usuarios u JOIN (

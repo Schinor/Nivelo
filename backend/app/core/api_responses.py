@@ -20,12 +20,13 @@ UNAUTHORIZED = {
 }
 
 
-def forbidden(permission: str) -> dict:
+def forbidden(quem: str) -> dict:
+    """403 documentado no OpenAPI. `quem`: quem pode fazer a ação (ex.: "admin da plataforma")."""
     return {
         403: {
-            "description": "Autenticado, mas sem a permissão necessária (evento 'acesso_negado' é registrado na auditoria)",
+            "description": f"Autenticado, mas a ação é só para {quem} (evento 'acesso.negado' na auditoria)",
             "content": {
-                "application/json": {"example": {"detail": f"Acesso negado: permissão '{permission}' necessária"}}
+                "application/problem+json": {"example": {"type": "https://nivelo/erros/acesso-negado", "status": 403}}
             },
         }
     }

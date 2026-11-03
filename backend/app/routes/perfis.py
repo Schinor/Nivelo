@@ -32,7 +32,7 @@ from app.clients.auth_client import forward_request
 from app.core.api_responses import AUTH_SERVICE_INDISPONIVEL, NOT_FOUND_USER, UNAUTHORIZED
 from app.core.config import settings
 from app.core.database import get_db
-from app.dependencies import current_user, negar_acesso
+from app.dependencies import negar_acesso, usuario_com_empresa
 from app.models.perfil import Perfil
 from app.repositories import perfil_repo
 from app.schemas.perfil import PerfilBioUpdate, PerfilOut
@@ -53,7 +53,7 @@ _uploads_recentes: dict[int, deque] = defaultdict(deque)
 
 FORBIDDEN_DONO = {
     403: {
-        "description": "Perfil de outro usuário — inclusive para admin (evento 'acesso_negado' é registrado)",
+        "description": "Perfil de outro usuário — inclusive para admin (evento 'acesso.negado' é registrado)",
         "content": {"application/json": {"example": {"detail": "Você só pode editar o próprio perfil"}}},
     }
 }
@@ -81,7 +81,7 @@ ERROS_UPLOAD = {
 
 async def _dados_da_conta(usuario_id: int) -> dict:
     """Nome e plano vêm do auth-service (dono da tabela usuarios); 404 se o usuário não existir."""
-    return await forward_request("GET", f"/users/{usuario_id}")
+    return await forward_request("GET", f"/users/{usuario_id}", interno=True)
 
 
 async def _montar_perfil(db: Session, usuario_id: int, user: dict, perfil: Perfil | None = None) -> PerfilOut:
@@ -178,7 +178,7 @@ def _apagar_em_best_effort(chave: str) -> None:
     response_model=PerfilOut,
     responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL},
 )
-async def meu_perfil(user: dict = Depends(current_user), db: Session = Depends(get_db)):
+async def meu_perfil(user: dict = Depends(usuario_com_empresa), db: Session = Depends(get_db)):
     """Perfil do usuário logado."""
     return await _montar_perfil(db, user["id"], user)
 
@@ -188,7 +188,7 @@ async def meu_perfil(user: dict = Depends(current_user), db: Session = Depends(g
     response_model=PerfilOut,
     responses={**UNAUTHORIZED, **NOT_FOUND_USER, **AUTH_SERVICE_INDISPONIVEL},
 )
-async def ver_perfil(usuario_id: int, user: dict = Depends(current_user), db: Session = Depends(get_db)):
+async def ver_perfil(usuario_id: int, user: dict = Depends(usuario_com_empresa), db: Session = Depends(get_db)):
     """Perfil de qualquer usuário (leitura aberta a quem está logado)."""
     return await _montar_perfil(db, usuario_id, user)
 
@@ -203,7 +203,7 @@ async def atualizar_bio(
     payload: PerfilBioUpdate,
     request: Request,
     background: BackgroundTasks,
-    user: dict = Depends(current_user),
+    user: dict = Depends(usuario_com_empresa),
     db: Session = Depends(get_db),
 ):
     """Atualiza a bio (até 280 caracteres; vazia vira null). Só o dono."""
@@ -225,7 +225,7 @@ async def enviar_foto(
     request: Request,
     background: BackgroundTasks,
     foto: UploadFile = File(..., description="JPEG, PNG ou WEBP (máx. PERFIL_FOTO_MAX_BYTES)"),
-    user: dict = Depends(current_user),
+    user: dict = Depends(usuario_com_empresa),
     db: Session = Depends(get_db),
 ):
     """Envia/troca a foto. O arquivo vai para o object storage; o banco guarda só a chave."""
@@ -282,7 +282,7 @@ async def remover_foto(
     usuario_id: int,
     request: Request,
     background: BackgroundTasks,
-    user: dict = Depends(current_user),
+    user: dict = Depends(usuario_com_empresa),
     db: Session = Depends(get_db),
 ):
     """Remove a foto (idempotente: sem foto também devolve 204)."""

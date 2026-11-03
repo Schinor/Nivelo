@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -88,9 +87,6 @@ def emitir_token(usuario, vinculo=None) -> str:
         "admin": bool(usuario.admin_plataforma),
         "empresa_id": str(vinculo.empresa_id) if vinculo else None,
         "papel": vinculo.papel if vinculo else None,
-        # Legado, sai junto com a coluna antiga de papel (ADR 009)
-        "role": usuario.role,
-        "permissions": usuario.permissions,
     }
     return create_access_token(claims)
 
@@ -100,14 +96,8 @@ def sessao_atual(token: str | None = Depends(oauth2_scheme), db: Session = Depen
     return SessaoAtual(usuario, decode_access_token(token))
 
 
-def require_permission(permission: str) -> Callable:
-    def dependency(current_user=Depends(get_current_user)):
-        user_permissions = current_user.permissions_list
-        if permission not in user_permissions and "administrar:sistema" not in user_permissions:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Acesso negado: permissão '{permission}' necessária",
-            )
-        return current_user
-
-    return dependency
+def exigir_admin(current_user=Depends(get_current_user)):
+    """Só o admin da plataforma (usuarios.admin_plataforma). Lido do banco, não do token."""
+    if not current_user.admin_plataforma:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito ao admin da plataforma")
+    return current_user

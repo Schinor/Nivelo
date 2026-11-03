@@ -53,8 +53,10 @@ def test_identidade_cria_empresas_vinculos_convites_e_admin_plataforma(banco):
     assert {"empresas", "vinculos", "convites"} <= tabelas(banco)
     with conectar(banco) as conn:
         colunas = {r[1] for r in conn.execute("PRAGMA table_info(usuarios)")}
-    # Expansão (ADR 009): a coluna nova entra e a antiga ainda fica
-    assert {"admin_plataforma", "role"} <= colunas
+    assert "admin_plataforma" in colunas
+    # Contração (ADR 009, revisão 006): o papel antigo e o RBAC saíram
+    assert not {"role", "role_id"} & colunas
+    assert not {"roles", "permissions", "role_permissions", "user_permissions"} & tabelas(banco)
 
 
 def test_identidade_converte_admin_e_e_idempotente(banco):
@@ -74,8 +76,23 @@ def test_identidade_converte_admin_e_e_idempotente(banco):
     assert admins == {"admin@nivelo.app": 1, "ana@nivelo.app": 0}
 
 
+def test_contracao_downgrade_recria_estrutura_e_reconstroi_admin(banco):
+    alembic("auth", banco, "upgrade", "head")
+    with conectar(banco) as conn:
+        conn.execute(
+            "INSERT INTO usuarios (nome, email, senha_hash, admin_plataforma) VALUES ('Admin', 'adm@x.com', 'h', 1)"
+        )
+    alembic("auth", banco, "downgrade", "-1")
+    assert {"roles", "permissions", "role_permissions", "user_permissions"} <= tabelas(banco)
+    with conectar(banco) as conn:
+        assert conn.execute("SELECT role FROM usuarios").fetchone()[0] == "admin"
+    alembic("auth", banco, "upgrade", "head")
+    assert "roles" not in tabelas(banco)
+
+
 def test_identidade_downgrade_e_upgrade_de_novo(banco):
     alembic("auth", banco, "upgrade", "head")
+    alembic("auth", banco, "downgrade", "005_identidade")
     alembic("auth", banco, "downgrade", "-1")
     assert not {"empresas", "vinculos", "convites"} & tabelas(banco)
     alembic("auth", banco, "upgrade", "head")
@@ -86,7 +103,7 @@ def test_vinculo_exige_usuario_e_empresa_existentes_e_papel_valido(banco):
     alembic("auth", banco, "upgrade", "head")
     empresa = "0190f3a0-0000-7000-8000-000000000001"
     with conectar(banco) as conn:
-        conn.execute("INSERT INTO usuarios (nome, email, senha_hash, role) VALUES ('Ana', 'a@x.com', 'h', 'cliente')")
+        conn.execute("INSERT INTO usuarios (nome, email, senha_hash) VALUES ('Ana', 'a@x.com', 'h')")
         conn.execute("INSERT INTO empresas (id, nome, tipo_pessoa) VALUES (?, 'Rocha Reformas', 'PJ')", (empresa,))
         conn.execute("INSERT INTO vinculos (usuario_id, empresa_id, papel) VALUES (1, ?, 'dono')", (empresa,))
 

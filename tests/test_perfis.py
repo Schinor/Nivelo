@@ -64,8 +64,8 @@ def ctx(monkeypatch):
         c.registrar_real = registrar_real
         c.client = TestClient(app)
 
-        def logar(uid, role="houston-temos-acesso", permissions=()):
-            app.dependency_overrides[current_user] = lambda: _usuario(uid, role, list(permissions))
+        def logar(uid, role="dono", permissions=()):
+            app.dependency_overrides[current_user] = lambda: _usuario(uid, role)
 
         c.logar = logar
         yield c
@@ -175,7 +175,7 @@ def test_outro_usuario_nao_edita_bio_alheia(ctx):
     assert resp.json()["detail"] == "Você só pode editar o próprio perfil"
     assert _perfil_no_banco(ctx, 1) is None
     assert ctx.eventos[-1] == {
-        "acao": "acesso_negado",
+        "acao": "acesso.negado",
         "usuario_id": 2,
         "recurso": "perfil:1",
         "detalhes": "PUT /api/perfis/1",
@@ -259,7 +259,7 @@ def test_upload_em_perfil_alheio_retorna_403_e_nada_e_gravado(ctx):
     assert _enviar(ctx, 1, _imagem()).status_code == 403
     assert _objetos(ctx.s3) == []
     assert _perfil_no_banco(ctx, 1) is None
-    assert ctx.eventos[-1]["acao"] == "acesso_negado"
+    assert ctx.eventos[-1]["acao"] == "acesso.negado"
     assert ctx.eventos[-1]["recurso"] == "perfil:1"
 
 

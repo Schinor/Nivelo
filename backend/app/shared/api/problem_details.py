@@ -80,7 +80,13 @@ def registrar_handlers(app: FastAPI, antes_de_http: AntesDoProblema | None = Non
         if antes_de_http is not None:
             await antes_de_http(request, exc)
         detail = exc.detail if isinstance(exc.detail, str) else HTTPStatus(exc.status_code).phrase
-        return problema(request, exc.status_code, detail, headers=getattr(exc, "headers", None))
+        return problema(
+            request,
+            exc.status_code,
+            detail,
+            type_=getattr(exc, "problem_type", None),
+            headers=getattr(exc, "headers", None),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validacao(request: Request, exc: RequestValidationError) -> JSONResponse:

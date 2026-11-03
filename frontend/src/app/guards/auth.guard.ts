@@ -10,6 +10,19 @@ export const authGuard: CanActivateFn = () => {
   return false;
 };
 
+/** Só conforto de navegação: a API responde 403 para quem não é admin. */
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.isLoggedIn()) {
+    router.navigate(['/login']);
+    return false;
+  }
+  if (auth.isAdmin()) return true;
+  router.navigate(['/obras']);
+  return false;
+};
+
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);

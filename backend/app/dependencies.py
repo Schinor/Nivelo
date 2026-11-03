@@ -1,85 +1,64 @@
-from collections.abc import Callable
+"""Dependências das rotas herdadas, apoiadas em app.shared.api.autenticacao.
 
-from fastapi import Depends, Header, HTTPException, Request, status
+As rotas novas usam direto `identidade`, `tenant`, `requer_papel` e `requer_admin`.
+"""
+
+from fastapi import Depends, HTTPException, Request
 
 from .clients import log_client
-from .clients.auth_client import get_authenticated_user
-from .core.security import decode_token
+from .shared.api.autenticacao import (
+    Identidade,
+    decodificar,
+    identidade,
+    negar,
+    requer_admin,
+    tenant,
+    token_do_cabecalho,
+)
+from .shared.application.contexto import TenantContext
 
 
-async def current_user(authorization: str | None = Header(default=None)) -> dict:
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token não enviado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+async def current_user(ident: Identidade = Depends(identidade)) -> dict:
+    """Qualquer token válido, inclusive sem tenant (logout, /me)."""
+    return ident.como_dict()
 
-    # Tenta decodificação rápida local de JWT com validação da assinatura
-    token_str = authorization.replace("Bearer ", "").replace("bearer ", "").strip()
-    try:
-        payload = decode_token(token_str)
-        user_id = payload.get("sub")
-        if user_id:
-            return {
-                "id": int(user_id),
-                "nome": payload.get("nome", ""),
-                "email": payload.get("email", ""),
-                "role": payload.get("role", "cliente"),
-                "permissions": payload.get("permissions", []),
-            }
-    except Exception:
-        pass
 
-    # Fallback para consulta remota ao microsserviço de autenticação
-    return await get_authenticated_user(authorization)
+async def usuario_com_empresa(_ctx: TenantContext = Depends(tenant), ident: Identidade = Depends(identidade)) -> dict:
+    """Exige empresa ativa no token: o token sem tenant recebe 403."""
+    return ident.como_dict()
+
+
+async def exigir_admin(ident: Identidade = Depends(requer_admin)) -> dict:
+    return ident.como_dict()
 
 
 def negar_acesso(request: Request, usuario_id: int | None, recurso: str, detail: str) -> HTTPException:
-    """Monta o 403 e anota quem/o quê para a auditoria.
-
-    Quem registra o evento 'acesso_negado' é o handler global de 403 (app.main),
-    que vale para TODA resposta 403 da API — inclusive as repassadas do auth-service.
-    """
-    request.state.acesso_negado = {"usuario_id": usuario_id, "recurso": recurso}
-    return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
-
-
-def _usuario_id_do_token(request: Request) -> int | None:
-    authorization = request.headers.get("authorization") or ""
-    try:
-        sub = decode_token(authorization.replace("Bearer ", "").replace("bearer ", "").strip()).get("sub")
-        return int(sub) if sub else None
-    except Exception:
-        return None
+    """Compatível com as rotas herdadas: monta o 403 e anota para a auditoria."""
+    ident = getattr(request.state, "identidade", None)
+    erro = negar(request, ident, recurso, detail)
+    request.state.acesso_negado["usuario_id"] = usuario_id
+    return erro
 
 
 async def auditar_acesso_negado(request: Request) -> None:
     contexto = getattr(request.state, "acesso_negado", None) or {}
     usuario_id = contexto.get("usuario_id")
+    empresa_id = contexto.get("empresa_id")
     if usuario_id is None:
         # 403 sem contexto (ex.: repassado do auth-service): identifica pelo JWT, se houver
-        usuario_id = _usuario_id_do_token(request)
+        token = token_do_cabecalho(request.headers.get("authorization"))
+        if token:
+            try:
+                ident = decodificar(token)
+                usuario_id = ident.usuario_id
+                empresa_id = str(ident.empresa_id) if ident.empresa_id else None
+            except Exception:
+                pass
     await log_client.registrar(
-        "acesso_negado",
+        "acesso.negado",
         request,
         usuario_id=usuario_id,
         recurso=contexto.get("recurso"),
         detalhes=f"{request.method} {request.url.path}",
+        empresa_id=empresa_id,
     )
-
-
-def require_permission(permission: str) -> Callable:
-    async def dependency(request: Request, user: dict = Depends(current_user)) -> dict:
-        user_permissions = user.get("permissions", [])
-        # Acesso permitido se possuir a permissão requerida ou a permissão suprema de admin
-        if permission not in user_permissions and "administrar:sistema" not in user_permissions:
-            raise negar_acesso(
-                request,
-                user.get("id"),
-                permission,
-                f"Acesso negado: permissão '{permission}' necessária",
-            )
-        return user
-
-    return dependency

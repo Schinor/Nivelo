@@ -2,11 +2,10 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
-import { HasPermissionDirective } from '../../directives/has-permission.directive';
 
 @Component({
   selector: 'app-navbar',
-  imports: [CommonModule, RouterLink, RouterLinkActive, HasPermissionDirective],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.css',
 })
@@ -15,10 +14,10 @@ export class NavbarComponent {
   router = inject(Router);
 
   get roleBadge(): { name: string; class: string } {
-    const role = this.auth.user()?.role;
-    switch (role) {
-      case 'admin':
-        return { name: 'Admin', class: 'badge-admin' };
+    if (this.auth.isAdmin()) {
+      return { name: 'Admin', class: 'badge-admin' };
+    }
+    switch (this.auth.papel()) {
       case 'dono':
         return { name: 'Dono', class: 'badge-dono' };
       case 'encarregado':

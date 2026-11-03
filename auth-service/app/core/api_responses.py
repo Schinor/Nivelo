@@ -20,17 +20,6 @@ UNAUTHORIZED = {
 }
 
 
-def forbidden(permission: str) -> dict:
-    return {
-        403: {
-            "description": "Autenticado, mas sem a permissão necessária",
-            "content": {
-                "application/json": {"example": {"detail": f"Acesso negado: permissão '{permission}' necessária"}}
-            },
-        }
-    }
-
-
 NOT_FOUND_USER = {
     404: {
         "description": "Usuário não encontrado",

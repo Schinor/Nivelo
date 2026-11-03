@@ -1,224 +1,62 @@
-<div class="usuarios-container">
-  <div class="usuarios-header">
+<main class="usuarios">
+  <header class="topo">
     <div>
-      <div class="kicker-tag"><span class="kicker-dot"></span><span>PAINEL ADMINISTRATIVO</span></div>
-      <h1>Usuários</h1>
-      <p class="subtitle">
-        Gerencie planos, permissões e contas do sistema.
-        <span class="badge-role-admin">Somente administradores</span>
-      </p>
+      <h1>Contas da plataforma</h1>
+      <p>Os papéis de cada pessoa ficam nos vínculos com as empresas, não aqui.</p>
     </div>
-    <a routerLink="/obras" class="btn-back">← Voltar às obras</a>
-  </div>
+    <a routerLink="/obras" class="btn-back">← Voltar</a>
+  </header>
 
-  @if (erro()) {
-    <div class="alert alert-error" role="alert">{{ erro() }}</div>
-  }
-  @if (aviso()) {
-    <div class="alert alert-success" role="status">{{ aviso() }}</div>
-  }
+  @if (aviso()) { <p class="aviso" role="status">{{ aviso() }}</p> }
+  @if (erro()) { <p class="erro" role="alert">{{ erro() }}</p> }
+
+  <input
+    class="busca"
+    type="search"
+    placeholder="Buscar por nome ou e-mail"
+    [ngModel]="busca()"
+    (ngModelChange)="busca.set($event)"
+    aria-label="Buscar usuários"
+  />
 
   @if (carregando()) {
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>Carregando usuários...</p>
-    </div>
+    <p>Carregando…</p>
   } @else {
-    <div class="toolbar">
-      <input
-        type="search"
-        class="search"
-        placeholder="Buscar por nome ou e-mail"
-        aria-label="Buscar usuários"
-        [ngModel]="busca()"
-        (ngModelChange)="busca.set($event)"
-      />
-      <div class="plan-filters" role="group" aria-label="Filtrar por plano">
-        @for (item of contagemPorPlano(); track item.papel.slug) {
-          <button
-            type="button"
-            class="plan-chip"
-            [class]="tier(item.papel.slug)"
-            [class.active]="filtroPlano() === item.papel.slug"
-            [attr.aria-pressed]="filtroPlano() === item.papel.slug"
-            (click)="alternarFiltro(item.papel.slug)"
-          >
-            <i></i>{{ item.papel.name }} <strong>{{ item.total }}</strong>
-          </button>
-        }
-      </div>
-    </div>
-
-    <div class="summary-bar">
-      <span>{{ usuariosFiltrados().length }} de {{ usuarios().length }} usuário(s)</span>
-      <span class="sep" aria-hidden="true">•</span>
-      <span>Alterações de plano e permissões valem a partir do próximo login do usuário</span>
-    </div>
-
-    @if (usuariosFiltrados().length === 0) {
-      <div class="empty">
-        <p>Nenhum usuário encontrado com esses filtros.</p>
-      </div>
-    } @else {
-      <ul class="user-list">
-        @for (u of usuariosFiltrados(); track u.id) {
-          <li class="user-row" [class.is-busy]="salvandoId() === u.id">
-            <div class="user-identity">
-              <span class="avatar" [class]="tier(u.role)">{{ iniciais(u.nome) }}</span>
-              <div class="user-text">
-                <span class="user-name">
-                  {{ u.nome }}
-                  @if (ehVoce(u)) { <span class="tag-you">Você</span> }
-                </span>
-                <span class="user-email">{{ u.email }}</span>
-                @if (u.criado_em) {
-                  <span class="user-since">Desde {{ u.criado_em | date: 'dd/MM/yyyy' }}</span>
-                }
-              </div>
-            </div>
-
-            <label class="plan-field">
-              <span class="field-label">Plano</span>
-              <select
-                #planoSelect
-                [class]="tier(u.role)"
-                [value]="u.role"
-                [disabled]="ehVoce(u) || salvandoId() === u.id"
-                (change)="trocarPlano(u, planoSelect)"
-              >
-                @for (p of papeis(); track p.slug) {
-                  <option [value]="p.slug" [selected]="p.slug === u.role">{{ p.name }}</option>
-                }
-              </select>
-            </label>
-
-            <div class="perm-summary">
-              <span class="field-label">Permissões</span>
-              <span class="perm-count">{{ u.permissions.length }} ativas</span>
-              @let aj = ajustes(u);
-              @if (aj.extras || aj.removidas) {
-                <span class="perm-diff">
-                  @if (aj.extras) { <span class="diff-extra">+{{ aj.extras }} extra</span> }
-                  @if (aj.removidas) { <span class="diff-removed">−{{ aj.removidas }} removida(s)</span> }
-                </span>
-              } @else {
-                <span class="perm-default">padrão do plano</span>
+    <table>
+      <thead>
+        <tr><th>Nome</th><th>E-mail</th><th>Desde</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (u of filtrados(); track u.id) {
+          <tr>
+            <td>{{ u.nome }} @if (u.admin) { <span class="selo">admin</span> }</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.criado_em | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              @if (!ehVoce(u)) {
+                <button type="button" class="remover" (click)="pedirRemocao(u)">Remover</button>
               }
-            </div>
-
-            <div class="row-actions">
-              @if (ehVoce(u)) {
-                <span class="self-note">Sua conta não pode ser alterada aqui</span>
-              } @else {
-                <button
-                  type="button"
-                  class="btn-secondary"
-                  [disabled]="salvandoId() === u.id"
-                  (click)="abrirPermissoes(u)"
-                >
-                  Permissões
-                </button>
-                <button
-                  type="button"
-                  class="btn-danger"
-                  [disabled]="salvandoId() === u.id"
-                  (click)="confirmarRemocao(u)"
-                >
-                  Remover
-                </button>
-              }
-            </div>
-          </li>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="4">Nenhuma conta encontrada.</td></tr>
         }
-      </ul>
-    }
+      </tbody>
+    </table>
   }
 
-  @if (edicao(); as ed) {
-    <div class="overlay" (click)="fecharPermissoes()">
-      <div
-        class="dialog dialog-wide"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="perm-title"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="dialog-header">
-          <div>
-            <h2 id="perm-title">Permissões de {{ ed.usuario.nome }}</h2>
-            <p class="dialog-sub">
-              Plano atual:
-              <span class="plan-pill" [class]="tier(ed.usuario.role)">{{ nomePlano(ed.usuario.role) }}</span>
-            </p>
-          </div>
-          <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharPermissoes()">×</button>
-        </div>
-
-        <ul class="perm-list">
-          @for (perm of permissoes(); track perm.id) {
-            @let o = origem(perm.slug);
-            <li>
-              <label class="perm-item" [class.checked]="ed.selecionadas.has(perm.slug)">
-                <input
-                  type="checkbox"
-                  [checked]="ed.selecionadas.has(perm.slug)"
-                  (change)="alternarPermissao(perm.slug)"
-                />
-                <span class="perm-text">
-                  <span class="perm-desc">{{ perm.description || perm.slug }}</span>
-                  <code class="perm-slug">{{ perm.slug }}</code>
-                </span>
-                @if (o === 'plano') { <span class="origin origin-plan">Do plano</span> }
-                @if (o === 'extra') { <span class="origin origin-extra">Extra</span> }
-                @if (o === 'removida') { <span class="origin origin-removed">Removida</span> }
-              </label>
-            </li>
-          }
-        </ul>
-
-        @if (ed.selecionadas.has('administrar:sistema') && ed.usuario.role !== 'admin') {
-          <p class="dialog-warning">
-            <strong>administrar:sistema</strong> libera todas as áreas do sistema, independentemente das outras permissões.
-          </p>
-        }
-
-        <div class="dialog-actions">
-          <button type="button" class="btn-link" (click)="restaurarPadrao()">Restaurar padrão do plano</button>
-          <span class="spacer"></span>
-          <button type="button" class="btn-secondary" (click)="fecharPermissoes()">Cancelar</button>
-          <button
-            type="button"
-            class="btn-primary"
-            [disabled]="!edicaoAlterada() || salvandoId() === ed.usuario.id"
-            (click)="salvarPermissoes()"
-          >
-            {{ salvandoId() === ed.usuario.id ? 'Salvando...' : 'Salvar permissões' }}
+  @if (aRemover(); as u) {
+    <div class="fundo" (click)="cancelarRemocao()">
+      <section class="dialogo" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <h2>Remover conta</h2>
+        <p>A conta <strong>{{ u.email }}</strong> será apagada junto com os vínculos, o perfil e a foto. Essa ação não pode ser desfeita.</p>
+        <div class="acoes">
+          <button type="button" (click)="cancelarRemocao()" [disabled]="removendo()">Cancelar</button>
+          <button type="button" class="remover" (click)="confirmarRemocao()" [disabled]="removendo()">
+            {{ removendo() ? 'Removendo…' : 'Remover' }}
           </button>
         </div>
-      </div>
+      </section>
     </div>
   }
-
-  @if (confirmacao(); as c) {
-    <div class="overlay" (click)="cancelarConfirmacao()">
-      <div
-        class="dialog"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-title"
-        aria-describedby="confirm-msg"
-        (click)="$event.stopPropagation()"
-      >
-        <h2 id="confirm-title">{{ c.titulo }}</h2>
-        <p id="confirm-msg" class="dialog-message">{{ c.mensagem }}</p>
-        <div class="dialog-actions">
-          <span class="spacer"></span>
-          <button type="button" class="btn-secondary" (click)="cancelarConfirmacao()">Cancelar</button>
-          <button type="button" [class]="c.perigo ? 'btn-danger-solid' : 'btn-primary'" (click)="confirmar()">
-            {{ c.botao }}
-          </button>
-        </div>
-      </div>
-    </div>
-  }
-</div>
+</main>

@@ -53,6 +53,11 @@ strict = true
 module = ["app.core.*"]
 ignore_errors = true
 
+# Bibliotecas sem tipos publicados
+[[tool.mypy.overrides]]
+module = ["jose.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

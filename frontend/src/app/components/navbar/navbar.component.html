@@ -7,12 +7,17 @@
     <div class="navbar-links">
       <a routerLink="/obras" routerLinkActive="active">Obras</a>
       <a routerLink="/perfil" routerLinkActive="active">Meu perfil</a>
-      <a *hasPermission="'gerenciar:usuarios'" routerLink="/usuarios" routerLinkActive="active">Usuários</a>
+      @if (auth.isAdmin()) {
+        <a routerLink="/usuarios" routerLinkActive="active">Usuários</a>
+      }
     </div>
     <div class="navbar-user">
       <div class="user-badge-container">
         <a class="user-name" routerLink="/perfil">{{ auth.user()?.nome }}</a>
         <span class="user-role-badge" [ngClass]="roleBadge.class"><i></i>{{ roleBadge.name }}</span>
+        @if (auth.contexto(); as ctx) {
+          <span class="empresa-ativa" title="Empresa ativa">{{ ctx.empresa_nome }}</span>
+        }
       </div>
       <button class="btn-logout" (click)="logout()">Sair</button>
     </div>

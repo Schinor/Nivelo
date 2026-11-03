@@ -30,7 +30,6 @@ def garantir_admin(db: Session, email: str, senha_inicial: str) -> Usuario | Non
             nome="Admin da plataforma",
             email=email,
             senha_hash=hash_password(senha_inicial),
-            role="admin",  # legado, sai com a coluna antiga (ADR 009)
             admin_plataforma=True,
         )
         db.add(usuario)

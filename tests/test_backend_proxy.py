@@ -23,8 +23,8 @@ def setup_api_app():
     from fastapi.testclient import TestClient
 
     from app.core.database import Base, get_db
-    from app.dependencies import current_user
     from app.main import app
+    from app.shared.api.autenticacao import identidade as current_user
 
     engine_test = create_engine(
         "sqlite:///:memory:",
@@ -56,8 +56,24 @@ def test_api_sobe_com_docs_e_titulo_nivelo():
 # ── Auditoria (log-service), /api/logs, logout, health e métricas ─────────────
 
 
-def _usuario(uid, role, permissions):
-    return {"id": uid, "nome": f"User {uid}", "email": f"u{uid}@teste.com", "role": role, "permissions": permissions}
+EMPRESA_TESTE = "0190f3a0-0000-7000-8000-00000000000a"
+
+
+def _usuario(uid, role="dono", permissions=None, empresa=EMPRESA_TESTE):
+    """Identidade de teste (o que viria do JWT). `role="admin"` = admin da plataforma, sem tenant."""
+    from app.shared.api.autenticacao import Identidade
+    from app.shared.domain.ids import EmpresaId
+
+    admin = role == "admin"
+    papel = None if admin or empresa is None else role
+    return Identidade(
+        usuario_id=uid,
+        nome=f"User {uid}",
+        email=f"u{uid}@teste.com",
+        admin=admin,
+        empresa_id=EmpresaId.de_texto(empresa) if papel else None,
+        papel=papel,
+    )
 
 
 def _capturar_eventos(monkeypatch):
@@ -66,7 +82,7 @@ def _capturar_eventos(monkeypatch):
 
     eventos = []
 
-    async def fake_registrar(acao, request=None, usuario_id=None, recurso=None, detalhes=None):
+    async def fake_registrar(acao, request=None, usuario_id=None, recurso=None, detalhes=None, empresa_id=None):
         eventos.append({"acao": acao, "usuario_id": usuario_id, "recurso": recurso, "detalhes": detalhes})
 
     monkeypatch.setattr(log_client, "registrar", fake_registrar)
@@ -200,11 +216,12 @@ def test_403_repassado_do_auth_service_tambem_gera_acesso_negado(monkeypatch):
         raise HTTPException(status_code=403, detail="Acesso negado: permissão 'gerenciar:usuarios' necessária")
 
     monkeypatch.setattr("app.routes.auth.forward_request", auth_nega)
-    token = jwt.encode({"sub": "5"}, os.environ["SECRET_KEY"], algorithm="HS256")
+    # O token diz admin, mas o auth-service (que lê o banco) nega: a API repassa o 403 e audita
+    token = jwt.encode({"sub": "5", "admin": True}, os.environ["SECRET_KEY"], algorithm="HS256")
 
     resp = TestClient(app).get("/api/auth/users", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 403
-    assert eventos == [{"acao": "acesso_negado", "usuario_id": 5, "recurso": None, "detalhes": "GET /api/auth/users"}]
+    assert eventos == [{"acao": "acesso.negado", "usuario_id": 5, "recurso": None, "detalhes": "GET /api/auth/users"}]
 
 
 def test_api_logs_usuario_comum_recebe_403_e_gera_acesso_negado(monkeypatch):
@@ -212,14 +229,13 @@ def test_api_logs_usuario_comum_recebe_403_e_gera_acesso_negado(monkeypatch):
     eventos = _capturar_eventos(monkeypatch)
     client = TestClient(app)
 
-    app.dependency_overrides[current_user] = lambda: _usuario(
-        7, "houston-temos-acesso", ["listar:favoritos", "criar:comentarios"]
-    )
+    app.dependency_overrides[current_user] = lambda: _usuario(7, "dono")
 
     resp = client.get("/api/logs")
     assert resp.status_code == 403
+    assert resp.json()["type"] == "https://nivelo/erros/acesso-negado"
     assert eventos == [
-        {"acao": "acesso_negado", "usuario_id": 7, "recurso": "visualizar:logs", "detalhes": "GET /api/logs"}
+        {"acao": "acesso.negado", "usuario_id": 7, "recurso": "GET /api/logs", "detalhes": "GET /api/logs"}
     ]
 
 

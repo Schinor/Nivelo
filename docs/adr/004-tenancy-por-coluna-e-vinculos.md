@@ -13,6 +13,7 @@ O Nivelo é multi-tenant: cada empresa só pode ver os próprios dados. O banco 
 - **O tenant é a conta contratante:** `empresas` com `tipo_pessoa` (PF/PJ) e `documento` opcional. Um autônomo é uma empresa PF de uma pessoa só.
 - **Usuário global, papel por vínculo (opção B):** `usuarios` não tem `empresa_id` nem papel de negócio. A tabela `vinculos(usuario_id, empresa_id, papel, ativo)` diz em que empresas a pessoa está e com qual papel.
 - **Empresa ativa no token:** o JWT carrega `empresa_id` e `papel` do vínculo ativo. `POST /auth/empresa-ativa` troca a empresa e emite um token novo.
+- **Token sem tenant:** quem não tem vínculo ativo (ou o admin da plataforma) recebe um token com `empresa_id` e `papel` nulos. Na API, ele só serve para `POST /auth/empresas` e `GET /auth/vinculos`, além de `/auth/me` e do logout; qualquer rota de empresa responde **403** com `type: https://nivelo/erros/sem-empresa-ativa`.
 - **O `empresa_id` vem só do token**, nunca do corpo, da query ou da URL. Registro de outra empresa responde **404**, sem revelar que existe.
 - **Três camadas de proteção:** a `TenantContext` montada do JWT; repositórios que recebem o `empresa_id` no construtor (não existe `get(id)` sem tenant); e uma rede de segurança no ORM (`with_loader_criteria` a partir de um `ContextVar`) que faz uma consulta sem tenant definido **falhar**. As exceções (painel admin, webhook do Stripe, relay da outbox) usam uma sessão marcada `sem_tenant=True`.
 - IDs públicos em UUID v7, nunca autoincremento.

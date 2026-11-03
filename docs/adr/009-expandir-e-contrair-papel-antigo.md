@@ -1,6 +1,6 @@
 # ADR 009 — Expandir agora, contrair depois: a coluna antiga de papel
 
-- **Status:** aceito
+- **Status:** aceito; contração feita na Fase 3 (revisão `006_contrai_papel_antigo`, `db/002_contrai_papel_antigo.sql`)
 - **Data:** 03/11/2026
 
 ## Contexto

@@ -68,7 +68,7 @@ app.include_router(storage_router)
 
 
 async def auditar_403(request: Request, exc: StarletteHTTPException) -> None:
-    """Ponto central da auditoria de negação: TODA resposta 403 gera 'acesso_negado'."""
+    """Ponto central da auditoria de negação: TODA resposta 403 gera 'acesso.negado'."""
     if exc.status_code == status.HTTP_403_FORBIDDEN:
         await auditar_acesso_negado(request)
 
