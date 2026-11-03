@@ -1,3 +1,4 @@
+import hashlib
 import os
 import sys
 
@@ -814,3 +815,155 @@ def test_rotas_do_rbac_antigo_nao_existem_mais():
     assert client.get("/roles").status_code == 404
     assert client.get("/permissions", headers=admin).status_code == 404
     assert client.put("/users/1/role", json={"role": "admin"}, headers=admin).status_code in (404, 405)
+
+
+# ── Convites (Fase 3) ────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def convites_enviados(monkeypatch):
+    enviados = []
+
+    def fake_send(to_email, token, empresa_nome, papel, convidado_por):
+        enviados.append({"to": to_email, "token": token, "empresa": empresa_nome, "papel": papel})
+        return True
+
+    monkeypatch.setattr("app.routes.convites.send_convite_email", fake_send)
+    return enviados
+
+
+def _dono(email="dono-conv@exemplo.com", empresa="Rocha Reformas"):
+    cad = _cadastrar(email, empresa).json()
+    return cad, _auth(_logar(email).json()["access_token"])
+
+
+OBRA = "0190f3a0-0000-7000-8000-0000000000a1"
+
+
+def test_dono_convida_e_o_banco_guarda_so_o_hash(convites_enviados):
+    from app.models.convite import Convite
+
+    _, dono = _dono()
+    resp = client.post(
+        "/convites", json={"email": "Ze@Exemplo.com", "papel": "encarregado", "obra_id": OBRA}, headers=dono
+    )
+    assert resp.status_code == 201
+    assert "token" not in resp.json()
+    enviado = convites_enviados[-1]
+    assert enviado["to"] == "ze@exemplo.com" and enviado["empresa"] == "Rocha Reformas"
+
+    db = TestingSessionLocal()
+    convite = db.query(Convite).one()
+    assert convite.token_hash == hashlib.sha256(enviado["token"].encode()).hexdigest()
+    assert enviado["token"] not in convite.token_hash
+    validade = convite.expira_em - datetime.now(UTC).replace(tzinfo=None)
+    assert timedelta(hours=71) < validade <= timedelta(hours=72)
+    db.close()
+
+
+def test_so_o_dono_convida(convites_enviados):
+    cad, dono = _dono()
+    client.post("/convites", json={"email": "enc@exemplo.com", "papel": "encarregado"}, headers=dono)
+    aceite = client.post(
+        "/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Zé", "senha": "senha123"}
+    )
+    assert aceite.status_code == 200
+    encarregado = _auth(_logar("enc@exemplo.com").json()["access_token"])
+
+    resp = client.post("/convites", json={"email": "x@exemplo.com", "papel": "cliente"}, headers=encarregado)
+    assert resp.status_code == 403
+    sem_tenant = _auth(_usuario_sem_vinculo("solto@exemplo.com")["access_token"])
+    assert (
+        client.post("/convites", json={"email": "x@exemplo.com", "papel": "cliente"}, headers=sem_tenant).status_code
+        == 403
+    )
+
+
+def test_convite_nao_aceita_papel_de_dono(convites_enviados):
+    _, dono = _dono()
+    resp = client.post("/convites", json={"email": "x@exemplo.com", "papel": "dono"}, headers=dono)
+    assert resp.status_code == 422
+
+
+def test_aceite_cria_usuario_e_vinculo_e_devolve_a_obra(convites_enviados):
+    from app.models.empresa import Vinculo
+
+    cad, dono = _dono()
+    client.post("/convites", json={"email": "cli@exemplo.com", "papel": "cliente", "obra_id": OBRA}, headers=dono)
+    resp = client.post(
+        "/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Jorge", "senha": "senha123"}
+    )
+
+    assert resp.status_code == 200
+    corpo = resp.json()
+    assert corpo["novo_usuario"] is True and corpo["papel"] == "cliente" and corpo["obra_id"] == OBRA
+    assert corpo["empresa_id"] == cad["empresa"]["id"]
+    login = _logar("cli@exemplo.com").json()
+    assert login["contexto"]["papel"] == "cliente"
+
+    db = TestingSessionLocal()
+    assert db.query(Vinculo).filter_by(usuario_id=corpo["usuario_id"]).one().papel == "cliente"
+    db.close()
+
+
+def test_aceite_reaproveita_conta_existente_com_o_mesmo_email(convites_enviados):
+    _cadastrar("ja-tenho@exemplo.com", "Minha Própria Empresa")
+    _, dono = _dono()
+    client.post("/convites", json={"email": "ja-tenho@exemplo.com", "papel": "encarregado"}, headers=dono)
+
+    resp = client.post("/convites/aceitar", json={"token": convites_enviados[-1]["token"]})
+    assert resp.status_code == 200
+    assert resp.json()["novo_usuario"] is False
+    # A senha continua a dela, e agora há dois vínculos
+    token = _logar("ja-tenho@exemplo.com").json()["access_token"]
+    assert sorted(v["papel"] for v in client.get("/vinculos", headers=_auth(token)).json()) == ["dono", "encarregado"]
+
+
+def test_convite_usado_duas_vezes_e_recusado(convites_enviados):
+    _, dono = _dono()
+    client.post("/convites", json={"email": "duas@exemplo.com", "papel": "cliente"}, headers=dono)
+    token = convites_enviados[-1]["token"]
+    assert (
+        client.post("/convites/aceitar", json={"token": token, "nome": "Ana", "senha": "senha123"}).status_code == 200
+    )
+    segunda = client.post("/convites/aceitar", json={"token": token, "nome": "Bia", "senha": "senha123"})
+    assert segunda.status_code == 400
+
+
+def test_convite_expirado_e_recusado(convites_enviados):
+    from app.models.convite import Convite
+
+    _, dono = _dono()
+    client.post("/convites", json={"email": "tarde@exemplo.com", "papel": "cliente"}, headers=dono)
+    db = TestingSessionLocal()
+    db.query(Convite).update({"expira_em": datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=1)})
+    db.commit()
+    db.close()
+
+    resp = client.post(
+        "/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Ana", "senha": "senha123"}
+    )
+    assert resp.status_code == 400
+    assert _logar("tarde@exemplo.com").status_code == 401  # nada foi criado
+
+
+def test_token_de_convite_inexistente_e_recusado():
+    assert client.post("/convites/aceitar", json={"token": "x" * 43}).status_code == 400
+
+
+def test_conta_nova_precisa_de_nome_e_senha_e_o_convite_continua_valido(convites_enviados):
+    _, dono = _dono()
+    client.post("/convites", json={"email": "sem-senha@exemplo.com", "papel": "cliente"}, headers=dono)
+    token = convites_enviados[-1]["token"]
+    assert client.post("/convites/aceitar", json={"token": token}).status_code == 422
+    assert (
+        client.post("/convites/aceitar", json={"token": token, "nome": "Ana", "senha": "senha123"}).status_code == 200
+    )
+
+
+def test_quem_ja_faz_parte_nao_e_convidado_de_novo(convites_enviados):
+    _, dono = _dono()
+    client.post("/convites", json={"email": "membro@exemplo.com", "papel": "cliente"}, headers=dono)
+    client.post("/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Ana", "senha": "senha123"})
+    resp = client.post("/convites", json={"email": "membro@exemplo.com", "papel": "encarregado"}, headers=dono)
+    assert resp.status_code == 409

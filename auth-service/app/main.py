@@ -18,6 +18,7 @@ from app.core.admin import garantir_admin
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
 from app.routes.auth import router as auth_router
+from app.routes.convites import router as convites_router
 from app.routes.identidade import router as identidade_router
 from app.routes.premium import router as premium_router
 from app.routes.users import router as users_router
@@ -93,5 +94,6 @@ Instrumentator(registry=CollectorRegistry(), excluded_handlers=["/metrics", "/he
 # Rotas
 app.include_router(auth_router)
 app.include_router(identidade_router)
+app.include_router(convites_router)
 app.include_router(users_router)
 app.include_router(premium_router)

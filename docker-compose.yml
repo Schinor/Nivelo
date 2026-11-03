@@ -80,6 +80,8 @@ services:
       - EMAIL_LOG_LINK_WITHOUT_SMTP=${EMAIL_LOG_LINK_WITHOUT_SMTP:-false}
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
       # Admin da plataforma, criado no primeiro boot (nunca pelo cadastro público)
+      # URL pública usada nos links dos e-mails (convite); vazio = usa CATALOGO_URL
+      - APP_BASE_URL=${APP_BASE_URL:-}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-}
       - ADMIN_SENHA_INICIAL=${ADMIN_SENHA_INICIAL:-}
     healthcheck:

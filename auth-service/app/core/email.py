@@ -166,3 +166,72 @@ def send_password_reset_email(to_email: str, token: str, user_name: str = "Usuá
     except Exception:
         logger.exception("Falha ao enviar e-mail de redefinição via %s:%s", smtp_host, smtp_port)
         raise
+
+
+def _enviar_email(to_email: str, subject: str, texto: str, html_content: str, link_para_log: str) -> bool:
+    """Envia por SMTP (Mailtrap). Sem credenciais: no modo dev registra o link; senão, erro explícito."""
+    smtp_host = (settings.MAILTRAP_HOST or "sandbox.smtp.mailtrap.io").strip(" \"'")
+    try:
+        smtp_port = int(str(settings.MAILTRAP_PORT).strip(" \"'"))
+    except Exception:
+        smtp_port = 2525
+    smtp_user = (settings.MAILTRAP_USERNAME or "").strip(" \"'")
+    smtp_pass = (settings.MAILTRAP_PASSWORD or "").strip(" \"'")
+    from_email = (settings.MAILTRAP_FROM_EMAIL or "nao-responda@nivelo.app").strip(" \"'")
+    from_name = (settings.MAILTRAP_FROM_NAME or "Nivelo").strip(" \"'")
+
+    if not smtp_user or not smtp_pass:
+        if settings.EMAIL_LOG_LINK_WITHOUT_SMTP:
+            logger.warning("SMTP não configurado; link (modo dev): %s", link_para_log)
+            return True
+        raise EmailNotConfiguredError("MAILTRAP_USERNAME/MAILTRAP_PASSWORD não configurados; e-mail não enviado")
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"{from_name} <{from_email}>"
+    msg["To"] = to_email
+    msg.attach(MIMEText(texto, "plain", "utf-8"))
+    msg.attach(MIMEText(html_content, "html", "utf-8"))
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(from_email, [to_email], msg.as_string())
+    except Exception:
+        logger.exception("Falha ao enviar e-mail via %s:%s", smtp_host, smtp_port)
+        raise
+    logger.info("E-mail '%s' enviado via %s", subject, smtp_host)
+    return True
+
+
+PAPEL_NO_CONVITE = {"encarregado": "encarregado", "cliente": "cliente da obra"}
+
+
+def send_convite_email(to_email: str, token: str, empresa_nome: str, papel: str, convidado_por: str) -> bool:
+    """Convite para entrar numa empresa. O link leva o token em claro; o banco guarda só o hash."""
+    base = (settings.APP_BASE_URL or settings.CATALOGO_URL or "http://localhost:8000").strip(" \"'").rstrip("/")
+    link = f"{base}/convite?token={token}"
+    empresa = html.escape(empresa_nome)
+    quem = html.escape(convidado_por)
+    como = PAPEL_NO_CONVITE.get(papel, papel)
+    horas = settings.CONVITE_VALIDADE_HORAS
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; background: #141414; color: #ffffff; padding: 20px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #1f1f1f; padding: 32px; border-radius: 12px;">
+    <h2 style="margin-top: 0;">Você foi convidado para o Nivelo</h2>
+    <p><strong>{quem}</strong> convidou você para acompanhar as obras de <strong>{empresa}</strong> como <strong>{como}</strong>.</p>
+    <p><a href="{link}" style="display: inline-block; background: #d1a441; color: #141414; padding: 12px 20px;
+       border-radius: 6px; text-decoration: none; font-weight: bold;">Aceitar convite</a></p>
+    <p style="font-size: 13px; color: #999999;">O convite vale por {horas} horas e só pode ser usado uma vez.
+       Se o botão não funcionar, copie este endereço: {link}</p>
+    <p style="font-size: 12px; color: #777777;">Se você não esperava este convite, ignore este e-mail.</p>
+  </div>
+</body></html>"""
+    texto = (
+        f"{convidado_por} convidou você para acompanhar as obras de {empresa_nome} como {como}.\n"
+        f"Aceite em até {horas} horas (uso único): {link}\n\n"
+        "Se você não esperava este convite, ignore este e-mail.\n"
+    )
+    return _enviar_email(to_email, f"Convite de {empresa_nome} no Nivelo", texto, html_content, link)

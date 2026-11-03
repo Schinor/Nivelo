@@ -17,8 +17,13 @@ class Settings(BaseSettings):
     MAILTRAP_FROM_EMAIL: str = "nao-responda@nivelo.app"
     MAILTRAP_FROM_NAME: str = "Nivelo"
 
-    # URL base pública da aplicação para geração do link no e-mail
+    # URL base pública da aplicação para os links dos e-mails. APP_BASE_URL é o nome novo;
+    # CATALOGO_URL continua aceito enquanto a stack antiga existir.
+    APP_BASE_URL: str = ""
     CATALOGO_URL: str = "http://localhost:8000"
+
+    # Convite para entrar numa empresa: validade e uso único (o banco guarda só o hash)
+    CONVITE_VALIDADE_HORAS: int = 72
 
     # Expiração do token de redefinição de senha em minutos (30 minutos)
     RESET_TOKEN_EXPIRE_MINUTES: int = 30
