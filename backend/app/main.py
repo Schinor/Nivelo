@@ -16,6 +16,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.models  # noqa: F401 — força o registro dos models no metadata
 from app.dependencies import auditar_acesso_negado
+from app.obras.api.rotas import router as obras_router
 from app.routes.auth import router as auth_router
 from app.routes.logs import router as logs_router
 from app.routes.observability_proxy import router as observability_router
@@ -58,6 +59,7 @@ app.add_middleware(RequestIdMiddleware)
 # Rotas da API
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(obras_router)
 app.include_router(logs_router)
 app.include_router(perfis_router)
 app.include_router(premium_router)
