@@ -4,6 +4,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request,
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from app.assinaturas.application.assinatura_free import garantir_assinatura_free
+from app.assinaturas.infrastructure.repositorio import RepositorioDeAssinaturasSQL
 from app.clients import log_client
 from app.clients.auth_client import forward_request
 from app.core.api_responses import (
@@ -37,6 +39,7 @@ from app.schemas.usuario import (
     ValidateTokenResponse,
 )
 from app.services import storage
+from app.shared.domain.ids import EmpresaId
 
 logger = logging.getLogger("nivelo.api.auth")
 
@@ -49,9 +52,25 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
     status_code=status.HTTP_201_CREATED,
     responses={**EMAIL_JA_CADASTRADO, **AUTH_SERVICE_INDISPONIVEL},
 )
-async def cadastro(payload: CadastroIn):
-    """Cria a empresa, o usuário e o vínculo `dono`. O papel nunca vem do corpo."""
-    return await forward_request("POST", "/cadastro", json_data=payload.model_dump(mode="json"))
+async def cadastro(payload: CadastroIn, db: Session = Depends(get_db)):
+    """Cria a empresa, o usuário e o vínculo `dono`. O papel nunca vem do corpo.
+
+    A empresa nasce no plano Free: o módulo de assinaturas grava a própria tabela logo depois
+    (o auth-service não escreve em tabela de outro contexto).
+    """
+    resposta = await forward_request("POST", "/cadastro", json_data=payload.model_dump(mode="json"))
+    _assinatura_free(db, resposta.get("empresa", {}).get("id"))
+    return resposta
+
+
+def _assinatura_free(db: Session, empresa_id: str | None) -> None:
+    """Falha aqui não desfaz o cadastro: a Fase 8 também cria a assinatura Free sob demanda."""
+    if not empresa_id:
+        return
+    try:
+        garantir_assinatura_free(RepositorioDeAssinaturasSQL(db), EmpresaId.de_texto(empresa_id))
+    except Exception:
+        logger.exception("não foi possível criar a assinatura Free da empresa %s", empresa_id)
 
 
 def _repassar_token(request: Request) -> dict[str, str]:
@@ -75,11 +94,13 @@ async def listar_vinculos(request: Request):
     status_code=status.HTTP_201_CREATED,
     responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL},
 )
-async def criar_empresa(payload: EmpresaIn, request: Request):
-    """Nova empresa com o usuário logado como dono. Funciona com token sem tenant."""
-    return await forward_request(
+async def criar_empresa(payload: EmpresaIn, request: Request, db: Session = Depends(get_db)):
+    """Nova empresa com o usuário logado como dono. Funciona com token sem tenant. Nasce no Free."""
+    resposta = await forward_request(
         "POST", "/empresas", json_data=payload.model_dump(mode="json"), headers=_repassar_token(request)
     )
+    _assinatura_free(db, resposta.get("empresa", {}).get("id"))
+    return resposta
 
 
 @router.post("/empresa-ativa", response_model=TokenOut, responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL})

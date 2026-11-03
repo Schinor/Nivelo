@@ -6,7 +6,7 @@ from test_backend_proxy import setup_api_app
 
 @pytest.fixture
 def ctx(monkeypatch):
-    app, _, _, TestClient = setup_api_app()
+    app, SessionLocal, _, TestClient = setup_api_app()
     chamadas = []
 
     async def fake_forward(method, path, json_data=None, headers=None, **kw):
@@ -19,7 +19,7 @@ def ctx(monkeypatch):
         pass
 
     c = Ctx()
-    c.client, c.chamadas = TestClient(app), chamadas
+    c.client, c.chamadas, c.SessionLocal = TestClient(app), chamadas, SessionLocal
     return c
 
 
@@ -92,3 +92,65 @@ def test_rotas_de_vinculo_exigem_token_e_o_repassam(ctx, monkeypatch, metodo, ro
     )
     assert com_token.status_code in (200, 201)
     assert ctx.chamadas[-1]["headers"] == {"authorization": "Bearer abc"}
+
+
+def _assinaturas(ctx):
+    from app.assinaturas.infrastructure.modelos import AssinaturaModel
+    from app.shared.infrastructure.tenancy import sem_tenant
+
+    db = ctx.SessionLocal()
+    with sem_tenant(db, "conferência do teste"):
+        linhas = [(str(a.empresa_id), a.plano, a.status) for a in db.query(AssinaturaModel).all()]
+    db.close()
+    return linhas
+
+
+CADASTRO = {"nome": "Ana", "email": "a@exemplo.com", "senha": "senha123", "empresa_nome": "Ana Reformas"}
+EMPRESA_NOVA = "0190f3a0-0000-7000-8000-0000000000aa"
+
+
+def _auth_responde_empresa(monkeypatch, empresa_id=EMPRESA_NOVA):
+    async def responde(method, path, **kw):
+        base = {"access_token": "t", "token_type": "bearer", "user": {"id": 1, "nome": "A", "email": "a@a.com"}}
+        empresa = {"id": empresa_id, "nome": "X", "tipo_pessoa": "PF"}
+        if path == "/cadastro":
+            return {"usuario": base["user"], "empresa": empresa, "papel": "dono"}
+        return {**base, "empresa": empresa}
+
+    monkeypatch.setattr("app.routes.auth.forward_request", responde)
+
+
+def test_cadastro_cria_a_assinatura_free_da_empresa(ctx, monkeypatch):
+    _auth_responde_empresa(monkeypatch)
+    assert ctx.client.post("/api/auth/cadastro", json=CADASTRO).status_code == 201
+    assert _assinaturas(ctx) == [(EMPRESA_NOVA, "free", "active")]
+
+
+def test_empresa_nova_do_usuario_logado_tambem_nasce_free(ctx, monkeypatch):
+    _auth_responde_empresa(monkeypatch)
+    resp = ctx.client.post("/api/auth/empresas", json={"nome": "Nova"}, headers={"Authorization": "Bearer abc"})
+    assert resp.status_code == 201
+    assert _assinaturas(ctx) == [(EMPRESA_NOVA, "free", "active")]
+
+
+def test_assinatura_free_e_idempotente(ctx):
+    from app.assinaturas.application.assinatura_free import garantir_assinatura_free
+    from app.assinaturas.infrastructure.repositorio import RepositorioDeAssinaturasSQL
+    from app.shared.domain.ids import EmpresaId
+
+    db = ctx.SessionLocal()
+    empresa = EmpresaId.de_texto(EMPRESA_NOVA)
+    assert garantir_assinatura_free(RepositorioDeAssinaturasSQL(db), empresa) is True
+    assert garantir_assinatura_free(RepositorioDeAssinaturasSQL(db), empresa) is False
+    db.close()
+    assert len(_assinaturas(ctx)) == 1
+
+
+def test_falha_na_assinatura_nao_desfaz_o_cadastro(ctx, monkeypatch):
+    _auth_responde_empresa(monkeypatch)
+
+    def quebra(*a, **kw):
+        raise RuntimeError("banco fora")
+
+    monkeypatch.setattr("app.routes.auth.garantir_assinatura_free", quebra)
+    assert ctx.client.post("/api/auth/cadastro", json=CADASTRO).status_code == 201
