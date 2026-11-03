@@ -2,29 +2,105 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+import uuid
+from decimal import Decimal
+from typing import Any
+
+from sqlalchemy import Select, exists, func, select
 from sqlalchemy.orm import Session
 
-from app.obras.application.consultas import ObraResumo
+from app.obras.application.consultas import MembroResumo, ObraDetalhe, ObraResumo
+from app.obras.domain.erros import ObraNaoEncontrada
+from app.obras.domain.ids import ObraId
 from app.obras.infrastructure.modelos import ObraMembroModel, ObraModel
 from app.shared.application.contexto import TenantContext
+from app.shared.application.paginacao import Pagina, PedidoDePagina
+from app.shared.infrastructure.tenancy import sem_tenant
+
+
+def _decimal(valor: Any) -> Decimal | None:
+    return None if valor is None else Decimal(str(valor))
 
 
 class ConsultaDeObrasSQL:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def listar(self, ctx: TenantContext) -> list[ObraResumo]:
-        consulta = select(ObraModel).where(
-            ObraModel.empresa_id == ctx.empresa_id.valor, ObraModel.removida_em.is_(None)
-        )
+    def _visiveis(self, ctx: TenantContext, consulta: Select[Any]) -> Select[Any]:
+        consulta = consulta.where(ObraModel.empresa_id == ctx.empresa_id.valor, ObraModel.removida_em.is_(None))
         if ctx.papel != "dono":
-            consulta = consulta.join(
-                ObraMembroModel,
-                (ObraMembroModel.obra_id == ObraModel.id) & (ObraMembroModel.empresa_id == ObraModel.empresa_id),
-            ).where(ObraMembroModel.usuario_id == ctx.usuario_id, ObraMembroModel.papel == ctx.papel)
-        consulta = consulta.order_by(ObraModel.criado_em.desc(), ObraModel.nome)
-        return [
-            ObraResumo(id=o.id, nome=o.nome, cidade=o.cidade, uf=o.uf, status=o.status)
+            consulta = consulta.where(
+                exists().where(
+                    ObraMembroModel.obra_id == ObraModel.id,
+                    ObraMembroModel.empresa_id == ObraModel.empresa_id,
+                    ObraMembroModel.usuario_id == ctx.usuario_id,
+                    ObraMembroModel.papel == ctx.papel,
+                )
+            )
+        return consulta
+
+    def listar(
+        self, ctx: TenantContext, status: str | None = None, pagina: PedidoDePagina | None = None
+    ) -> Pagina[ObraResumo]:
+        pagina = pagina or PedidoDePagina()
+        filtro = self._visiveis(ctx, select(ObraModel))
+        if status is not None:
+            filtro = filtro.where(ObraModel.status == status)
+        total = self._session.scalar(select(func.count()).select_from(filtro.subquery())) or 0
+        consulta = (
+            filtro.order_by(ObraModel.criado_em.desc(), ObraModel.nome, ObraModel.id)
+            .offset(pagina.deslocamento)
+            .limit(pagina.por_pagina)
+        )
+        itens = [
+            ObraResumo(
+                id=o.id,
+                nome=o.nome,
+                cidade=o.cidade,
+                uf=o.uf,
+                status=o.status,
+                cliente_nome=o.cliente_nome,
+                previsao_termino=o.previsao_termino,
+            )
             for o in self._session.scalars(consulta)
         ]
+        return Pagina(itens=itens, pagina=pagina.pagina, por_pagina=pagina.por_pagina, total=int(total))
+
+    def detalhar(self, ctx: TenantContext, obra_id: ObraId) -> ObraDetalhe:
+        o = self._session.scalars(self._visiveis(ctx, select(ObraModel)).where(ObraModel.id == obra_id.valor)).first()
+        if o is None:
+            raise ObraNaoEncontrada()
+        membros = None
+        if ctx.papel == "dono":
+            membros = [
+                MembroResumo(usuario_id=m.usuario_id, papel=m.papel, adicionado_em=m.adicionado_em)
+                for m in self._session.scalars(
+                    select(ObraMembroModel)
+                    .where(ObraMembroModel.obra_id == o.id, ObraMembroModel.empresa_id == o.empresa_id)
+                    .order_by(ObraMembroModel.papel, ObraMembroModel.usuario_id)
+                )
+            ]
+        return ObraDetalhe(
+            id=o.id,
+            nome=o.nome,
+            logradouro=o.logradouro,
+            cidade=o.cidade,
+            uf=o.uf,
+            latitude=_decimal(o.latitude),
+            longitude=_decimal(o.longitude),
+            cliente_nome=o.cliente_nome,
+            data_inicio=o.data_inicio,
+            previsao_termino=o.previsao_termino,
+            status=o.status,
+            versao=o.versao,
+            criado_em=o.criado_em,
+            atualizado_em=o.atualizado_em,
+            membros=membros,
+        )
+
+
+def obra_de_outra_empresa(session: Session, obra_id: uuid.UUID, empresa_do_pedido: uuid.UUID) -> bool:
+    """Para a auditoria do 404: a obra existe, mas é de outra empresa? Nunca muda a resposta."""
+    with sem_tenant(session, "auditoria do 404 por tenancy: só confere se a obra existe em outra empresa"):
+        dona = session.scalar(select(ObraModel.empresa_id).where(ObraModel.id == obra_id))
+    return dona is not None and dona != empresa_do_pedido

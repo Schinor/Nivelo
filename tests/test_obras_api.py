@@ -1,5 +1,6 @@
-"""Gestão de Obras na Fase 3: autorização por papel e tenant, isolamento entre empresas e a
-rede de segurança do ORM. Tokens de verdade (JWT), sem substituir dependências."""
+"""Gestão de Obras: autorização por papel e tenant, isolamento entre empresas e a rede de
+segurança do ORM (Fase 3). Tokens de verdade (JWT), sem substituir dependências. O CRUD da
+Fase 4a está em test_obras_crud_api.py."""
 
 import uuid
 
@@ -27,7 +28,7 @@ def ctx(obras_ctx):
 
 def nomes(resp):
     assert resp.status_code == 200, resp.text
-    return sorted(o["nome"] for o in resp.json())
+    return sorted(o["nome"] for o in resp.json()["itens"])
 
 
 # ── Token sem tenant (usuário sem vínculo) ──────────────────────────────────
@@ -69,12 +70,13 @@ def test_cliente_registrando_diario_recebe_403(ctx):
     assert ctx.eventos[-1]["acao"] == "acesso.negado"
 
 
-def test_dono_e_encarregado_passam_pela_autorizacao(ctx):
-    # 501 = autorizado; o caso de uso chega na Fase 4
-    assert ctx.client.post("/api/obras", json={}, headers=tk(DONO_A, EMPRESA_A, "dono")).status_code == 501
+def test_dono_e_encarregado_passam_pela_autorizacao_do_diario(ctx):
+    # 501 = autorizado; o registro do diário chega na Fase 4b
     resp = ctx.client.post(f"/api/obras/{OBRA_A1}/diarios", json={}, headers=tk(ENC_A, EMPRESA_A, "encarregado"))
     assert resp.status_code == 501
     assert resp.json()["type"] == "https://nivelo/erros/em-construcao"
+    resp = ctx.client.post(f"/api/obras/{OBRA_A1}/diarios", json={}, headers=tk(DONO_A, EMPRESA_A, "dono"))
+    assert resp.status_code == 501
 
 
 # ── Isolamento entre empresas ────────────────────────────────────────────────

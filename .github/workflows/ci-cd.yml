@@ -56,7 +56,9 @@ jobs:
       - name: Nenhuma referência ao domínio antigo
         run: scripts/checar_dominio_antigo.sh
 
-      - name: Testes (pytest)
+      - name: Testes (pytest; os de concorrência usam o MariaDB do service)
+        env:
+          MARIADB_URL: mysql+pymysql://root:ci-descartavel@127.0.0.1:3306
         run: pytest -q
 
       - name: Migrações no MariaDB 11.8 (Alembic, db/*.sql e seed)

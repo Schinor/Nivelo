@@ -14,3 +14,4 @@ Uma página por decisão: contexto, decisão e consequências. Uma decisão nova
 | [008](008-alembic-com-sql-exportado.md) | Alembic por serviço, com SQL exportado em `db/` | Aceito |
 | [009](009-expandir-e-contrair-papel-antigo.md) | Expandir agora, contrair depois: a coluna antiga de papel | Aceito |
 | [010](010-esquema-do-dominio.md) | Esquema do domínio: UUID nativo, FK composta por empresa e soft delete | Aceito |
+| [011](011-read-committed-nos-comandos.md) | READ COMMITTED nas transações de comando (corrida do limite de plano) | Proposto |

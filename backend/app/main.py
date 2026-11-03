@@ -15,6 +15,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.models  # noqa: F401 — força o registro dos models no metadata
+from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
+from app.clients import log_client
 from app.dependencies import auditar_acesso_negado
 from app.obras.api.convites import router as convites_router
 from app.obras.api.rotas import router as obras_router
@@ -29,6 +31,7 @@ from app.shared.api.health import router as health_router
 from app.shared.api.problem_details import registrar_handlers
 from app.shared.api.request_id import RequestIdMiddleware
 from app.shared.api.spa import registrar_spa
+from app.shared.domain.erros import ErroDeDominio
 
 # Loggers "nivelo.api.*" em INFO no stdout (ex.: event.id/tipo/usuario_id do webhook do Stripe).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.
@@ -57,6 +60,10 @@ app.add_middleware(
 # Por último = mais externo: o Request ID já existe quando qualquer outro middleware ou handler roda
 app.add_middleware(RequestIdMiddleware)
 
+# Raiz de composição: Obras pede os direitos do plano pela porta `ConsultaDireitos` e não pode
+# importar a infraestrutura de Assinaturas (import-linter). A implementação é ligada aqui.
+app.state.consulta_direitos = ConsultaDireitosSQL
+
 # Rotas da API
 app.include_router(health_router)
 app.include_router(auth_router)
@@ -77,7 +84,22 @@ async def auditar_403(request: Request, exc: StarletteHTTPException) -> None:
         await auditar_acesso_negado(request)
 
 
-registrar_handlers(app, antes_de_http=auditar_403)
+async def auditar_404_de_outro_tenant(request: Request, exc: ErroDeDominio) -> None:
+    """404 de um recurso que existe em outra empresa: a resposta é a mesma de "não existe", e a
+    auditoria registra `recurso.nao_encontrado_outro_tenant` (a rota anota quando é o caso)."""
+    anotado = getattr(request.state, "nao_encontrado_outro_tenant", None)
+    if exc.status == status.HTTP_404_NOT_FOUND and anotado:
+        await log_client.registrar(
+            "recurso.nao_encontrado_outro_tenant",
+            request,
+            usuario_id=anotado["usuario_id"],
+            recurso=anotado["recurso"],
+            detalhes=f"{request.method} {request.url.path}",
+            empresa_id=anotado["empresa_id"],
+        )
+
+
+registrar_handlers(app, antes_de_http=auditar_403, antes_de_dominio=auditar_404_de_outro_tenant)
 
 
 # Registry próprio evita colisão de métricas quando mais de um app é importado no mesmo processo.
