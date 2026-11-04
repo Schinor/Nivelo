@@ -96,6 +96,9 @@ jobs:
           echo "/storage sem assinatura retornou $code"
           test "$code" = "403"
 
+      - name: Teste 5 - ponte /storage recusa URL assinada para a empresa A com a chave da B (Garage real)
+        run: python scripts/verificar_ponte_storage.py http://localhost:8000
+
       - name: Logs dos containers em caso de falha
         if: failure()
         run: docker compose -f docker-compose.ci.yml logs

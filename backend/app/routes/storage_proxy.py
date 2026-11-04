@@ -7,6 +7,13 @@ assinada com o mesmo host que o httpx envia aqui (garage:3900).
 Sem JWT de propósito: <img src> não manda Authorization.
 A autenticação do arquivo é a própria assinatura da URL.
 
+A ponte não tem credencial própria: não usa o cliente S3 nem as chaves da API, e não repassa
+o Authorization do navegador. Só repassa a requisição que a API já assinou, com o caminho
+byte a byte. A assinatura SigV4 cobre o caminho (bucket + chave), então trocar a empresa, a
+obra ou o diário na chave invalida a URL, e o Garage responde 403. A validação de prefixo pela
+empresa do token acontece antes, na API, quando ela assina (`ObjectKey.para_foto`). Testado
+contra o Garage de verdade em scripts/verificar_ponte_storage.py (passo do CI).
+
 PUT: o envio das fotos do diário (URL pré-assinada de 5 min, gerada pela API). Só vale para
 chaves sob `empresas/` e com no máximo 5 MB; o Garage confere a assinatura e o Content-Type.
 """

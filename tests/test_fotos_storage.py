@@ -5,7 +5,7 @@ import uuid
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
-from test_perfis import BUCKET, _mock_garage
+from test_perfis import BUCKET, _corpo_em_stream, _mock_garage
 from test_perfis import ctx as ctx  # noqa: F401 — fixture com moto e o app da API
 
 EMPRESA = "0190f3a0-0000-7000-8000-00000000000a"
@@ -83,3 +83,34 @@ def test_put_com_assinatura_recusada_pelo_garage_devolve_403(garage, monkeypatch
     _mock_garage(monkeypatch, lambda request: httpx.Response(403, content=b"<Error>SignatureDoesNotMatch</Error>"))
     resp = garage.client.put(f"/storage/{BUCKET}/{CHAVE}?X-Amz-Signature=errada", content=b"x")
     assert resp.status_code == 403
+
+
+def test_ponte_so_repassa_a_requisicao_assinada_sem_credencial_propria(garage, monkeypatch):
+    """A ponte não assina nada: sem as credenciais do S3 ela continua funcionando, e não repassa
+    nenhuma credencial (nem o Authorization do navegador). Quem confere a assinatura, que cobre o
+    caminho (a chave), é o Garage."""
+    import httpx
+
+    from app.services import storage
+
+    url_put = garage.garage.url_para_enviar(CHAVE, "image/jpeg", 300)
+    url_get = garage.garage.url_para_ler(CHAVE, 600)
+
+    def sem_credencial():
+        raise AssertionError("a ponte não pode usar o cliente S3 (credencial da API)")
+
+    monkeypatch.setattr(storage, "get_client", sem_credencial)
+    recebidos = []
+
+    def handler(request):
+        recebidos.append(request)
+        return httpx.Response(200, stream=_corpo_em_stream(b"ok"))
+
+    _mock_garage(monkeypatch, handler)
+    navegador = {"Authorization": "Bearer token-do-usuario", "Cookie": "sessao=1", "Content-Type": "image/jpeg"}
+    assert garage.client.put(url_put, content=b"x", headers=navegador).status_code == 200
+    assert garage.client.get(url_get, headers=navegador).status_code == 200
+    for enviado in recebidos:
+        nomes = {k.lower() for k in enviado.headers}
+        assert not nomes & {"authorization", "cookie", "x-amz-security-token", "x-amz-date"}
+    assert recebidos[0].url.raw_path.decode() == url_put[len("/storage") :]
