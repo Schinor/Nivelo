@@ -3,27 +3,56 @@
 UUID v7 começa pelo instante de criação em milissegundos: fica ordenável (bom para índice)
 e não é sequencial como um autoincremento (não facilita enumerar recursos pela URL).
 O Python 3.12 ainda não tem `uuid.uuid7`, então a geração segue a RFC 9562 aqui.
+
+Dentro do processo a geração é monotônica (RFC 9562, seção 6.2, método 1): os 12 bits de
+`rand_a` viram um contador quando dois ids caem no mesmo milissegundo. Assim, dois eventos do
+mesmo comando saem da outbox na ordem em que aconteceram, mesmo com o `ocorrido_em` do banco
+sem fração de segundo.
 """
 
 from __future__ import annotations
 
 import os
+import threading
 import time
 import uuid
 from dataclasses import dataclass
 from typing import Self
 
+_trava = threading.Lock()
+_ultimo_ms = -1
+_contador = 0
+_CONTADOR_MAXIMO = 0xFFF
+
+
+def _montar(ms: int, rand_a: int, rand_b: int) -> uuid.UUID:
+    return uuid.UUID(int=ms << 80 | 0x7 << 76 | rand_a << 64 | 0b10 << 62 | rand_b)
+
 
 def uuid7(agora_ms: int | None = None) -> uuid.UUID:
-    """Gera um UUID v7: 48 bits de timestamp (ms), versão 7, variante RFC e 74 bits aleatórios."""
-    ms = int(time.time() * 1000) if agora_ms is None else agora_ms
-    if not 0 <= ms < 1 << 48:
-        raise ValueError("timestamp fora do intervalo de 48 bits")
+    """Gera um UUID v7: 48 bits de timestamp (ms), versão 7, variante RFC, 12 bits de
+    contador/aleatório (`rand_a`) e 62 bits aleatórios (`rand_b`).
+
+    Sem `agora_ms`, os ids gerados no processo são estritamente crescentes. Com `agora_ms`
+    (testes), o id usa exatamente esse instante, sem contador."""
+    global _ultimo_ms, _contador
     aleatorio = int.from_bytes(os.urandom(10), "big")
-    rand_a = aleatorio >> 62 & 0xFFF
     rand_b = aleatorio & ((1 << 62) - 1)
-    valor = ms << 80 | 0x7 << 76 | rand_a << 64 | 0b10 << 62 | rand_b
-    return uuid.UUID(int=valor)
+    if agora_ms is not None:
+        if not 0 <= agora_ms < 1 << 48:
+            raise ValueError("timestamp fora do intervalo de 48 bits")
+        return _montar(agora_ms, aleatorio >> 62 & _CONTADOR_MAXIMO, rand_b)
+    with _trava:
+        ms = int(time.time() * 1000)
+        if ms > _ultimo_ms:
+            # Contador começa na metade de baixo: sobra espaço para os ids do mesmo milissegundo
+            _ultimo_ms, _contador = ms, aleatorio >> 63 & 0x7FF
+        elif _contador < _CONTADOR_MAXIMO:
+            _contador += 1
+        else:
+            # Mais de ~2 mil ids no mesmo milissegundo (ou o relógio voltou): avança 1 ms
+            _ultimo_ms, _contador = _ultimo_ms + 1, 0
+        return _montar(_ultimo_ms, _contador, rand_b)
 
 
 @dataclass(frozen=True, slots=True)

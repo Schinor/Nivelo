@@ -182,3 +182,33 @@ def test_laco_do_relay_roda_ate_mandarem_parar(api):
 
     asyncio.run(rodar())
     assert [e["tipo"] for e in entregues] == ["obra.criada"]
+
+
+def test_eventos_do_mesmo_segundo_saem_na_ordem_em_que_aconteceram(api):
+    """O MariaDB guarda `ocorrido_em` sem fração de segundo: o desempate é o event_id (UUID v7
+    monotônico), e não a sorte."""
+    from datetime import UTC, datetime
+
+    from app.shared.domain.eventos import EventoDeNegocio
+    from app.shared.domain.ids import EmpresaId, UsuarioId
+    from app.shared.infrastructure.outbox import MetadadosDaRequisicao, RelayDaOutbox, gravar_na_outbox
+
+    class Teste(EventoDeNegocio):
+        recurso = "teste"
+
+        @property
+        def recurso_id(self):
+            return "x"
+
+    mesmo_segundo = datetime(2026, 11, 4, 12, 0, 0, tzinfo=UTC)
+    eventos = [
+        Teste(tipo=f"teste.n{i:02d}", empresa_id=EmpresaId(uuid.UUID(EMPRESA_A)), ator_id=UsuarioId(1),
+              ocorrido_em=mesmo_segundo)
+        for i in range(40)
+    ]  # fmt: skip
+    with api.SessionLocal() as s:
+        gravar_na_outbox(s, reversed(eventos), MetadadosDaRequisicao())  # a ordem de gravação não importa
+        s.commit()
+    entregues = []
+    RelayDaOutbox(api.SessionLocal, entregues.extend, lote=7).publicar_tudo()
+    assert [e["tipo"] for e in entregues] == [e.tipo for e in eventos]

@@ -82,3 +82,21 @@ def test_tenant_context_so_aceita_papel_de_negocio(api):
     assert contexto.TenantContext(empresa, 1, "encarregado").papel == "encarregado"
     with pytest.raises(ValueError):
         contexto.TenantContext(empresa, 1, "admin")  # o admin é da plataforma, não de uma empresa
+
+
+def test_uuid7_e_estritamente_crescente_no_mesmo_milissegundo(api, monkeypatch):
+    """Monotônico (RFC 9562, método 1): a ordem dos eventos na outbox não depende da sorte."""
+    ids = api("app.shared.domain.ids")
+    monkeypatch.setattr(ids.time, "time", lambda: 1_762_131_600.0)  # relógio parado
+    gerados = [ids.uuid7() for _ in range(5000)]  # passa do contador de 12 bits
+    assert gerados == sorted(gerados) and len(set(gerados)) == 5000
+    assert all(g.version == 7 and g.variant == uuid.RFC_4122 for g in gerados)
+    assert gerados[0].int >> 80 == 1_762_131_600_000
+
+
+def test_uuid7_continua_crescente_se_o_relogio_voltar(api, monkeypatch):
+    ids = api("app.shared.domain.ids")
+    monkeypatch.setattr(ids.time, "time", lambda: 1_762_131_600.0)
+    antes = ids.uuid7()
+    monkeypatch.setattr(ids.time, "time", lambda: 1_762_131_599.0)
+    assert ids.uuid7() > antes
