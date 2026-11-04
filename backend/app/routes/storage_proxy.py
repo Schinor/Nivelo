@@ -6,15 +6,19 @@ assinada com o mesmo host que o httpx envia aqui (garage:3900).
 
 Sem JWT de propósito: <img src> não manda Authorization.
 A autenticação do arquivo é a própria assinatura da URL.
+
+PUT: o envio das fotos do diário (URL pré-assinada de 5 min, gerada pela API). Só vale para
+chaves sob `empresas/` e com no máximo 5 MB; o Garage confere a assinatura e o Content-Type.
 """
 
 from __future__ import annotations
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
+from app.obras.domain.valores_do_diario import TAMANHO_MAXIMO_FOTO
 from app.services import storage
 
 router = APIRouter(tags=["storage"], include_in_schema=False)
@@ -62,3 +66,42 @@ async def proxy_storage(caminho: str, request: Request):
         headers=cabecalhos,
         background=BackgroundTask(_fechar, upstream, cliente),
     )
+
+
+def _caminho_e_query(request: Request) -> tuple[str, str]:
+    caminho_bruto = request.scope["raw_path"].decode("latin-1").split("?", 1)[0]
+    return caminho_bruto[len(storage.STORAGE_PUBLIC_PREFIX) :], request.scope["query_string"].decode("latin-1")
+
+
+@router.put(f"{storage.STORAGE_PUBLIC_PREFIX}/{{caminho:path}}")
+async def proxy_storage_envio(caminho: str, request: Request):
+    caminho_upstream, query = _caminho_e_query(request)
+    if not caminho_upstream.startswith(f"/{storage.STORAGE_BUCKET}/empresas/"):
+        raise HTTPException(status_code=404)
+    if "X-Amz-Signature=" not in query:
+        raise HTTPException(status_code=403, detail="URL sem assinatura")
+    tamanho = request.headers.get("content-length")
+    if tamanho is None or not tamanho.isdigit():
+        raise HTTPException(status_code=411, detail="Envie o Content-Length")
+    if int(tamanho) > TAMANHO_MAXIMO_FOTO:
+        raise HTTPException(status_code=413, detail="A foto precisa ter até 5 MB")
+
+    corpo = bytearray()
+    async for pedaco in request.stream():
+        corpo.extend(pedaco)
+        if len(corpo) > TAMANHO_MAXIMO_FOTO:
+            raise HTTPException(status_code=413, detail="A foto precisa ter até 5 MB")
+
+    cabecalhos = {"content-length": str(len(corpo))}
+    if "content-type" in request.headers:
+        cabecalhos["content-type"] = request.headers["content-type"]
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as cliente:
+            upstream = await cliente.put(
+                f"{storage.STORAGE_ENDPOINT}{caminho_upstream}?{query}", content=bytes(corpo), headers=cabecalhos
+            )
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Storage indisponível")
+    # Assinatura inválida, expirada ou Content-Type diferente do assinado → 403 do Garage
+    resposta = {k: v for k, v in upstream.headers.items() if k.lower() in ("etag", "content-type")}
+    return Response(content=upstream.content, status_code=upstream.status_code, headers=resposta)

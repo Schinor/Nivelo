@@ -23,6 +23,7 @@ from app.clients import log_client
 from app.core.database import SessionLocal
 from app.dependencies import auditar_acesso_negado
 from app.obras.api.convites import router as convites_router
+from app.obras.api.diarios import router as diarios_router
 from app.obras.api.rotas import router as obras_router
 from app.routes.auth import router as auth_router
 from app.routes.logs import router as logs_router
@@ -90,6 +91,7 @@ app.state.consulta_direitos = ConsultaDireitosSQL
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(obras_router)
+app.include_router(diarios_router)
 app.include_router(convites_router)
 app.include_router(logs_router)
 app.include_router(perfis_router)
@@ -106,9 +108,14 @@ async def auditar_403(request: Request, exc: StarletteHTTPException) -> None:
         await auditar_acesso_negado(request)
 
 
-async def auditar_404_de_outro_tenant(request: Request, exc: ErroDeDominio) -> None:
-    """404 de um recurso que existe em outra empresa: a resposta é a mesma de "não existe", e a
-    auditoria registra `recurso.nao_encontrado_outro_tenant` (a rota anota quando é o caso)."""
+async def auditar_erro_de_dominio(request: Request, exc: ErroDeDominio) -> None:
+    """- 403 de regra de negócio (ex.: encarregado revisando diário de outro): `acesso.negado`,
+      como todo 403.
+    - 404 de um recurso que existe em outra empresa: a resposta é a mesma de "não existe", e a
+      auditoria registra `recurso.nao_encontrado_outro_tenant` (a rota anota quando é o caso)."""
+    if exc.status == status.HTTP_403_FORBIDDEN:
+        await auditar_acesso_negado(request)
+        return
     anotado = getattr(request.state, "nao_encontrado_outro_tenant", None)
     if exc.status == status.HTTP_404_NOT_FOUND and anotado:
         await log_client.registrar(
@@ -121,7 +128,7 @@ async def auditar_404_de_outro_tenant(request: Request, exc: ErroDeDominio) -> N
         )
 
 
-registrar_handlers(app, antes_de_http=auditar_403, antes_de_dominio=auditar_404_de_outro_tenant)
+registrar_handlers(app, antes_de_http=auditar_403, antes_de_dominio=auditar_erro_de_dominio)
 
 
 # Registry próprio evita colisão de métricas quando mais de um app é importado no mesmo processo.

@@ -74,12 +74,13 @@ def test_cliente_registrando_diario_recebe_403(ctx):
 
 
 def test_dono_e_encarregado_passam_pela_autorizacao_do_diario(ctx):
-    # 501 = autorizado; o registro do diário chega na Fase 4b
-    resp = ctx.client.post(f"/api/obras/{OBRA_A1}/diarios", json={}, headers=tk(ENC_A, EMPRESA_A, "encarregado"))
-    assert resp.status_code == 501
-    assert resp.json()["type"] == "https://nivelo/erros/em-construcao"
-    resp = ctx.client.post(f"/api/obras/{OBRA_A1}/diarios", json={}, headers=tk(DONO_A, EMPRESA_A, "dono"))
-    assert resp.status_code == 501
+    diario = {"data": "2026-10-15", "atividades": "Fundação"}
+    resp = ctx.client.post(f"/api/obras/{OBRA_A1}/diarios", json=diario, headers=tk(ENC_A, EMPRESA_A, "encarregado"))
+    assert resp.status_code == 201 and resp.json()["autor_id"] == ENC_A
+    resp = ctx.client.post(
+        f"/api/obras/{OBRA_A1}/diarios", json={**diario, "data": "2026-10-16"}, headers=tk(DONO_A, EMPRESA_A, "dono")
+    )
+    assert resp.status_code == 201
 
 
 # ── Isolamento entre empresas ────────────────────────────────────────────────

@@ -122,3 +122,17 @@ class ObraOut(BaseModel):
     criado_em: datetime
     atualizado_em: datetime
     membros: list[MembroOut] | None = Field(default=None, description="Só para o dono")
+
+
+class EventoDoHistoricoOut(BaseModel):
+    """Um evento de negócio da obra, no formato da auditoria (Parte A.4)."""
+
+    event_id: str | None = None
+    tipo: str | None = None
+    ator_id: int | None = None
+    ator_papel: str | None = None
+    recurso: str | None = None
+    recurso_id: str | None = None
+    ocorrido_em: str | None = None
+    request_id: str | None = None
+    dados: dict[str, Any] = Field(default_factory=dict)

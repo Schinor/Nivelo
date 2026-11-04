@@ -15,11 +15,28 @@ from app.obras.domain.ids import ObraId
 from app.obras.infrastructure.modelos import ObraMembroModel, ObraModel
 from app.shared.application.contexto import TenantContext
 from app.shared.application.paginacao import Pagina, PedidoDePagina
-from app.shared.infrastructure.tenancy import sem_tenant
+from app.shared.infrastructure.tenancy import TemEmpresa, sem_tenant
 
 
 def _decimal(valor: Any) -> Decimal | None:
     return None if valor is None else Decimal(str(valor))
+
+
+def obras_visiveis(ctx: TenantContext, consulta: Select[Any]) -> Select[Any]:
+    """Restringe `consulta` (que já envolve `ObraModel`) às obras que quem pede enxerga: da
+    empresa, não removidas e, para encarregado e cliente, só aquelas em que são membros com o
+    próprio papel."""
+    consulta = consulta.where(ObraModel.empresa_id == ctx.empresa_id.valor, ObraModel.removida_em.is_(None))
+    if ctx.papel != "dono":
+        consulta = consulta.where(
+            exists().where(
+                ObraMembroModel.obra_id == ObraModel.id,
+                ObraMembroModel.empresa_id == ObraModel.empresa_id,
+                ObraMembroModel.usuario_id == ctx.usuario_id,
+                ObraMembroModel.papel == ctx.papel,
+            )
+        )
+    return consulta
 
 
 class ConsultaDeObrasSQL:
@@ -27,17 +44,7 @@ class ConsultaDeObrasSQL:
         self._session = session
 
     def _visiveis(self, ctx: TenantContext, consulta: Select[Any]) -> Select[Any]:
-        consulta = consulta.where(ObraModel.empresa_id == ctx.empresa_id.valor, ObraModel.removida_em.is_(None))
-        if ctx.papel != "dono":
-            consulta = consulta.where(
-                exists().where(
-                    ObraMembroModel.obra_id == ObraModel.id,
-                    ObraMembroModel.empresa_id == ObraModel.empresa_id,
-                    ObraMembroModel.usuario_id == ctx.usuario_id,
-                    ObraMembroModel.papel == ctx.papel,
-                )
-            )
-        return consulta
+        return obras_visiveis(ctx, consulta)
 
     def listar(
         self, ctx: TenantContext, status: str | None = None, pagina: PedidoDePagina | None = None
@@ -99,8 +106,12 @@ class ConsultaDeObrasSQL:
         )
 
 
-def obra_de_outra_empresa(session: Session, obra_id: uuid.UUID, empresa_do_pedido: uuid.UUID) -> bool:
-    """Para a auditoria do 404: a obra existe, mas é de outra empresa? Nunca muda a resposta."""
-    with sem_tenant(session, "auditoria do 404 por tenancy: só confere se a obra existe em outra empresa"):
-        dona = session.scalar(select(ObraModel.empresa_id).where(ObraModel.id == obra_id))
+def de_outra_empresa(session: Session, modelo: type[TemEmpresa], id_: uuid.UUID, empresa_do_pedido: uuid.UUID) -> bool:
+    """Para a auditoria do 404: o recurso existe, mas é de outra empresa? Nunca muda a resposta."""
+    with sem_tenant(session, "auditoria do 404 por tenancy: só confere se o recurso existe em outra empresa"):
+        dona = session.scalar(select(modelo.empresa_id).where(modelo.id == id_))  # type: ignore[attr-defined]
     return dona is not None and dona != empresa_do_pedido
+
+
+def obra_de_outra_empresa(session: Session, obra_id: uuid.UUID, empresa_do_pedido: uuid.UUID) -> bool:
+    return de_outra_empresa(session, ObraModel, obra_id, empresa_do_pedido)

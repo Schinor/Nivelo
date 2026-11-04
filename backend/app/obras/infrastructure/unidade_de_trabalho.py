@@ -15,8 +15,9 @@ from typing import Self
 from sqlalchemy.orm import Session
 
 from app.assinaturas.application.direitos import ConsultaDireitos
-from app.obras.domain.repositorio import RepositorioDeObras
+from app.obras.domain.repositorio import RepositorioDeDiarios, RepositorioDeObras
 from app.obras.infrastructure.repositorio import RepositorioDeObrasSQL
+from app.obras.infrastructure.repositorio_de_diarios import RepositorioDeDiariosSQL
 from app.shared.domain.eventos import EventoDeNegocio
 from app.shared.domain.ids import EmpresaId
 from app.shared.infrastructure.outbox import MetadadosDaRequisicao, gravar_na_outbox
@@ -36,6 +37,8 @@ class UnidadeDeTrabalhoDeObrasSQL:
         self._metadados = metadados or MetadadosDaRequisicao()
         self._obras = RepositorioDeObrasSQL(session, empresa_id)
         self.obras: RepositorioDeObras = self._obras
+        self._diarios = RepositorioDeDiariosSQL(session, empresa_id)
+        self.diarios: RepositorioDeDiarios = self._diarios
         self.direitos: ConsultaDireitos = direitos
 
     def __enter__(self) -> Self:
@@ -54,7 +57,10 @@ class UnidadeDeTrabalhoDeObrasSQL:
         eventos: list[EventoDeNegocio] = []
         for obra in self._obras.vistos.values():
             eventos.extend(obra.puxar_eventos())
-        return sorted(eventos, key=lambda e: (e.ocorrido_em, e.event_id))
+        for diario in self._diarios.vistos.values():
+            eventos.extend(diario.puxar_eventos())
+        # Na ordem em que aconteceram dentro de cada agregado (o event_id é UUID v7 monotônico)
+        return eventos
 
     def commit(self) -> None:
         gravar_na_outbox(self._session, self._eventos_pendentes(), self._metadados)

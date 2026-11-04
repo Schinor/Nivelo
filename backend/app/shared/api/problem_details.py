@@ -31,6 +31,7 @@ TYPE_POR_STATUS = {
     403: "acesso-negado",
     404: "nao-encontrado",
     409: "conflito",
+    411: "tamanho-obrigatorio",
     413: "conteudo-grande-demais",
     415: "tipo-de-midia-nao-suportado",
     422: "validacao",

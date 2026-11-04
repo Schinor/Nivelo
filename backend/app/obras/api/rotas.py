@@ -1,4 +1,4 @@
-"""Rotas de Gestão de Obras (Fase 4a: obras e membros).
+"""Rotas de obras e membros (os diários e as fotos estão em `diarios.py`).
 
 - O papel é conferido aqui (`requer_papel`, 403 auditado); o resto das regras vem dos handlers.
 - A empresa vem só do token. Obra de outra empresa, removida ou de que a pessoa não é membro
@@ -13,13 +13,24 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, NoReturn
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
+from app.obras.api.dependencias import (
+    auditando_404,
+    equipe_da_empresa,
+    exigir_versao,
+    relogio,
+    unidade_de_trabalho,
+    versao,
+    versao_do_if_match,
+)
+from app.obras.api.dependencias import historico_da_obra as historico_da_obra_dep
 from app.obras.api.schemas import (
     EnderecoOut,
+    EventoDoHistoricoOut,
     MembroIn,
     MembroOut,
     ObraEdicaoIn,
@@ -38,21 +49,18 @@ from app.obras.application.comandos import (
     RemoverMembro,
     RemoverObra,
 )
-from app.obras.application.consultas import ObraDetalhe
+from app.obras.application.consultas import HistoricoDaObra, ObraDetalhe
 from app.obras.application.portas import EquipeDaEmpresa
-from app.obras.domain.erros import ObraNaoEncontrada
 from app.obras.domain.ids import ObraId
-from app.obras.infrastructure.consultas import ConsultaDeObrasSQL, obra_de_outra_empresa
-from app.obras.infrastructure.equipe import EquipeViaAuthService
+from app.obras.infrastructure.consultas import ConsultaDeObrasSQL
+from app.obras.infrastructure.modelos import ObraModel
 from app.obras.infrastructure.unidade_de_trabalho import UnidadeDeTrabalhoDeObrasSQL
 from app.shared.api.autenticacao import requer_papel, tenant
-from app.shared.api.request_id import obter_request_id
 from app.shared.api.sessao import sessao_do_tenant
 from app.shared.application.contexto import TenantContext
 from app.shared.application.paginacao import POR_PAGINA_MAXIMO, POR_PAGINA_PADRAO, PedidoDePagina
 from app.shared.domain.ids import UsuarioId
-from app.shared.domain.relogio import Relogio, RelogioDoSistema
-from app.shared.infrastructure.outbox import MetadadosDaRequisicao
+from app.shared.domain.relogio import Relogio
 
 router = APIRouter(prefix="/api/obras", tags=["obras"])
 
@@ -70,56 +78,14 @@ CONFLITO: R = {409: {"description": "A obra mudou depois de lida (versão diverg
 # ── Dependências ─────────────────────────────────────────────────────────────
 
 
-def unidade_de_trabalho(
-    request: Request, ctx: TenantContext = Depends(tenant), db: Session = Depends(sessao_do_tenant)
-) -> UnidadeDeTrabalhoDeObrasSQL:
-    # A implementação dos direitos (Assinaturas) é ligada no main.py: Obras só conhece a porta
-    fabrica_de_direitos = request.app.state.consulta_direitos
-    metadados = MetadadosDaRequisicao(ator_papel=ctx.papel, request_id=obter_request_id())
-    return UnidadeDeTrabalhoDeObrasSQL(db, ctx.empresa_id, fabrica_de_direitos(db), metadados)
-
-
-def equipe_da_empresa(authorization: str = Header(default="")) -> EquipeDaEmpresa:
-    return EquipeViaAuthService(authorization)
-
-
-def relogio() -> Relogio:
-    return RelogioDoSistema()
-
-
 def consulta(db: Session = Depends(sessao_do_tenant)) -> ConsultaDeObrasSQL:
     return ConsultaDeObrasSQL(db)
 
 
 @contextmanager
 def _auditando_404(request: Request, db: Session, ctx: TenantContext, obra_id: uuid.UUID) -> Iterator[None]:
-    """Repassa o 404; se a obra existe em outra empresa, anota para a auditoria (ver main.py)."""
-    try:
+    with auditando_404(request, db, ctx, {ObraModel: obra_id}):
         yield
-    except ObraNaoEncontrada:
-        if obra_de_outra_empresa(db, obra_id, ctx.empresa_id.valor):
-            request.state.nao_encontrado_outro_tenant = {
-                "usuario_id": ctx.usuario_id,
-                "empresa_id": str(ctx.empresa_id),
-                "recurso": f"obra:{obra_id}",
-            }
-        raise
-
-
-def _versao_do_if_match(if_match: str | None) -> int | None:
-    if if_match is None or not if_match.strip():
-        return None
-    valor = if_match.strip().removeprefix("W/").strip('"')
-    if not valor.isdigit() or int(valor) < 1:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, 'If-Match deve ser a versão da obra, como "3"')
-    return int(valor)
-
-
-def _versao(if_match: str | None, do_corpo: int | None) -> int | None:
-    do_cabecalho = _versao_do_if_match(if_match)
-    if do_cabecalho is not None and do_corpo is not None and do_cabecalho != do_corpo:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "If-Match e o campo versao divergem")
-    return do_cabecalho if do_cabecalho is not None else do_corpo
 
 
 def _saida(d: ObraDetalhe, response: Response) -> ObraOut:
@@ -215,13 +181,9 @@ def editar_obra(
     db: Session = Depends(sessao_do_tenant),
 ) -> ObraOut:
     """Só o dono. Exige a versão lida; se outra pessoa salvou antes, 409."""
-    versao = _versao(if_match, payload.versao)
-    if versao is None:
-        raise HTTPException(
-            status.HTTP_428_PRECONDITION_REQUIRED, 'Mande a versão lida no If-Match (ex.: "3") ou no campo versao'
-        )
+    lida = exigir_versao(if_match, payload.versao)
     with _auditando_404(request, db, ctx, obra_id):
-        obra = handlers.editar_obra(EditarObra(ObraId(obra_id), versao, payload.para_dados()), ctx, uow)
+        obra = handlers.editar_obra(EditarObra(ObraId(obra_id), lida, payload.para_dados()), ctx, uow)
     return _saida(ConsultaDeObrasSQL(db).detalhar(ctx, obra.id), response)
 
 
@@ -241,7 +203,7 @@ def alterar_status(
     db: Session = Depends(sessao_do_tenant),
 ) -> ObraOut:
     """Só o dono. ativa ↔ pausada, ativa|pausada → concluida. Reativar passa pelo plano."""
-    cmd = AlterarStatusObra(ObraId(obra_id), payload.status, _versao(if_match, payload.versao))
+    cmd = AlterarStatusObra(ObraId(obra_id), payload.status, versao(if_match, payload.versao))
     with _auditando_404(request, db, ctx, obra_id):
         obra = handlers.alterar_status_obra(cmd, ctx, uow)
     return _saida(ConsultaDeObrasSQL(db).detalhar(ctx, obra.id), response)
@@ -264,7 +226,7 @@ def remover_obra(
 ) -> Response:
     """Só o dono. Soft delete: a obra some das listagens e do limite; o histórico fica."""
     with _auditando_404(request, db, ctx, obra_id):
-        handlers.remover_obra(RemoverObra(ObraId(obra_id), _versao_do_if_match(if_match)), ctx, uow, agora)
+        handlers.remover_obra(RemoverObra(ObraId(obra_id), versao_do_if_match(if_match)), ctx, uow, agora)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -323,23 +285,28 @@ def remover_membro(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ── Diários (Fase 4b) ────────────────────────────────────────────────────────
+# ── Histórico (só o dono) ────────────────────────────────────────────────────
 
 
-class EmConstrucao(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Disponível na próxima versão")
-        self.problem_type = "https://nivelo/erros/em-construcao"
-
-
-@router.post(
-    "/{obra_id}/diarios",
-    status_code=status.HTTP_201_CREATED,
-    response_model=None,
-    responses={**SEM_TENANT_OU_PAPEL, 501: {"description": "Chega na Fase 4b"}},
+@router.get(
+    "/{obra_id}/historico",
+    response_model=list[EventoDoHistoricoOut],
+    responses={
+        **SEM_TENANT_OU_PAPEL,
+        **NAO_ENCONTRADA,
+        503: {"description": "Auditoria (log-service) indisponível"},
+    },
 )
-def registrar_diario(
-    obra_id: uuid.UUID, _ctx: TenantContext = Depends(requer_papel("dono", "encarregado"))
-) -> NoReturn:
-    """Dono e encarregado. O caso de uso chega na Fase 4b."""
-    raise EmConstrucao()
+def historico_da_obra(
+    obra_id: uuid.UUID,
+    request: Request,
+    limite: int = Query(default=100, ge=1, le=500),
+    ctx: TenantContext = Depends(requer_papel("dono")),
+    db: Session = Depends(sessao_do_tenant),
+    historico: HistoricoDaObra = Depends(historico_da_obra_dep),
+) -> Any:
+    """Só o dono. Eventos de negócio da obra e dos diários e fotos dela, do mais recente para o
+    mais antigo (vêm da auditoria, alimentada pela outbox; podem chegar com ~1 s de atraso)."""
+    with _auditando_404(request, db, ctx, obra_id):
+        ConsultaDeObrasSQL(db).detalhar(ctx, ObraId(obra_id))
+    return historico.eventos(ctx, ObraId(obra_id), limite)

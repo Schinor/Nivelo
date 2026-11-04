@@ -50,12 +50,12 @@ strict = true
 # Código herdado alcançado por import (o health usa app.core): não é verificado até migrar.
 # Ao migrar outro módulo herdado que o código novo importe, acrescente-o aqui ou tipe-o.
 [[tool.mypy.overrides]]
-module = ["app.core.*"]
+module = ["app.core.*", "app.services.*"]
 ignore_errors = true
 
 # Bibliotecas sem tipos publicados
 [[tool.mypy.overrides]]
-module = ["jose.*"]
+module = ["jose.*", "boto3.*", "botocore.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
