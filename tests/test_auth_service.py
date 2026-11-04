@@ -1012,3 +1012,44 @@ def test_dono_lista_a_equipe_da_empresa_ativa_e_mais_ninguem_ve(convites_enviado
     sem_tenant = _auth(_usuario_sem_vinculo("solto-eq@exemplo.com")["access_token"])
     assert client.get("/equipe", headers=sem_tenant).status_code == 403
     assert client.get("/equipe").status_code == 401
+
+
+def test_equipe_segue_a_empresa_ativa_de_quem_tem_varios_vinculos(convites_enviados):
+    """Dono na empresa A e encarregado na B: com A ativa vê só a equipe de A; com B ativa, 403."""
+    cad_a, dono_a = _dono("multi-eq@exemplo.com", "Empresa A")
+    _, dono_b = _dono("dono-b-eq@exemplo.com", "Empresa B")
+    client.post("/convites", json={"email": "multi-eq@exemplo.com", "papel": "encarregado"}, headers=dono_b)
+    aceite = client.post("/convites/aceitar", json={"token": convites_enviados[-1]["token"]})  # usuário existente
+    assert aceite.status_code == 200
+    empresa_b = aceite.json()["empresa_id"]
+
+    troca_a = client.post("/empresa-ativa", json={"empresa_id": cad_a["empresa"]["id"]}, headers=dono_a)
+    resp = client.get("/equipe", headers=_auth(troca_a.json()["access_token"]))
+    assert resp.status_code == 200
+    assert {(m["email"], m["papel"]) for m in resp.json()} == {("multi-eq@exemplo.com", "dono")}
+
+    troca_b = client.post("/empresa-ativa", json={"empresa_id": empresa_b}, headers=dono_a)
+    assert _claims(troca_b.json()["access_token"])["papel"] == "encarregado"
+    assert client.get("/equipe", headers=_auth(troca_b.json()["access_token"])).status_code == 403
+
+
+def test_equipe_confere_o_vinculo_no_banco_e_nao_mostra_vinculo_desativado(convites_enviados):
+    from app.models.empresa import Vinculo
+    from app.models.usuario import Usuario
+
+    _, dono = _dono("dono-desl@exemplo.com", "Rocha Reformas")
+    client.post("/convites", json={"email": "saiu@exemplo.com", "papel": "encarregado"}, headers=dono)
+    client.post("/convites/aceitar", json={"token": convites_enviados[-1]["token"], "nome": "Zé", "senha": "senha123"})
+
+    db = TestingSessionLocal()
+    saiu = db.query(Usuario).filter_by(email="saiu@exemplo.com").one()
+    db.query(Vinculo).filter_by(usuario_id=saiu.id).update({"ativo": False})
+    db.commit()
+    assert {m["email"] for m in client.get("/equipe", headers=dono).json()} == {"dono-desl@exemplo.com"}
+
+    # O token ainda diz "dono", mas o vínculo foi desativado: o banco manda
+    eu = db.query(Usuario).filter_by(email="dono-desl@exemplo.com").one()
+    db.query(Vinculo).filter_by(usuario_id=eu.id).update({"ativo": False})
+    db.commit()
+    db.close()
+    assert client.get("/equipe", headers=dono).status_code == 403
