@@ -1,4 +1,4 @@
-"""Concorrência no MariaDB de verdade (o SQLite não trava linha). Roda quando MARIADB_URL
+"""Concorrência e isolamento no MariaDB de verdade (o SQLite não trava linha). Roda quando MARIADB_URL
 existe (CI e `docker run ... mariadb:11.8` local); senão, é pulado.
 
 Duas criações de obra ao mesmo tempo numa empresa Free: o `FOR UPDATE` na assinatura e o
@@ -99,3 +99,32 @@ def test_duas_criacoes_simultaneas_no_free_so_uma_passa(motor, ja_tem_assinatura
     for _ in range(5):
         resultados, gravadas = _corrida(motor, ja_tem_assinatura)
         assert resultados == ["402", "criou"] and gravadas == 1
+
+
+def test_read_committed_vale_so_na_transacao_do_comando(motor):
+    """ADR 011: a unidade de trabalho pede READ COMMITTED na própria conexão; a conexão volta ao
+    pool no isolamento padrão e as consultas fora do comando continuam em REPEATABLE READ."""
+    from test_backend_proxy import setup_api_app
+
+    setup_api_app()
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.orm import Session
+
+    from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
+    from app.obras.infrastructure.unidade_de_trabalho import UnidadeDeTrabalhoDeObrasSQL
+    from app.shared.domain.ids import EmpresaId
+    from app.shared.infrastructure.tenancy import definir_tenant
+
+    # Uma conexão só no pool: a consulta depois do comando reaproveita a mesma conexão
+    um_so = create_engine(motor.url, pool_size=1, max_overflow=0)
+    isolamento = text("SELECT @@transaction_isolation")
+    empresa = EmpresaId(uuid.uuid4())
+    try:
+        with Session(um_so) as s:
+            definir_tenant(s, empresa.valor)
+            with UnidadeDeTrabalhoDeObrasSQL(s, empresa, ConsultaDireitosSQL(s)):
+                assert s.scalar(isolamento) == "READ-COMMITTED"
+        with Session(um_so) as s:
+            assert s.scalar(isolamento) == "REPEATABLE-READ"
+    finally:
+        um_so.dispose()

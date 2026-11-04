@@ -1,6 +1,6 @@
 # ADR 011 — READ COMMITTED nas transações de comando
 
-- **Status:** proposto (aguardando revisão)
+- **Status:** aceito (04/11/2026)
 - **Data:** 03/11/2026
 - **Complementa:** ADR 006
 
@@ -18,7 +18,7 @@ O SQLite dos testes não trava linha, então a suíte não via nada disso.
 
 - A unidade de trabalho de Gestão de Obras abre a transação do comando em **READ COMMITTED** (só no MariaDB/MySQL). Cada comando vê o que já foi gravado, e o `FOR UPDATE` da assinatura serializa os comandos de uma mesma empresa.
 - A linha de assinatura que falta (empresa anterior à Fase 3) nasce numa transação própria, também em READ COMMITTED e já gravada, antes da trava. A existência é conferida com uma leitura sem trava.
-- O engine global continua no padrão. As leituras (listagens e detalhes) não mudam.
+- **Escopo: só as transações de comando.** O READ COMMITTED é pedido na conexão da transação, ao abrir a unidade de trabalho, e volta ao padrão quando a conexão retorna ao pool. O engine global continua em REPEATABLE READ, e as consultas (listagens, detalhes, histórico) não passam pela unidade de trabalho, então não mudam. Um teste no MariaDB confere as duas coisas.
 - `tests/test_concorrencia_mariadb.py` cobre a corrida no MariaDB e roda no CI (o passo do pytest recebe o `MARIADB_URL` do service container). Sem a correção, ele falha.
 
 ## Consequências
