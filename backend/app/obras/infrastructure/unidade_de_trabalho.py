@@ -1,8 +1,10 @@
 """Unidade de trabalho SQLAlchemy de Gestão de Obras: uma transação na sessão do tenant.
 
-A transação do comando roda em READ COMMITTED (ADR 011). No REPEATABLE READ padrão do
-MariaDB, a transação que espera o `FOR UPDATE` da assinatura contaria as obras num retrato
-anterior ao commit da outra, e duas criações simultâneas passariam do limite do plano.
+- O commit grava os eventos dos agregados desta transação na `outbox`, na mesma transação
+  (ADR 003). Sair sem commit, ou com erro, desfaz o dado e os eventos juntos.
+- A transação do comando roda em READ COMMITTED (ADR 011). No REPEATABLE READ padrão do
+  MariaDB, a transação que espera o `FOR UPDATE` da assinatura contaria as obras num retrato
+  anterior ao commit da outra, e duas criações simultâneas passariam do limite do plano.
 """
 
 from __future__ import annotations
@@ -15,15 +17,25 @@ from sqlalchemy.orm import Session
 from app.assinaturas.application.direitos import ConsultaDireitos
 from app.obras.domain.repositorio import RepositorioDeObras
 from app.obras.infrastructure.repositorio import RepositorioDeObrasSQL
+from app.shared.domain.eventos import EventoDeNegocio
 from app.shared.domain.ids import EmpresaId
+from app.shared.infrastructure.outbox import MetadadosDaRequisicao, gravar_na_outbox
 
 ISOLAMENTO_DOS_COMANDOS = "READ COMMITTED"
 
 
 class UnidadeDeTrabalhoDeObrasSQL:
-    def __init__(self, session: Session, empresa_id: EmpresaId, direitos: ConsultaDireitos) -> None:
+    def __init__(
+        self,
+        session: Session,
+        empresa_id: EmpresaId,
+        direitos: ConsultaDireitos,
+        metadados: MetadadosDaRequisicao | None = None,
+    ) -> None:
         self._session = session
-        self.obras: RepositorioDeObras = RepositorioDeObrasSQL(session, empresa_id)
+        self._metadados = metadados or MetadadosDaRequisicao()
+        self._obras = RepositorioDeObrasSQL(session, empresa_id)
+        self.obras: RepositorioDeObras = self._obras
         self.direitos: ConsultaDireitos = direitos
 
     def __enter__(self) -> Self:
@@ -38,7 +50,14 @@ class UnidadeDeTrabalhoDeObrasSQL:
         # Sem commit explícito (ou com erro), nada fica gravado
         self.rollback()
 
+    def _eventos_pendentes(self) -> list[EventoDeNegocio]:
+        eventos: list[EventoDeNegocio] = []
+        for obra in self._obras.vistos.values():
+            eventos.extend(obra.puxar_eventos())
+        return sorted(eventos, key=lambda e: (e.ocorrido_em, e.event_id))
+
     def commit(self) -> None:
+        gravar_na_outbox(self._session, self._eventos_pendentes(), self._metadados)
         self._session.commit()
 
     def rollback(self) -> None:

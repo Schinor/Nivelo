@@ -46,11 +46,13 @@ from app.obras.infrastructure.consultas import ConsultaDeObrasSQL, obra_de_outra
 from app.obras.infrastructure.equipe import EquipeViaAuthService
 from app.obras.infrastructure.unidade_de_trabalho import UnidadeDeTrabalhoDeObrasSQL
 from app.shared.api.autenticacao import requer_papel, tenant
+from app.shared.api.request_id import obter_request_id
 from app.shared.api.sessao import sessao_do_tenant
 from app.shared.application.contexto import TenantContext
 from app.shared.application.paginacao import POR_PAGINA_MAXIMO, POR_PAGINA_PADRAO, PedidoDePagina
 from app.shared.domain.ids import UsuarioId
 from app.shared.domain.relogio import Relogio, RelogioDoSistema
+from app.shared.infrastructure.outbox import MetadadosDaRequisicao
 
 router = APIRouter(prefix="/api/obras", tags=["obras"])
 
@@ -73,7 +75,8 @@ def unidade_de_trabalho(
 ) -> UnidadeDeTrabalhoDeObrasSQL:
     # A implementação dos direitos (Assinaturas) é ligada no main.py: Obras só conhece a porta
     fabrica_de_direitos = request.app.state.consulta_direitos
-    return UnidadeDeTrabalhoDeObrasSQL(db, ctx.empresa_id, fabrica_de_direitos(db))
+    metadados = MetadadosDaRequisicao(ator_papel=ctx.papel, request_id=obter_request_id())
+    return UnidadeDeTrabalhoDeObrasSQL(db, ctx.empresa_id, fabrica_de_direitos(db), metadados)
 
 
 def equipe_da_empresa(authorization: str = Header(default="")) -> EquipeDaEmpresa:

@@ -6,7 +6,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+import asyncio
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import app.models  # noqa: F401 — força o registro dos models no metadata
 from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
 from app.clients import log_client
+from app.core.database import SessionLocal
 from app.dependencies import auditar_acesso_negado
 from app.obras.api.convites import router as convites_router
 from app.obras.api.rotas import router as obras_router
@@ -32,6 +36,8 @@ from app.shared.api.problem_details import registrar_handlers
 from app.shared.api.request_id import RequestIdMiddleware
 from app.shared.api.spa import registrar_spa
 from app.shared.domain.erros import ErroDeDominio
+from app.shared.infrastructure.log_service import PublicadorNoLogService
+from app.shared.infrastructure.outbox import RelayDaOutbox, rodar_relay
 
 # Loggers "nivelo.api.*" em INFO no stdout (ex.: event.id/tipo/usuario_id do webhook do Stripe).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.
@@ -42,11 +48,27 @@ logging.getLogger("nivelo.api").setLevel(logging.INFO)
 
 # O esquema vem das migrações Alembic (alembic upgrade head roda antes do uvicorn; ver Dockerfile)
 
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI) -> AsyncIterator[None]:
+    """Relay da outbox (ADR 003 e 012): uma task asyncio no próprio processo da API, sem
+    container novo. A cada 1 s publica no log-service os eventos gravados pelos comandos."""
+    parar = asyncio.Event()
+    relay = RelayDaOutbox(SessionLocal, PublicadorNoLogService())
+    tarefa = asyncio.create_task(rodar_relay(relay, parar), name="relay-da-outbox")
+    try:
+        yield
+    finally:
+        parar.set()
+        await tarefa
+
+
 app = FastAPI(
     title="Nivelo API",
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
+    lifespan=ciclo_de_vida,
 )
 
 app.add_middleware(

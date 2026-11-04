@@ -106,3 +106,79 @@ def test_metrics_expostas():
     metrics = client.get("/metrics")
     assert metrics.status_code == 200
     assert "http_requests_total" in metrics.text
+
+
+# ── Eventos de negócio (outbox da API, Fase 4b) ──────────────────────────────
+
+EMPRESA_A = "0190f3a0-0000-7000-8000-00000000000a"
+OBRA_A = "0190f3a0-0000-7000-8000-0000000000a1"
+
+
+def _negocio(tipo, recurso="diario", recurso_id="0190f3a0-0000-7000-8000-0000000000d1", **extra):
+    import uuid
+
+    return {
+        "event_id": str(uuid.uuid4()),
+        "tipo": tipo,
+        "empresa_id": EMPRESA_A,
+        "ator_id": 2,
+        "ator_papel": "encarregado",
+        "recurso": recurso,
+        "recurso_id": recurso_id,
+        "ocorrido_em": "2026-11-04T14:02:11.000Z",
+        "request_id": "req-1",
+        "dados": {"obra_id": OBRA_A, "data": "2026-11-04"},
+        **extra,
+    }
+
+
+def test_evento_de_negocio_vai_para_o_stream_com_ator_e_ocorrido_em():
+    _, client = setup_log_service()
+    headers = {"X-Internal-Token": TOKEN}
+    ev = _negocio("diario.publicado")
+    resp = client.post("/eventos/negocio", json={"eventos": [ev]}, headers=headers)
+    assert resp.status_code == 202 and resp.json() == {"gravados": 1, "duplicados": 0}
+
+    [gravado] = client.get("/eventos", headers=headers).json()
+    assert gravado["event_id"] == ev["event_id"] and gravado["tipo"] == "diario.publicado"
+    assert gravado["usuario_id"] == "2" and gravado["ator_papel"] == "encarregado"
+    assert gravado["timestamp"] == "2026-11-04T14:02:11.000Z" and gravado["obra_id"] == OBRA_A
+    assert gravado["acao"] == "diario.publicado" and gravado["recurso"] == f"diario:{ev['recurso_id']}"
+    assert '"data":"2026-11-04"' in gravado["dados"]
+
+
+def test_event_id_repetido_e_ignorado():
+    _, client = setup_log_service()
+    headers = {"X-Internal-Token": TOKEN}
+    ev = _negocio("foto.anexada", recurso="foto")
+    client.post("/eventos/negocio", json={"eventos": [ev]}, headers=headers)
+    resp = client.post("/eventos/negocio", json={"eventos": [ev, _negocio("obra.criada")]}, headers=headers)
+    assert resp.json() == {"gravados": 1, "duplicados": 1}
+    assert len(client.get("/eventos", headers=headers).json()) == 2
+
+
+def test_evento_de_negocio_exige_token_e_formato():
+    _, client = setup_log_service()
+    assert client.post("/eventos/negocio", json={"eventos": []}, headers={"X-Internal-Token": "x"}).status_code == 401
+    sem_id = {k: v for k, v in _negocio("obra.criada").items() if k != "event_id"}
+    resp = client.post("/eventos/negocio", json={"eventos": [sem_id]}, headers={"X-Internal-Token": TOKEN})
+    assert resp.status_code == 422
+
+
+def test_listagem_filtra_por_empresa_e_obra():
+    _, client = setup_log_service()
+    headers = {"X-Internal-Token": TOKEN}
+    outra_obra = "0190f3a0-0000-7000-8000-0000000000a2"
+    lote = [
+        _negocio("obra.criada", recurso="obra", recurso_id=OBRA_A, dados={"nome": "Casa"}),
+        _negocio("diario.publicado"),
+        _negocio("diario.publicado", dados={"obra_id": outra_obra}),
+        _negocio("obra.criada", recurso="obra", recurso_id=OBRA_A, empresa_id="outra-empresa"),
+    ]
+    client.post("/eventos/negocio", json={"eventos": lote}, headers=headers)
+    client.post("/eventos", json=_evento("login"), headers=headers)  # evento técnico, sem empresa
+
+    da_obra = client.get(f"/eventos?empresa_id={EMPRESA_A}&obra_id={OBRA_A}", headers=headers).json()
+    assert [e["tipo"] for e in da_obra] == ["diario.publicado", "obra.criada"]
+    da_empresa = client.get(f"/eventos?empresa_id={EMPRESA_A}&limit=2", headers=headers).json()
+    assert len(da_empresa) == 2 and {e["empresa_id"] for e in da_empresa} == {EMPRESA_A}

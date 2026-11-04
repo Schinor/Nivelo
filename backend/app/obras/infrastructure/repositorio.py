@@ -61,6 +61,8 @@ class RepositorioDeObrasSQL:
         self._empresa_id = empresa_id
         # Retrato do que foi lido, para gravar só o que mudou
         self._lidos: dict[ObraId, tuple[dict[str, Any], dict[int, str]]] = {}
+        # Agregados desta transação: a unidade de trabalho recolhe os eventos deles no commit
+        self.vistos: dict[ObraId, Obra] = {}
 
     def obter(self, obra_id: ObraId) -> Obra:
         modelo = self._session.scalars(
@@ -97,6 +99,7 @@ class RepositorioDeObrasSQL:
             removida_em=modelo.removida_em,
         )
         self._lidos[obra_id] = (_colunas(obra), _membros(obra))
+        self.vistos[obra_id] = obra
         return obra
 
     def adicionar(self, obra: Obra) -> None:
@@ -122,6 +125,7 @@ class RepositorioDeObrasSQL:
                 )
             )
         self._lidos[obra.id] = (_colunas(obra), _membros(obra))
+        self.vistos[obra.id] = obra
 
     def salvar(self, obra: Obra) -> None:
         colunas_lidas, membros_lidos = self._lidos.get(obra.id, ({}, {}))

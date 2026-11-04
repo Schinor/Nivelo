@@ -1,7 +1,7 @@
 """Porta da unidade de trabalho: uma transação por comando.
 
 Uso nos handlers: `with uow: ...; uow.commit()`. Sair do bloco sem commit (ou com erro)
-desfaz tudo. Na Fase 4b o commit também grava os eventos dos agregados na outbox, na mesma
+desfaz tudo. O commit também grava os eventos dos agregados na outbox, na mesma
 transação.
 """
 
