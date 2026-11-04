@@ -11,6 +11,7 @@ from datetime import date, datetime
 from sqlalchemy import (
     CHAR,
     JSON,
+    Boolean,
     Date,
     DateTime,
     Enum,
@@ -136,6 +137,7 @@ class DiarioFotoModel(TemEmpresa, Base):
     legenda: Mapped[str | None] = mapped_column(String(280), nullable=True)
     enviado_por: Mapped[int] = mapped_column(Integer, nullable=False)
     criado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.now())
+    apos_publicacao: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class DiarioRevisaoModel(TemEmpresa, Base):

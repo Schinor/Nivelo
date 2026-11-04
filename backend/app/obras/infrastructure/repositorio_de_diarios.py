@@ -176,6 +176,7 @@ class RepositorioDeDiariosSQL:
                     enviado_por=UsuarioId(f.enviado_por),
                     legenda=f.legenda,
                     criado_em=f.criado_em,
+                    apos_publicacao=f.apos_publicacao,
                 )
                 for f in fotos
             ],
@@ -271,6 +272,7 @@ class RepositorioDeDiariosSQL:
                     legenda=f.legenda,
                     enviado_por=f.enviado_por.valor,
                     criado_em=_sem_fuso(f.criado_em) or datetime.now(UTC).replace(tzinfo=None),
+                    apos_publicacao=f.apos_publicacao,
                 )
             )
         for r in d.puxar_revisoes_novas():

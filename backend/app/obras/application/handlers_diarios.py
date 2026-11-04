@@ -273,7 +273,7 @@ def confirmar_foto(
             # O objeto enviado não vai ser usado: não deixa lixo no bucket
             _apagar_do_bucket(armazenamento, [str(chave)])
             raise
-        diario.anexar_foto(foto, _ator(ctx))
+        foto = diario.anexar_foto(foto, _ator(ctx))
         uow.diarios.salvar(diario)
         uow.commit()
     return foto

@@ -170,6 +170,18 @@ class FotoAnexada(EventoDoDiario):
 
 
 @dataclass(frozen=True, kw_only=True)
+class FotoAnexadaAposPublicacao(FotoAnexada):
+    """Foto acrescentada a um diário já publicado: o registro mudou depois de o cliente ver,
+    então a auditoria distingue do anexo comum e guarda quando o diário tinha sido publicado."""
+
+    tipo: str = "foto.anexada_apos_publicacao"
+    publicado_em: str
+
+    def dados(self) -> Dados:
+        return {**super().dados(), "publicado_em": self.publicado_em}
+
+
+@dataclass(frozen=True, kw_only=True)
 class FotoRemovida(EventoDoDiario):
     recurso: ClassVar[str] = "foto"
     tipo: str = "foto.removida"

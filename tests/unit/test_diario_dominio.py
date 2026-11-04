@@ -264,7 +264,7 @@ def test_anexar_foto_gera_evento_e_e_idempotente(d):
     diario.puxar_eventos()
     f = foto(d, diario)
     diario.anexar_foto(f, U(d, 2))
-    assert diario.anexar_foto(f, U(d, 2)) is f and diario.fotos == (f,)
+    assert diario.anexar_foto(f, U(d, 2)) == f and diario.fotos == (f,)
     eventos = diario.puxar_eventos()
     assert [e.tipo for e in eventos] == ["foto.anexada"]
     assert eventos[0].recurso == "foto" and eventos[0].recurso_id == str(f.id)
@@ -313,3 +313,20 @@ def test_comentario_so_em_diario_publicado_e_com_texto(d):
     c = diario.comentar("  Ficou ótimo  ", U(d, 3), AGORA)
     assert c.texto == "Ficou ótimo" and diario.puxar_comentarios_novos() == [c]
     assert [e.tipo for e in diario.puxar_eventos()] == ["comentario.registrado"]
+
+
+def test_foto_anexada_depois_de_publicar_fica_marcada_e_tem_evento_proprio(d):
+    rascunho = novo(d)
+    rascunho.puxar_eventos()
+    antes = rascunho.anexar_foto(foto(d, rascunho), U(d, 2))
+    assert not antes.apos_publicacao and [e.tipo for e in rascunho.puxar_eventos()] == ["foto.anexada"]
+    rascunho.publicar(U(d, 2), AGORA)
+    rascunho.puxar_eventos()
+
+    depois = rascunho.anexar_foto(foto(d, rascunho), U(d, 2))
+    assert depois.apos_publicacao and not rascunho.foto(antes.id).apos_publicacao
+    [evento] = rascunho.puxar_eventos()
+    assert evento.tipo == "foto.anexada_apos_publicacao" and evento.recurso == "foto"
+    assert evento.dados()["publicado_em"] == AGORA.isoformat() and evento.recurso_id == str(depois.id)
+    # A marca vem do diário, não de quem monta a foto
+    assert rascunho.anexar_foto(depois, U(d, 2)).apos_publicacao

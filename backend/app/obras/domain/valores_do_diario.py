@@ -232,6 +232,8 @@ class FotoDoDiario:
     enviado_por: UsuarioId
     legenda: str | None = None
     criado_em: datetime | None = None
+    # A foto entrou depois de o diário ser publicado: o cliente vê a marca e a data
+    apos_publicacao: bool = False
 
     def __post_init__(self) -> None:
         exigir_imagem_aceita(self.content_type, self.tamanho_bytes)

@@ -41,6 +41,7 @@ from app.obras.domain.eventos import (
     DiarioRevisado,
     EventoDoDiario,
     FotoAnexada,
+    FotoAnexadaAposPublicacao,
     FotoRemovida,
     OcorrenciaRegistrada,
 )
@@ -226,7 +227,10 @@ class DiarioDeObra:
     # ── Fotos ─────────────────────────────────────────────────────────────────
 
     def anexar_foto(self, foto: FotoDoDiario, ator: UsuarioId) -> FotoDoDiario:
-        """Idempotente: confirmar de novo a mesma foto devolve a que já está anexada."""
+        """Idempotente: confirmar de novo a mesma foto devolve a que já está anexada.
+
+        Em diário publicado a foto entra marcada como "adicionada após a publicação" (o cliente
+        vê a marca e a data) e o evento é `foto.anexada_apos_publicacao`."""
         if not foto.object_key.pertence_a(self.empresa_id, self.obra_id, self.id):
             raise FotoInvalida("Essa foto não foi enviada para este diário.")
         if foto.object_key.foto_id != foto.id:
@@ -234,10 +238,15 @@ class DiarioDeObra:
         existente = self._fotos.get(foto.id)
         if existente is not None:
             return existente
+        dados = {"foto_id": foto.id, "object_key": str(foto.object_key), "tamanho_bytes": foto.tamanho_bytes}
+        if self.publicado:
+            foto = replace(foto, apos_publicacao=True)
+            publicado_em = self.publicado_em.isoformat() if self.publicado_em else ""
+            self._registrar(FotoAnexadaAposPublicacao, ator, publicado_em=publicado_em, **dados)
+        else:
+            foto = replace(foto, apos_publicacao=False)
+            self._registrar(FotoAnexada, ator, **dados)
         self._fotos[foto.id] = foto
-        self._registrar(
-            FotoAnexada, ator, foto_id=foto.id, object_key=str(foto.object_key), tamanho_bytes=foto.tamanho_bytes
-        )
         return foto
 
     def remover_foto(self, foto_id: FotoId, ator: UsuarioId) -> FotoDoDiario:

@@ -334,7 +334,8 @@ def confirmar_foto(
         tamanho_bytes=foto.tamanho_bytes,
         legenda=foto.legenda,
         enviado_por=foto.enviado_por.valor,
-        criado_em=foto.criado_em,
+        adicionada_em=foto.criado_em,
+        adicionada_apos_publicacao=foto.apos_publicacao,
     )
 
 

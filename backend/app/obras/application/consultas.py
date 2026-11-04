@@ -94,7 +94,8 @@ class FotoDTO:
     tamanho_bytes: int
     legenda: str | None
     enviado_por: int
-    criado_em: datetime
+    adicionada_em: datetime
+    adicionada_apos_publicacao: bool
 
 
 @dataclass(frozen=True, slots=True)

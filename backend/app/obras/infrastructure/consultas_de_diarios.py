@@ -127,7 +127,8 @@ class ConsultaDeDiariosSQL:
             atualizado_em=d.atualizado_em,
             ocorrencias=[OcorrenciaDTO(o.id, o.tipo, o.descricao, o.impacto_prazo_dias) for o in ocorrencias],
             fotos=[
-                FotoDTO(f.id, f.content_type, f.tamanho_bytes, f.legenda, f.enviado_por, f.criado_em) for f in fotos
+                FotoDTO(f.id, f.content_type, f.tamanho_bytes, f.legenda, f.enviado_por, f.criado_em, f.apos_publicacao)
+                for f in fotos
             ],
             revisoes=int(revisoes or 0),
         )

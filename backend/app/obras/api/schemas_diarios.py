@@ -131,7 +131,11 @@ class FotoOut(BaseModel):
     tamanho_bytes: int
     legenda: str | None
     enviado_por: int
-    criado_em: datetime | None = None
+    adicionada_em: datetime | None = Field(default=None, description="Quando a foto foi anexada (UTC)")
+    adicionada_apos_publicacao: bool = Field(
+        default=False,
+        description='A foto entrou depois de o diário ser publicado: mostre "Adicionada após a publicação" com a data',
+    )
 
 
 class DiarioResumoOut(BaseModel):

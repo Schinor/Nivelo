@@ -596,3 +596,21 @@ def test_historico_consulta_o_log_service_com_a_empresa_do_token_e_descarta_o_re
     monkeypatch.setattr("app.obras.infrastructure.historico.httpx.get", fora)
     with pytest.raises(DependenciaIndisponivel):
         HistoricoViaLogService().eventos(c, ObraId(uuid.UUID(OBRA_A1)), 50)
+
+
+def test_foto_depois_da_publicacao_aparece_marcada_com_a_data_para_o_cliente(ctx):
+    d = novo(ctx, OBRA_A2, DONO)
+    antes = anexar(ctx, d, DONO, legenda="Antes")
+    publicar(ctx, d, DONO)
+    depois = anexar(ctx, d, DONO, legenda="Depois")
+    assert not antes["adicionada_apos_publicacao"] and depois["adicionada_apos_publicacao"]
+    assert depois["adicionada_em"].startswith("2026-11-04T18:00")
+
+    fotos = {f["legenda"]: f for f in ctx.client.get(f"/api/diarios/{d['id']}", headers=CLI).json()["fotos"]}
+    assert fotos["Antes"]["adicionada_apos_publicacao"] is False
+    assert fotos["Depois"]["adicionada_apos_publicacao"] is True
+    assert fotos["Depois"]["adicionada_em"].startswith("2026-11-04T18:00")
+
+    tipos = [e["tipo"] for e in outbox(ctx)]
+    assert tipos.count("foto.anexada") == 1 and tipos[-1] == "foto.anexada_apos_publicacao"
+    assert outbox(ctx)[-1]["dados"]["publicado_em"].startswith("2026-11-04T18:00")
