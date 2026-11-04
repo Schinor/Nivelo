@@ -15,4 +15,4 @@ Uma página por decisão: contexto, decisão e consequências. Uma decisão nova
 | [009](009-expandir-e-contrair-papel-antigo.md) | Expandir agora, contrair depois: a coluna antiga de papel | Aceito |
 | [010](010-esquema-do-dominio.md) | Esquema do domínio: UUID nativo, FK composta por empresa e soft delete | Aceito |
 | [011](011-read-committed-nos-comandos.md) | READ COMMITTED nas transações de comando (corrida do limite de plano) | Aceito |
-| [012](012-relay-entrega-ao-log-service.md) | O relay da outbox entrega os eventos ao log-service por HTTP | Proposto |
+| [012](012-relay-entrega-ao-log-service.md) | O relay da outbox entrega os eventos ao log-service por HTTP | Aceito |

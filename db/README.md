@@ -8,6 +8,7 @@ Os arquivos `0NN_*.sql` são **gerados** a partir das migrações do Alembic por
 | `001_dominio.sql` | Identidade do Nivelo (empresas, vínculos, convites) e domínio (obras, diários, ocorrências, fotos, revisões, comentários, assinaturas, eventos do Stripe e outbox) |
 | `002_contrai_papel_antigo.sql` | Contração do papel antigo: sai `usuarios.role`/`role_id` e as tabelas de RBAC (ADR 009) |
 | `003_reset_token_hash.sql` | `reset_tokens` recriada com `token_hash` (SHA-256), como os convites; invalida os tokens emitidos antes |
+| `004_outbox_backoff_e_foto_apos_publicacao.sql` | `outbox.proxima_tentativa_em` e `ultimo_erro` (backoff do relay, ADR 012) e `diario_fotos.apos_publicacao` |
 | `900_seed_dev.sql` | Dados de desenvolvimento: 2 empresas, cada uma com dono, encarregado, cliente e uma obra, e 3 diários. Escrito à mão. **Nunca em produção.** |
 
 ## Banco vazio

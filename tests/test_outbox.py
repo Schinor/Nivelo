@@ -67,28 +67,108 @@ def test_cada_comando_grava_os_proprios_eventos(api):
     assert [linha.tipo for linha in _outbox(api)] == ["obra.criada", "obra.status_alterado", "obra.removida"]
 
 
-def test_relay_publica_marca_e_numa_falha_conta_a_tentativa_e_tenta_de_novo(api):
+class Relogio:
+    """Relógio do relay controlado pelo teste."""
+
+    def __init__(self):
+        from datetime import datetime
+
+        self.agora = datetime(2026, 11, 4, 12, 0, 0)
+
+    def __call__(self):
+        return self.agora
+
+    def avancar(self, segundos):
+        from datetime import timedelta
+
+        self.agora += timedelta(seconds=segundos)
+
+
+def test_falha_adia_a_linha_com_backoff_exponencial_e_depois_publica(api):
     from app.shared.infrastructure.outbox import RelayDaOutbox
 
     api.client.post("/api/obras", json=OBRA, headers=DONO)
-    entregues, falhar = [], [True]
+    entregues, falhar, relogio = [], [True], Relogio()
 
     def publicar(lote):
         if falhar[0]:
             raise ConnectionError("log-service fora do ar")
         entregues.extend(lote)
 
-    relay = RelayDaOutbox(api.SessionLocal, publicar)
-    assert relay.publicar_tudo() == 0
-    [linha] = _outbox(api)
-    assert linha.publicado_em is None and linha.tentativas == 1
+    relay = RelayDaOutbox(api.SessionLocal, publicar, relogio=relogio)
+    esperas = []
+    for _ in range(4):
+        assert relay.publicar_tudo() == 0
+        [linha] = _outbox(api)
+        espera = (linha.proxima_tentativa_em - relogio.agora).total_seconds()
+        esperas.append(espera)
+        assert "ConnectionError: log-service fora do ar" in linha.ultimo_erro
+        relogio.avancar(espera - 0.5)
+        assert relay.publicar_tudo() == 0 and _outbox(api)[0].tentativas == linha.tentativas  # ainda não
+        relogio.avancar(0.5)
+    assert esperas == [1, 2, 4, 8] and _outbox(api)[0].tentativas == 4
 
     falhar[0] = False
     assert relay.publicar_tudo() == 1
-    assert [e["tipo"] for e in entregues] == ["obra.criada"]
     [linha] = _outbox(api)
-    assert linha.publicado_em is not None
+    assert linha.publicado_em is not None and linha.ultimo_erro is None
+    assert [e["tipo"] for e in entregues] == ["obra.criada"]
     assert relay.publicar_tudo() == 0  # nada pendente: não republica
+
+
+def test_backoff_para_em_5_minutos(api):
+    from app.shared.infrastructure.outbox import atraso_da_tentativa
+
+    assert [atraso_da_tentativa(n) for n in (1, 2, 3, 9, 10, 50)] == [1, 2, 4, 256, 300, 300]
+
+
+def test_evento_recusado_pelo_log_service_nao_trava_a_fila(api):
+    from sqlalchemy import select
+
+    from app.shared.infrastructure.outbox import EntregaRecusada, OutboxModel, RelayDaOutbox
+
+    for i in range(3):
+        api.client.post("/api/obras", json={**OBRA, "nome": f"Obra {i}"}, headers=DONO)
+        api.client.delete(f"/api/obras/{_outbox(api)[-1].payload['recurso_id']}", headers=DONO)  # libera a vaga
+    with api.SessionLocal() as s:
+        ruim = s.scalars(select(OutboxModel).order_by(OutboxModel.ocorrido_em)).all()[2]
+        ruim.payload = {**ruim.payload, "tipo": "x"}  # o log-service recusa (tipo curto demais)
+        id_ruim = ruim.id
+        s.commit()
+
+    lotes, relogio = [], Relogio()
+
+    def publicar(lote):
+        lotes.append(len(lote))
+        if any(e["tipo"] == "x" for e in lote):
+            raise EntregaRecusada("HTTP 422")
+
+    relay = RelayDaOutbox(api.SessionLocal, publicar, relogio=relogio)
+    assert relay.publicar_tudo() == 5
+    assert lotes == [6, 1, 1, 1, 1, 1, 1]  # o lote recusado é separado, evento a evento
+    [pendente] = [o for o in _outbox(api) if o.publicado_em is None]
+    assert pendente.id == id_ruim and pendente.tentativas == 1 and "HTTP 422" in pendente.ultimo_erro
+
+
+def test_queda_no_meio_da_separacao_adia_o_resto_do_lote(api):
+    from app.shared.infrastructure.outbox import EntregaRecusada, RelayDaOutbox
+
+    for i in range(2):
+        api.client.post("/api/obras", json={**OBRA, "nome": f"Obra {i}"}, headers=DONO)
+        api.client.delete(f"/api/obras/{_outbox(api)[-1].payload['recurso_id']}", headers=DONO)
+    chamadas = []
+
+    def publicar(lote):
+        chamadas.append(len(lote))
+        if len(chamadas) == 1:
+            raise EntregaRecusada("HTTP 422")
+        if len(chamadas) == 3:
+            raise ConnectionError("caiu")
+
+    assert RelayDaOutbox(api.SessionLocal, publicar, relogio=Relogio()).publicar_tudo() == 1
+    linhas = _outbox(api)
+    assert [o.publicado_em is not None for o in linhas] == [True, False, False, False]
+    assert {o.tentativas for o in linhas[1:]} == {1}
 
 
 def test_relay_publica_em_lotes_na_ordem_em_que_aconteceram(api):
@@ -155,12 +235,23 @@ def test_publicador_entrega_o_lote_ao_log_service_com_o_token_interno(api, monke
         }
     ]
 
-    def recusa(url, **kw):
-        return httpx.Response(503, request=httpx.Request("POST", url))
+    from app.shared.infrastructure.outbox import EntregaRecusada
 
-    monkeypatch.setattr("app.shared.infrastructure.log_service.httpx.post", recusa)
-    with pytest.raises(httpx.HTTPStatusError):
-        PublicadorNoLogService(url="http://log-service:8002", token="segredo")([{"event_id": "x"}])
+    def responde(codigo):
+        monkeypatch.setattr(
+            "app.shared.infrastructure.log_service.httpx.post",
+            lambda url, **kw: httpx.Response(codigo, request=httpx.Request("POST", url)),
+        )
+
+    publicador = PublicadorNoLogService(url="http://log-service:8002", token="segredo")
+    for codigo in (400, 413, 422):  # conteúdo recusado: o relay separa os eventos
+        responde(codigo)
+        with pytest.raises(EntregaRecusada):
+            publicador([{"event_id": "x"}])
+    for codigo in (401, 503):  # token errado ou serviço fora: o lote inteiro espera
+        responde(codigo)
+        with pytest.raises(httpx.HTTPStatusError):
+            publicador([{"event_id": "x"}])
 
 
 def test_laco_do_relay_roda_ate_mandarem_parar(api):

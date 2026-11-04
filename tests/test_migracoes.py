@@ -214,8 +214,22 @@ def test_dominio_tem_tres_ou_mais_tabelas_com_chave_estrangeira(dominio):
 # que roda no SQLite e no MariaDB.
 
 
-def test_dominio_downgrade_e_upgrade_de_novo(dominio):
+def test_backoff_da_outbox_e_foto_apos_publicacao_descem_e_sobem(dominio):
+    def colunas(tabela):
+        with conectar(dominio) as conn:
+            return {r[1] for r in conn.execute(f"PRAGMA table_info({tabela})")}
+
+    assert {"proxima_tentativa_em", "ultimo_erro"} <= colunas("outbox")
+    assert "apos_publicacao" in colunas("diario_fotos")
     alembic("api", dominio, "downgrade", "-1")
+    assert not {"proxima_tentativa_em", "ultimo_erro"} & colunas("outbox")
+    assert "apos_publicacao" not in colunas("diario_fotos")
+    alembic("api", dominio, "upgrade", "head")
+    assert "apos_publicacao" in colunas("diario_fotos")
+
+
+def test_dominio_downgrade_e_upgrade_de_novo(dominio):
+    alembic("api", dominio, "downgrade", "api_002_remove_catalogo")
     assert not TABELAS_DO_DOMINIO & tabelas(dominio)
     assert "perfis" in tabelas(dominio)
     alembic("api", dominio, "upgrade", "head")

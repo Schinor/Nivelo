@@ -1,6 +1,8 @@
 import os
 import sys
 
+import pytest
+
 TOKEN = "token-interno-de-teste"
 
 
@@ -182,3 +184,15 @@ def test_listagem_filtra_por_empresa_e_obra():
     assert [e["tipo"] for e in da_obra] == ["diario.publicado", "obra.criada"]
     da_empresa = client.get(f"/eventos?empresa_id={EMPRESA_A}&limit=2", headers=headers).json()
     assert len(da_empresa) == 2 and {e["empresa_id"] for e in da_empresa} == {EMPRESA_A}
+
+
+def test_log_service_nao_sobe_sem_token_interno(monkeypatch):
+    """Token vazio aceitaria o cabeçalho vazio de qualquer um."""
+    import pydantic
+
+    setup_log_service()
+    from app.config import Settings
+
+    monkeypatch.setenv("LOG_INTERNAL_TOKEN", "  ")
+    with pytest.raises(pydantic.ValidationError):
+        Settings()
