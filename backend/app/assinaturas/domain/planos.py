@@ -139,3 +139,21 @@ class PoliticaDePlano:
             plano_atual=efetivos.plano,
             plano_sugerido=sugerido,
         )
+
+    @staticmethod
+    def exigir_vaga_de_foto(efetivos: DireitosEfetivos, fotos_na_obra: int) -> None:
+        limite = efetivos.direitos.max_fotos_por_obra
+        if limite is None or fotos_na_obra < limite:
+            return
+        sugerido = PROXIMO_PLANO[efetivos.plano]
+        convite = f" Assine o {sugerido.rotulo} para ter fotos ilimitadas." if sugerido else ""
+        raise LimiteDoPlanoExcedido(
+            mensagem=(
+                f"O plano {efetivos.plano.rotulo} permite {_no_plural(limite, 'foto', 'fotos')} por obra"
+                f" e esta obra já tem {fotos_na_obra}.{convite}"
+            ),
+            limite=limite,
+            atual=fotos_na_obra,
+            plano_atual=efetivos.plano,
+            plano_sugerido=sugerido,
+        )
