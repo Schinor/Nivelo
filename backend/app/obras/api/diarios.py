@@ -361,7 +361,7 @@ def url_da_foto(
     response_class=Response,
     responses={**SEM_TENANT_OU_PAPEL, **FOTO_404, 409: {"description": "Foto de diário publicado não é removida"}},
 )
-def remover_foto(
+def remover_foto_do_diario(
     foto_id: uuid.UUID,
     request: Request,
     ctx: TenantContext = Depends(ESCREVE),

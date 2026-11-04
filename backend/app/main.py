@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 from prometheus_client import CollectorRegistry
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -64,8 +65,15 @@ async def ciclo_de_vida(_app: FastAPI) -> AsyncIterator[None]:
         await tarefa
 
 
+def _operation_id(rota: APIRoute) -> str:
+    """operationId = nome da função da rota (ex.: `registrar_diario`). O cliente do front é
+    gerado do OpenAPI (ng-openapi-gen) e fica com nomes legíveis (`registrarDiario`)."""
+    return rota.name
+
+
 app = FastAPI(
     title="Nivelo API",
+    generate_unique_id_function=_operation_id,
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",

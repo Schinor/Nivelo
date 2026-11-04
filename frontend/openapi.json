@@ -1,0 +1,6067 @@
+{
+  "components": {
+    "schemas": {
+      "AceiteIn": {
+        "properties": {
+          "nome": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome"
+          },
+          "senha": {
+            "anyOf": [
+              {
+                "maxLength": 72,
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Senha"
+          },
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "AceiteIn",
+        "type": "object"
+      },
+      "AceiteOut": {
+        "properties": {
+          "empresa_id": {
+            "format": "uuid",
+            "title": "Empresa Id",
+            "type": "string"
+          },
+          "novo_usuario": {
+            "title": "Novo Usuario",
+            "type": "boolean"
+          },
+          "obra_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Obra Id"
+          },
+          "papel": {
+            "title": "Papel",
+            "type": "string"
+          },
+          "usuario_id": {
+            "title": "Usuario Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usuario_id",
+          "empresa_id",
+          "papel",
+          "novo_usuario"
+        ],
+        "title": "AceiteOut",
+        "type": "object"
+      },
+      "Body_enviar_foto": {
+        "properties": {
+          "foto": {
+            "description": "JPEG, PNG ou WEBP (máx. PERFIL_FOTO_MAX_BYTES)",
+            "format": "binary",
+            "title": "Foto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "foto"
+        ],
+        "title": "Body_enviar_foto",
+        "type": "object"
+      },
+      "Body_login": {
+        "properties": {
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret"
+          },
+          "grant_type": {
+            "anyOf": [
+              {
+                "pattern": "password",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "scope": {
+            "default": "",
+            "title": "Scope",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login",
+        "type": "object"
+      },
+      "CadastroIn": {
+        "description": "Cadastro público: cria a empresa, o usuário e o vínculo `dono`. O papel nunca vem do corpo.",
+        "properties": {
+          "documento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documento"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "empresa_nome": {
+            "description": "Nome da sua empresa ou seu nome profissional",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Empresa Nome",
+            "type": "string"
+          },
+          "nome": {
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Nome",
+            "type": "string"
+          },
+          "senha": {
+            "maxLength": 72,
+            "minLength": 6,
+            "title": "Senha",
+            "type": "string"
+          },
+          "tipo_pessoa": {
+            "default": "PF",
+            "enum": [
+              "PF",
+              "PJ"
+            ],
+            "title": "Tipo Pessoa",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nome",
+          "email",
+          "senha",
+          "empresa_nome"
+        ],
+        "title": "CadastroIn",
+        "type": "object"
+      },
+      "CadastroOut": {
+        "properties": {
+          "empresa": {
+            "$ref": "#/components/schemas/EmpresaOut"
+          },
+          "papel": {
+            "default": "dono",
+            "title": "Papel",
+            "type": "string"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioOut"
+          }
+        },
+        "required": [
+          "usuario",
+          "empresa"
+        ],
+        "title": "CadastroOut",
+        "type": "object"
+      },
+      "CheckoutOut": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "CheckoutOut",
+        "type": "object"
+      },
+      "ClimaIn": {
+        "properties": {
+          "manha": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ensolarado",
+                  "nublado",
+                  "chuvoso",
+                  "tempestade"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manha"
+          },
+          "tarde": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ensolarado",
+                  "nublado",
+                  "chuvoso",
+                  "tempestade"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tarde"
+          }
+        },
+        "title": "ClimaIn",
+        "type": "object"
+      },
+      "ComentarioIn": {
+        "examples": [
+          {
+            "texto": "Pode seguir com o contrapiso."
+          }
+        ],
+        "properties": {
+          "texto": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Texto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "texto"
+        ],
+        "title": "ComentarioIn",
+        "type": "object"
+      },
+      "ComentarioOut": {
+        "properties": {
+          "autor_id": {
+            "title": "Autor Id",
+            "type": "integer"
+          },
+          "criado_em": {
+            "format": "date-time",
+            "title": "Criado Em",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "texto": {
+            "title": "Texto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "autor_id",
+          "texto",
+          "criado_em"
+        ],
+        "title": "ComentarioOut",
+        "type": "object"
+      },
+      "ContextoOut": {
+        "description": "A empresa ativa do token. Ausente (null) = token sem tenant.",
+        "properties": {
+          "empresa_id": {
+            "format": "uuid",
+            "title": "Empresa Id",
+            "type": "string"
+          },
+          "empresa_nome": {
+            "title": "Empresa Nome",
+            "type": "string"
+          },
+          "papel": {
+            "title": "Papel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "empresa_id",
+          "empresa_nome",
+          "papel"
+        ],
+        "title": "ContextoOut",
+        "type": "object"
+      },
+      "ConviteIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "obra_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Obra Id"
+          },
+          "papel": {
+            "enum": [
+              "encarregado",
+              "cliente"
+            ],
+            "title": "Papel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "papel"
+        ],
+        "title": "ConviteIn",
+        "type": "object"
+      },
+      "ConviteOut": {
+        "description": "Sem o token: ele só existe no e-mail do convidado.",
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expira_em": {
+            "format": "date-time",
+            "title": "Expira Em",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "obra_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Obra Id"
+          },
+          "papel": {
+            "title": "Papel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "papel",
+          "expira_em"
+        ],
+        "title": "ConviteOut",
+        "type": "object"
+      },
+      "DiarioEdicaoIn": {
+        "examples": [
+          {
+            "atividades": "Contrapiso da cozinha e assentamento do piso do banheiro.",
+            "clima": {
+              "manha": "ensolarado",
+              "tarde": "chuvoso"
+            },
+            "condicao": "praticavel",
+            "data": "2026-11-04",
+            "efetivo": 5,
+            "motivo": "Faltou contar o ajudante que chegou às 9h",
+            "observacoes": "Caçamba trocada às 10h.",
+            "ocorrencias": [
+              {
+                "descricao": "Chuva forte a partir das 15h",
+                "impacto_prazo_dias": 0,
+                "tipo": "chuva"
+              }
+            ],
+            "versao": 2
+          }
+        ],
+        "properties": {
+          "atividades": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Obrigatório para publicar",
+            "title": "Atividades"
+          },
+          "clima": {
+            "$ref": "#/components/schemas/ClimaIn"
+          },
+          "condicao": {
+            "default": "praticavel",
+            "enum": [
+              "praticavel",
+              "impraticavel"
+            ],
+            "title": "Condicao",
+            "type": "string"
+          },
+          "data": {
+            "description": "Dia do registro. Não pode ser futuro; um diário por obra por dia",
+            "format": "date",
+            "title": "Data",
+            "type": "string"
+          },
+          "efetivo": {
+            "default": 0,
+            "description": "Quantas pessoas trabalharam no dia",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Efetivo",
+            "type": "integer"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Obrigatório se o diário já foi publicado: a alteração vira uma revisão com este motivo",
+            "title": "Motivo"
+          },
+          "observacoes": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacoes"
+          },
+          "ocorrencias": {
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaIn"
+            },
+            "maxItems": 50,
+            "title": "Ocorrencias",
+            "type": "array"
+          },
+          "versao": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Versão lida. Obrigatória aqui ou no If-Match",
+            "title": "Versao"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DiarioEdicaoIn",
+        "type": "object"
+      },
+      "DiarioIn": {
+        "examples": [
+          {
+            "atividades": "Contrapiso da cozinha e assentamento do piso do banheiro.",
+            "clima": {
+              "manha": "ensolarado",
+              "tarde": "chuvoso"
+            },
+            "condicao": "praticavel",
+            "data": "2026-11-04",
+            "efetivo": 4,
+            "observacoes": "Caçamba trocada às 10h.",
+            "ocorrencias": [
+              {
+                "descricao": "Chuva forte a partir das 15h",
+                "impacto_prazo_dias": 0,
+                "tipo": "chuva"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "atividades": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Obrigatório para publicar",
+            "title": "Atividades"
+          },
+          "clima": {
+            "$ref": "#/components/schemas/ClimaIn"
+          },
+          "condicao": {
+            "default": "praticavel",
+            "enum": [
+              "praticavel",
+              "impraticavel"
+            ],
+            "title": "Condicao",
+            "type": "string"
+          },
+          "data": {
+            "description": "Dia do registro. Não pode ser futuro; um diário por obra por dia",
+            "format": "date",
+            "title": "Data",
+            "type": "string"
+          },
+          "efetivo": {
+            "default": 0,
+            "description": "Quantas pessoas trabalharam no dia",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Efetivo",
+            "type": "integer"
+          },
+          "observacoes": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacoes"
+          },
+          "ocorrencias": {
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaIn"
+            },
+            "maxItems": 50,
+            "title": "Ocorrencias",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DiarioIn",
+        "type": "object"
+      },
+      "DiarioOut": {
+        "properties": {
+          "atividades": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atividades"
+          },
+          "atualizado_em": {
+            "format": "date-time",
+            "title": "Atualizado Em",
+            "type": "string"
+          },
+          "autor_id": {
+            "title": "Autor Id",
+            "type": "integer"
+          },
+          "clima": {
+            "$ref": "#/components/schemas/ClimaIn"
+          },
+          "condicao": {
+            "title": "Condicao",
+            "type": "string"
+          },
+          "criado_em": {
+            "format": "date-time",
+            "title": "Criado Em",
+            "type": "string"
+          },
+          "data": {
+            "format": "date",
+            "title": "Data",
+            "type": "string"
+          },
+          "efetivo": {
+            "title": "Efetivo",
+            "type": "integer"
+          },
+          "fotos": {
+            "items": {
+              "$ref": "#/components/schemas/FotoOut"
+            },
+            "title": "Fotos",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "obra_id": {
+            "format": "uuid",
+            "title": "Obra Id",
+            "type": "string"
+          },
+          "observacoes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacoes"
+          },
+          "ocorrencias": {
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaOut"
+            },
+            "title": "Ocorrencias",
+            "type": "array"
+          },
+          "publicado_em": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publicado Em"
+          },
+          "revisoes": {
+            "description": "Quantas vezes o diário publicado foi revisado",
+            "title": "Revisoes",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "versao": {
+            "description": "Mande de volta no If-Match (ou no campo versao) ao editar",
+            "title": "Versao",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "obra_id",
+          "data",
+          "clima",
+          "condicao",
+          "atividades",
+          "efetivo",
+          "observacoes",
+          "status",
+          "autor_id",
+          "versao",
+          "publicado_em",
+          "criado_em",
+          "atualizado_em",
+          "ocorrencias",
+          "fotos",
+          "revisoes"
+        ],
+        "title": "DiarioOut",
+        "type": "object"
+      },
+      "DiarioResumoOut": {
+        "properties": {
+          "autor_id": {
+            "title": "Autor Id",
+            "type": "integer"
+          },
+          "condicao": {
+            "title": "Condicao",
+            "type": "string"
+          },
+          "data": {
+            "format": "date",
+            "title": "Data",
+            "type": "string"
+          },
+          "efetivo": {
+            "title": "Efetivo",
+            "type": "integer"
+          },
+          "fotos": {
+            "title": "Fotos",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "obra_id": {
+            "format": "uuid",
+            "title": "Obra Id",
+            "type": "string"
+          },
+          "ocorrencias": {
+            "title": "Ocorrencias",
+            "type": "integer"
+          },
+          "publicado_em": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publicado Em"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "obra_id",
+          "data",
+          "status",
+          "condicao",
+          "efetivo",
+          "autor_id",
+          "publicado_em",
+          "fotos",
+          "ocorrencias"
+        ],
+        "title": "DiarioResumoOut",
+        "type": "object"
+      },
+      "EmpresaAtivaIn": {
+        "properties": {
+          "empresa_id": {
+            "format": "uuid",
+            "title": "Empresa Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "empresa_id"
+        ],
+        "title": "EmpresaAtivaIn",
+        "type": "object"
+      },
+      "EmpresaCriadaOut": {
+        "description": "Empresa nova do usuário logado, já como empresa ativa no token devolvido.",
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "contexto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "empresa": {
+            "$ref": "#/components/schemas/EmpresaOut"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UsuarioOut"
+          }
+        },
+        "required": [
+          "access_token",
+          "user",
+          "empresa"
+        ],
+        "title": "EmpresaCriadaOut",
+        "type": "object"
+      },
+      "EmpresaIn": {
+        "properties": {
+          "documento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CPF (PF) ou CNPJ (PJ), opcional",
+            "title": "Documento"
+          },
+          "nome": {
+            "description": "Nome da empresa ou nome profissional",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Nome",
+            "type": "string"
+          },
+          "tipo_pessoa": {
+            "default": "PF",
+            "enum": [
+              "PF",
+              "PJ"
+            ],
+            "title": "Tipo Pessoa",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nome"
+        ],
+        "title": "EmpresaIn",
+        "type": "object"
+      },
+      "EmpresaOut": {
+        "properties": {
+          "documento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documento"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "tipo_pessoa": {
+            "enum": [
+              "PF",
+              "PJ"
+            ],
+            "title": "Tipo Pessoa",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "tipo_pessoa"
+        ],
+        "title": "EmpresaOut",
+        "type": "object"
+      },
+      "EnderecoIn": {
+        "properties": {
+          "cidade": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Cidade",
+            "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": -90.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "logradouro": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Logradouro",
+            "type": "string"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "maximum": 180.0,
+                "minimum": -180.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "uf": {
+            "description": "Sigla do estado, como SP",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "logradouro",
+          "cidade",
+          "uf"
+        ],
+        "title": "EnderecoIn",
+        "type": "object"
+      },
+      "EnderecoOut": {
+        "properties": {
+          "cidade": {
+            "title": "Cidade",
+            "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "logradouro": {
+            "title": "Logradouro",
+            "type": "string"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "logradouro",
+          "cidade",
+          "uf"
+        ],
+        "title": "EnderecoOut",
+        "type": "object"
+      },
+      "EventoDoHistoricoOut": {
+        "description": "Um evento de negócio da obra, no formato da auditoria (Parte A.4).",
+        "properties": {
+          "ator_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ator Id"
+          },
+          "ator_papel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ator Papel"
+          },
+          "dados": {
+            "title": "Dados",
+            "type": "object"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "ocorrido_em": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocorrido Em"
+          },
+          "recurso": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurso"
+          },
+          "recurso_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurso Id"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          }
+        },
+        "title": "EventoDoHistoricoOut",
+        "type": "object"
+      },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordRequest",
+        "type": "object"
+      },
+      "ForgotPasswordResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ForgotPasswordResponse",
+        "type": "object"
+      },
+      "FotoConfirmacaoIn": {
+        "examples": [
+          {
+            "legenda": "Contrapiso pronto",
+            "object_key": "empresas/<empresa>/obras/<obra>/diarios/<diario>/<foto>.jpg"
+          }
+        ],
+        "properties": {
+          "legenda": {
+            "anyOf": [
+              {
+                "maxLength": 280,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legenda"
+          },
+          "object_key": {
+            "description": "A chave devolvida pelo upload-url",
+            "maxLength": 255,
+            "title": "Object Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object_key"
+        ],
+        "title": "FotoConfirmacaoIn",
+        "type": "object"
+      },
+      "FotoOut": {
+        "properties": {
+          "adicionada_apos_publicacao": {
+            "default": false,
+            "description": "A foto entrou depois de o diário ser publicado: mostre \"Adicionada após a publicação\" com a data",
+            "title": "Adicionada Apos Publicacao",
+            "type": "boolean"
+          },
+          "adicionada_em": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Quando a foto foi anexada (UTC)",
+            "title": "Adicionada Em"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "enviado_por": {
+            "title": "Enviado Por",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "legenda": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legenda"
+          },
+          "tamanho_bytes": {
+            "title": "Tamanho Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "content_type",
+          "tamanho_bytes",
+          "legenda",
+          "enviado_por"
+        ],
+        "title": "FotoOut",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "MembroDaEquipeOut": {
+        "properties": {
+          "desde": {
+            "format": "date-time",
+            "title": "Desde",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "papel": {
+            "description": "Papel do vínculo: dono, encarregado ou cliente",
+            "title": "Papel",
+            "type": "string"
+          },
+          "usuario_id": {
+            "title": "Usuario Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usuario_id",
+          "nome",
+          "email",
+          "papel",
+          "desde"
+        ],
+        "title": "MembroDaEquipeOut",
+        "type": "object"
+      },
+      "MembroIn": {
+        "examples": [
+          {
+            "papel": "encarregado",
+            "usuario_id": 2
+          }
+        ],
+        "properties": {
+          "papel": {
+            "enum": [
+              "encarregado",
+              "cliente"
+            ],
+            "title": "Papel",
+            "type": "string"
+          },
+          "usuario_id": {
+            "description": "Pessoa da equipe (GET /api/auth/equipe)",
+            "exclusiveMinimum": 0.0,
+            "title": "Usuario Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usuario_id",
+          "papel"
+        ],
+        "title": "MembroIn",
+        "type": "object"
+      },
+      "MembroOut": {
+        "properties": {
+          "adicionado_em": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adicionado Em"
+          },
+          "papel": {
+            "title": "Papel",
+            "type": "string"
+          },
+          "usuario_id": {
+            "title": "Usuario Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usuario_id",
+          "papel"
+        ],
+        "title": "MembroOut",
+        "type": "object"
+      },
+      "ObraEdicaoIn": {
+        "examples": [
+          {
+            "cliente_nome": "Jorge Alves",
+            "data_inicio": "2026-11-03",
+            "endereco": {
+              "cidade": "Marília",
+              "logradouro": "Rua das Acácias, 120",
+              "uf": "SP"
+            },
+            "nome": "Casa do Jorge (2º piso)",
+            "previsao_termino": "2027-03-31",
+            "versao": 1
+          }
+        ],
+        "properties": {
+          "cliente_nome": {
+            "description": "Nome de quem contratou a obra",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Cliente Nome",
+            "type": "string"
+          },
+          "data_inicio": {
+            "format": "date",
+            "title": "Data Inicio",
+            "type": "string"
+          },
+          "endereco": {
+            "$ref": "#/components/schemas/EnderecoIn"
+          },
+          "nome": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Nome",
+            "type": "string"
+          },
+          "previsao_termino": {
+            "description": "Não pode ser antes de data_inicio",
+            "format": "date",
+            "title": "Previsao Termino",
+            "type": "string"
+          },
+          "versao": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Versão lida. Obrigatória aqui ou no cabeçalho If-Match",
+            "title": "Versao"
+          }
+        },
+        "required": [
+          "nome",
+          "endereco",
+          "cliente_nome",
+          "data_inicio",
+          "previsao_termino"
+        ],
+        "title": "ObraEdicaoIn",
+        "type": "object"
+      },
+      "ObraIn": {
+        "examples": [
+          {
+            "cliente_nome": "Jorge Alves",
+            "data_inicio": "2026-11-03",
+            "endereco": {
+              "cidade": "Marília",
+              "logradouro": "Rua das Acácias, 120",
+              "uf": "SP"
+            },
+            "nome": "Casa do Jorge",
+            "previsao_termino": "2027-03-31"
+          }
+        ],
+        "properties": {
+          "cliente_nome": {
+            "description": "Nome de quem contratou a obra",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Cliente Nome",
+            "type": "string"
+          },
+          "data_inicio": {
+            "format": "date",
+            "title": "Data Inicio",
+            "type": "string"
+          },
+          "endereco": {
+            "$ref": "#/components/schemas/EnderecoIn"
+          },
+          "nome": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Nome",
+            "type": "string"
+          },
+          "previsao_termino": {
+            "description": "Não pode ser antes de data_inicio",
+            "format": "date",
+            "title": "Previsao Termino",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nome",
+          "endereco",
+          "cliente_nome",
+          "data_inicio",
+          "previsao_termino"
+        ],
+        "title": "ObraIn",
+        "type": "object"
+      },
+      "ObraOut": {
+        "properties": {
+          "atualizado_em": {
+            "format": "date-time",
+            "title": "Atualizado Em",
+            "type": "string"
+          },
+          "cliente_nome": {
+            "title": "Cliente Nome",
+            "type": "string"
+          },
+          "criado_em": {
+            "format": "date-time",
+            "title": "Criado Em",
+            "type": "string"
+          },
+          "data_inicio": {
+            "format": "date",
+            "title": "Data Inicio",
+            "type": "string"
+          },
+          "endereco": {
+            "$ref": "#/components/schemas/EnderecoOut"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "membros": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MembroOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só para o dono",
+            "title": "Membros"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "previsao_termino": {
+            "format": "date",
+            "title": "Previsao Termino",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "versao": {
+            "description": "Mande de volta no If-Match (ou no campo versao) ao editar",
+            "title": "Versao",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "endereco",
+          "cliente_nome",
+          "data_inicio",
+          "previsao_termino",
+          "status",
+          "versao",
+          "criado_em",
+          "atualizado_em"
+        ],
+        "title": "ObraOut",
+        "type": "object"
+      },
+      "ObraResumoOut": {
+        "properties": {
+          "cidade": {
+            "title": "Cidade",
+            "type": "string"
+          },
+          "cliente_nome": {
+            "title": "Cliente Nome",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "previsao_termino": {
+            "format": "date",
+            "title": "Previsao Termino",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "uf": {
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "cidade",
+          "uf",
+          "status",
+          "cliente_nome",
+          "previsao_termino"
+        ],
+        "title": "ObraResumoOut",
+        "type": "object"
+      },
+      "OcorrenciaIn": {
+        "properties": {
+          "descricao": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Descricao",
+            "type": "string"
+          },
+          "impacto_prazo_dias": {
+            "anyOf": [
+              {
+                "maximum": 365.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Atraso no prazo, em dias",
+            "title": "Impacto Prazo Dias"
+          },
+          "tipo": {
+            "enum": [
+              "chuva",
+              "falta_de_material",
+              "pedido_do_cliente",
+              "acidente",
+              "outro"
+            ],
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo",
+          "descricao"
+        ],
+        "title": "OcorrenciaIn",
+        "type": "object"
+      },
+      "OcorrenciaOut": {
+        "properties": {
+          "descricao": {
+            "title": "Descricao",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "impacto_prazo_dias": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Impacto Prazo Dias"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "descricao",
+          "impacto_prazo_dias"
+        ],
+        "title": "OcorrenciaOut",
+        "type": "object"
+      },
+      "PaginaDeComentariosOut": {
+        "properties": {
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/ComentarioOut"
+            },
+            "title": "Itens",
+            "type": "array"
+          },
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "por_pagina": {
+            "title": "Por Pagina",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "itens",
+          "pagina",
+          "por_pagina",
+          "total"
+        ],
+        "title": "PaginaDeComentariosOut",
+        "type": "object"
+      },
+      "PaginaDeDiariosOut": {
+        "properties": {
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/DiarioResumoOut"
+            },
+            "title": "Itens",
+            "type": "array"
+          },
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "por_pagina": {
+            "title": "Por Pagina",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "itens",
+          "pagina",
+          "por_pagina",
+          "total"
+        ],
+        "title": "PaginaDeDiariosOut",
+        "type": "object"
+      },
+      "PaginaDeObrasOut": {
+        "properties": {
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/ObraResumoOut"
+            },
+            "title": "Itens",
+            "type": "array"
+          },
+          "pagina": {
+            "title": "Pagina",
+            "type": "integer"
+          },
+          "por_pagina": {
+            "title": "Por Pagina",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "itens",
+          "pagina",
+          "por_pagina",
+          "total"
+        ],
+        "title": "PaginaDeObrasOut",
+        "type": "object"
+      },
+      "PedidoDeUploadIn": {
+        "examples": [
+          {
+            "content_type": "image/jpeg",
+            "tamanho_bytes": 412000
+          }
+        ],
+        "properties": {
+          "content_type": {
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "tamanho_bytes": {
+            "description": "Até 5 MB",
+            "exclusiveMinimum": 0.0,
+            "maximum": 5242880.0,
+            "title": "Tamanho Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content_type",
+          "tamanho_bytes"
+        ],
+        "title": "PedidoDeUploadIn",
+        "type": "object"
+      },
+      "PerfilBioUpdate": {
+        "description": "Sem campo usuario_id de propósito: a identidade vem do JWT (extras são ignorados).",
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "maxLength": 280,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          }
+        },
+        "title": "PerfilBioUpdate",
+        "type": "object"
+      },
+      "PerfilOut": {
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "pode_editar": {
+            "default": false,
+            "title": "Pode Editar",
+            "type": "boolean"
+          },
+          "premium": {
+            "default": false,
+            "title": "Premium",
+            "type": "boolean"
+          },
+          "usuario_id": {
+            "title": "Usuario Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usuario_id",
+          "nome"
+        ],
+        "title": "PerfilOut",
+        "type": "object"
+      },
+      "PremiumStatusOut": {
+        "properties": {
+          "premium": {
+            "title": "Premium",
+            "type": "boolean"
+          },
+          "premium_desde": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Premium Desde"
+          }
+        },
+        "required": [
+          "premium"
+        ],
+        "title": "PremiumStatusOut",
+        "type": "object"
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "nova_senha": {
+            "title": "Nova Senha",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "nova_senha"
+        ],
+        "title": "ResetPasswordRequest",
+        "type": "object"
+      },
+      "ResetPasswordResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ResetPasswordResponse",
+        "type": "object"
+      },
+      "RevisaoOut": {
+        "properties": {
+          "autor_id": {
+            "title": "Autor Id",
+            "type": "integer"
+          },
+          "criado_em": {
+            "format": "date-time",
+            "title": "Criado Em",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "motivo": {
+            "title": "Motivo",
+            "type": "string"
+          },
+          "retrato": {
+            "description": "Como o diário estava antes desta revisão",
+            "title": "Retrato",
+            "type": "object"
+          },
+          "versao_anterior": {
+            "title": "Versao Anterior",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "versao_anterior",
+          "motivo",
+          "autor_id",
+          "criado_em",
+          "retrato"
+        ],
+        "title": "RevisaoOut",
+        "type": "object"
+      },
+      "StatusIn": {
+        "examples": [
+          {
+            "status": "pausada",
+            "versao": 1
+          }
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "ativa",
+              "pausada",
+              "concluida"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "versao": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opcional: confere a versão lida (409 se divergir)",
+            "title": "Versao"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "StatusIn",
+        "type": "object"
+      },
+      "TokenOut": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "contexto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UsuarioOut"
+          }
+        },
+        "required": [
+          "access_token",
+          "user"
+        ],
+        "title": "TokenOut",
+        "type": "object"
+      },
+      "UploadUrlOut": {
+        "properties": {
+          "expira_em_segundos": {
+            "title": "Expira Em Segundos",
+            "type": "integer"
+          },
+          "foto_id": {
+            "format": "uuid",
+            "title": "Foto Id",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Cabeçalhos obrigatórios no PUT",
+            "title": "Headers",
+            "type": "object"
+          },
+          "metodo": {
+            "const": "PUT",
+            "default": "PUT",
+            "enum": [
+              "PUT"
+            ],
+            "title": "Metodo",
+            "type": "string"
+          },
+          "object_key": {
+            "title": "Object Key",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL relativa à API (/storage/...): faça PUT do arquivo nela",
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "foto_id",
+          "object_key",
+          "url",
+          "headers",
+          "expira_em_segundos"
+        ],
+        "title": "UploadUrlOut",
+        "type": "object"
+      },
+      "UrlDaFotoOut": {
+        "properties": {
+          "expira_em_segundos": {
+            "title": "Expira Em Segundos",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expira_em_segundos"
+        ],
+        "title": "UrlDaFotoOut",
+        "type": "object"
+      },
+      "UsuarioOut": {
+        "properties": {
+          "admin": {
+            "default": false,
+            "title": "Admin",
+            "type": "boolean"
+          },
+          "criado_em": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criado Em"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "nome": {
+            "title": "Nome",
+            "type": "string"
+          },
+          "premium": {
+            "default": false,
+            "title": "Premium",
+            "type": "boolean"
+          },
+          "premium_desde": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Premium Desde"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "email"
+        ],
+        "title": "UsuarioOut",
+        "type": "object"
+      },
+      "ValidateTokenResponse": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid"
+        ],
+        "title": "ValidateTokenResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VersaoIn": {
+        "properties": {
+          "versao": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opcional: confere a versão lida (409 se divergir)",
+            "title": "Versao"
+          }
+        },
+        "title": "VersaoIn",
+        "type": "object"
+      },
+      "VinculoOut": {
+        "properties": {
+          "ativa": {
+            "description": "É a empresa ativa do token usado na consulta",
+            "title": "Ativa",
+            "type": "boolean"
+          },
+          "empresa_id": {
+            "format": "uuid",
+            "title": "Empresa Id",
+            "type": "string"
+          },
+          "empresa_nome": {
+            "title": "Empresa Nome",
+            "type": "string"
+          },
+          "papel": {
+            "title": "Papel",
+            "type": "string"
+          },
+          "tipo_pessoa": {
+            "enum": [
+              "PF",
+              "PJ"
+            ],
+            "title": "Tipo Pessoa",
+            "type": "string"
+          }
+        },
+        "required": [
+          "empresa_id",
+          "empresa_nome",
+          "tipo_pessoa",
+          "papel",
+          "ativa"
+        ],
+        "title": "VinculoOut",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Nivelo API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/auth/admin/status": {
+      "get": {
+        "operationId": "admin_status",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "status": 403,
+                  "type": "https://nivelo/erros/acesso-negado"
+                }
+              }
+            },
+            "description": "Autenticado, mas a ação é só para admin da plataforma (evento 'acesso.negado' na auditoria)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Admin Status",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/cadastro": {
+      "post": {
+        "description": "Cria a empresa, o usuário e o vínculo `dono`. O papel nunca vem do corpo.\n\nA empresa nasce no plano Free: o módulo de assinaturas grava a própria tabela logo depois\n(o auth-service não escreve em tabela de outro contexto).",
+        "operationId": "cadastro",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CadastroIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CadastroOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "E-mail já cadastrado"
+                }
+              }
+            },
+            "description": "E-mail já cadastrado"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Cadastro",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/empresa-ativa": {
+      "post": {
+        "description": "Troca a empresa ativa: confere o vínculo e devolve um token novo.",
+        "operationId": "trocar_empresa_ativa",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmpresaAtivaIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Trocar Empresa Ativa",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/empresas": {
+      "post": {
+        "description": "Nova empresa com o usuário logado como dono. Funciona com token sem tenant. Nasce no Free.",
+        "operationId": "criar_empresa",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmpresaIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaCriadaOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Criar Empresa",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/equipe": {
+      "get": {
+        "description": "Quem tem vínculo ativo na empresa ativa (para escolher membros das obras). Só o dono.",
+        "operationId": "listar_equipe",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MembroDaEquipeOut"
+                  },
+                  "title": "Response Listar Equipe",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "description": "Só o dono"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Listar Equipe",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "operationId": "forgot_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotPasswordResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Forgot Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "E-mail ou senha incorretos"
+                }
+              }
+            },
+            "description": "E-mail ou senha incorretos"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Registra o logout na trilha de auditoria. O JWT é stateless, então nada é invalidado.",
+        "operationId": "logout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "operationId": "reset_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "inexistente": {
+                    "value": {
+                      "detail": "Token de recuperação inválido ou inexistente."
+                    }
+                  },
+                  "senha_curta": {
+                    "value": {
+                      "detail": "A nova senha deve ter no mínimo 6 caracteres."
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Token de redefinição inválido, expirado, já usado ou senha fraca"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Reset Password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/users": {
+      "get": {
+        "operationId": "list_users",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioOut"
+                  },
+                  "title": "Response List Users",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "status": 403,
+                  "type": "https://nivelo/erros/acesso-negado"
+                }
+              }
+            },
+            "description": "Autenticado, mas a ação é só para admin da plataforma (evento 'acesso.negado' na auditoria)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "List Users",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/users/{user_id}": {
+      "delete": {
+        "description": "Remove o perfil (com a foto) na API e, em seguida, a conta no auth-service.\n\nAs recusas do auth-service (própria conta, usuário inexistente) são conferidas\nantes de apagar qualquer coisa.",
+        "operationId": "delete_user",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "propria_conta": {
+                    "value": {
+                      "detail": "Você não pode alterar ou remover a sua própria conta por aqui"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Ação sobre a própria conta ou dados inválidos"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "status": 403,
+                  "type": "https://nivelo/erros/acesso-negado"
+                }
+              }
+            },
+            "description": "Autenticado, mas a ação é só para admin da plataforma (evento 'acesso.negado' na auditoria)"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Usuário não encontrado"
+                }
+              }
+            },
+            "description": "Usuário não encontrado"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Delete User",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/validate-reset-token/{token}": {
+      "get": {
+        "operationId": "validate_reset_token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Validate Reset Token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/vinculos": {
+      "get": {
+        "description": "Empresas do usuário e o papel em cada uma. Funciona com token sem tenant.",
+        "operationId": "listar_vinculos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VinculoOut"
+                  },
+                  "title": "Response Listar Vinculos",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Listar Vinculos",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/convites": {
+      "post": {
+        "description": "Só o dono. A obra, se informada, precisa ser da empresa ativa (senão 404).",
+        "operationId": "convidar",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConviteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConviteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Só o dono convida"
+          },
+          "404": {
+            "description": "Obra não encontrada"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Convidar",
+        "tags": [
+          "convites"
+        ]
+      }
+    },
+    "/api/convites/aceitar": {
+      "post": {
+        "description": "Público: o token do e-mail é a credencial. Cria ou reaproveita a conta e entra na obra.",
+        "operationId": "aceitar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AceiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Convite inválido"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Aceitar",
+        "tags": [
+          "convites"
+        ]
+      }
+    },
+    "/api/diarios/{diario_id}": {
+      "delete": {
+        "description": "Só o dono, e só rascunho (o publicado é registro de prova). Apaga as fotos junto.",
+        "operationId": "remover_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "if-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "409": {
+            "description": "Diário publicado não é removido"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remover Diario",
+        "tags": [
+          "diarios"
+        ]
+      },
+      "get": {
+        "description": "Membros da obra e o dono. O cliente só vê o diário publicado.",
+        "operationId": "detalhar_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiarioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detalhar Diario",
+        "tags": [
+          "diarios"
+        ]
+      },
+      "put": {
+        "description": "Dono e encarregado. Rascunho: edita direto. Publicado: exige `motivo`, guarda o retrato\nanterior numa revisão e gera `diario.revisado`; o encarregado só revisa os próprios.",
+        "operationId": "editar_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Versão lida, como \"3\"",
+            "in": "header",
+            "name": "if-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Versão lida, como \"3\"",
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiarioEdicaoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiarioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "409": {
+            "description": "Versão divergente, diário duplicado no dia, ou ação que não vale no status"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra do diário violada (Problem Details com type próprio)"
+          },
+          "428": {
+            "description": "Faltou a versão (If-Match ou campo versao)"
+          }
+        },
+        "summary": "Editar Diario",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/diarios/{diario_id}/comentarios": {
+      "get": {
+        "description": "Membros da obra e o dono, do mais antigo para o mais novo.",
+        "operationId": "listar_comentarios",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "por_pagina",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Por Pagina",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaDeComentariosOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar Comentarios",
+        "tags": [
+          "diarios"
+        ]
+      },
+      "post": {
+        "description": "Qualquer membro da obra e o dono, só em diário publicado.",
+        "operationId": "comentar",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComentarioIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComentarioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "409": {
+            "description": "Só diário publicado recebe comentário"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra do diário violada (Problem Details com type próprio)"
+          }
+        },
+        "summary": "Comentar",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/diarios/{diario_id}/fotos": {
+      "post": {
+        "description": "Dono e encarregado. Confere o objeto no bucket (tipo e tamanho) e anexa ao diário.\nConfirmar de novo a mesma foto devolve a que já está anexada.",
+        "operationId": "confirmar_foto",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FotoConfirmacaoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FotoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "402": {
+            "description": "Limite de fotos por obra do plano (Problem Details com limite e uso)"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra do diário violada (Problem Details com type próprio)"
+          }
+        },
+        "summary": "Confirmar Foto",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/diarios/{diario_id}/fotos/upload-url": {
+      "post": {
+        "description": "Dono e encarregado. Devolve uma URL de PUT válida por 5 min para JPEG, PNG ou WebP de até\n5 MB, já conferido o limite de fotos do plano. Depois do PUT, confirme em `POST .../fotos`.",
+        "operationId": "pedir_upload_de_foto",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoDeUploadIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "402": {
+            "description": "Limite de fotos por obra do plano (Problem Details com limite e uso)"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra do diário violada (Problem Details com type próprio)"
+          }
+        },
+        "summary": "Pedir Upload De Foto",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/diarios/{diario_id}/publicar": {
+      "post": {
+        "description": "Dono e encarregado. Exige as atividades preenchidas. A partir daqui o cliente vê.",
+        "operationId": "publicar_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "if-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/VersaoIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiarioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "409": {
+            "description": "Versão divergente, diário duplicado no dia, ou ação que não vale no status"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra do diário violada (Problem Details com type próprio)"
+          }
+        },
+        "summary": "Publicar Diario",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/diarios/{diario_id}/revisoes": {
+      "get": {
+        "description": "Quem vê o diário vê as revisões (o histórico de prova), da mais recente para a mais antiga.",
+        "operationId": "revisoes_do_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Diario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RevisaoOut"
+                  },
+                  "title": "Response Revisoes Do Diario",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Diário inexistente, de outra empresa, de obra sem acesso ou rascunho (cliente)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revisoes Do Diario",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/fotos/{foto_id}": {
+      "delete": {
+        "description": "Dono e encarregado, só em rascunho. Remove a referência e o objeto do bucket.",
+        "operationId": "remover_foto_do_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "foto_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Foto Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Foto inexistente, de outra empresa ou sem acesso"
+          },
+          "409": {
+            "description": "Foto de diário publicado não é removida"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remover Foto Do Diario",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/fotos/{foto_id}/url": {
+      "get": {
+        "description": "Quem vê o diário vê a foto: URL de GET válida por 10 min.",
+        "operationId": "url_da_foto",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "foto_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Foto Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlDaFotoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Foto inexistente, de outra empresa ou sem acesso"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Url Da Foto",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/logs": {
+      "get": {
+        "description": "Trilha de auditoria global (mais recentes primeiro). Só o admin da plataforma.",
+        "operationId": "listar_logs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "title": "Response Listar Logs",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "status": 403,
+                  "type": "https://nivelo/erros/acesso-negado"
+                }
+              }
+            },
+            "description": "Autenticado, mas a ação é só para admin da plataforma (evento 'acesso.negado' na auditoria)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de auditoria indisponível"
+                }
+              }
+            },
+            "description": "log-service inacessível"
+          }
+        },
+        "summary": "Listar Logs",
+        "tags": [
+          "logs"
+        ]
+      }
+    },
+    "/api/obras": {
+      "get": {
+        "description": "Dono: todas as obras da empresa. Encarregado e cliente: só as obras em que são membros.",
+        "operationId": "listar_obras",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "ativa",
+                    "pausada",
+                    "concluida"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "por_pagina",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Por Pagina",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaDeObrasOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar Obras",
+        "tags": [
+          "obras"
+        ]
+      },
+      "post": {
+        "description": "Só o dono. A obra nasce ativa e ocupa uma vaga do plano (Free: 1 obra ativa).",
+        "operationId": "criar_obra",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObraIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObraOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "402": {
+            "description": "Limite de obras ativas do plano (Problem Details com limite e uso)"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra da obra violada (ex.: transição de status)"
+          }
+        },
+        "summary": "Criar Obra",
+        "tags": [
+          "obras"
+        ]
+      }
+    },
+    "/api/obras/{obra_id}": {
+      "delete": {
+        "description": "Só o dono. Soft delete: a obra some das listagens e do limite; o histórico fica.",
+        "operationId": "remover_obra",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "if-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "409": {
+            "description": "A obra mudou depois de lida (versão divergente)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remover Obra",
+        "tags": [
+          "obras"
+        ]
+      },
+      "get": {
+        "description": "Membros da obra e o dono. A lista de membros só vem para o dono.",
+        "operationId": "detalhar_obra",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObraOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detalhar Obra",
+        "tags": [
+          "obras"
+        ]
+      },
+      "put": {
+        "description": "Só o dono. Exige a versão lida; se outra pessoa salvou antes, 409.",
+        "operationId": "editar_obra",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Versão lida, como \"3\"",
+            "in": "header",
+            "name": "if-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Versão lida, como \"3\"",
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObraEdicaoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObraOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "409": {
+            "description": "A obra mudou depois de lida (versão divergente)"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra da obra violada (ex.: transição de status)"
+          },
+          "428": {
+            "description": "Faltou a versão (If-Match ou campo versao)"
+          }
+        },
+        "summary": "Editar Obra",
+        "tags": [
+          "obras"
+        ]
+      }
+    },
+    "/api/obras/{obra_id}/diarios": {
+      "get": {
+        "description": "Membros da obra e o dono, do dia mais recente para o mais antigo. O cliente só vê os\npublicados.",
+        "operationId": "listar_diarios",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rascunho",
+                    "publicado"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "por_pagina",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Por Pagina",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaDeDiariosOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar Diarios",
+        "tags": [
+          "diarios"
+        ]
+      },
+      "post": {
+        "description": "Dono e encarregado (nas obras em que é membro). O diário nasce rascunho.",
+        "operationId": "registrar_diario",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiarioIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiarioOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "409": {
+            "description": "Já existe diário desta obra nesse dia"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra do diário violada (Problem Details com type próprio)"
+          }
+        },
+        "summary": "Registrar Diario",
+        "tags": [
+          "diarios"
+        ]
+      }
+    },
+    "/api/obras/{obra_id}/historico": {
+      "get": {
+        "description": "Só o dono. Eventos de negócio da obra e dos diários e fotos dela, do mais recente para o\nmais antigo (vêm da auditoria, alimentada pela outbox; podem chegar com ~1 s de atraso).",
+        "operationId": "historico_da_obra",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limite",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EventoDoHistoricoOut"
+                  },
+                  "title": "Response Historico Da Obra",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "Auditoria (log-service) indisponível"
+          }
+        },
+        "summary": "Historico Da Obra",
+        "tags": [
+          "obras"
+        ]
+      }
+    },
+    "/api/obras/{obra_id}/membros": {
+      "post": {
+        "description": "Só o dono. A pessoa precisa ter vínculo ativo na empresa com o mesmo papel (quem ainda\nnão é da empresa entra por convite: POST /api/convites).",
+        "operationId": "adicionar_membro",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembroIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembroOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "409": {
+            "description": "Já é membro da obra"
+          },
+          "422": {
+            "description": "A pessoa não é da empresa, ou o papel não bate com o vínculo"
+          },
+          "503": {
+            "description": "auth-service indisponível para conferir a equipe"
+          }
+        },
+        "summary": "Adicionar Membro",
+        "tags": [
+          "obras"
+        ]
+      }
+    },
+    "/api/obras/{obra_id}/membros/{usuario_id}": {
+      "delete": {
+        "description": "Só o dono. A pessoa continua na empresa; só deixa de ver esta obra.",
+        "operationId": "remover_membro",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "usuario_id",
+            "required": true,
+            "schema": {
+              "title": "Usuario Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra não encontrada, ou a pessoa não é membro"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remover Membro",
+        "tags": [
+          "obras"
+        ]
+      }
+    },
+    "/api/obras/{obra_id}/status": {
+      "patch": {
+        "description": "Só o dono. ativa ↔ pausada, ativa|pausada → concluida. Reativar passa pelo plano.",
+        "operationId": "alterar_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obra_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obra Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "if-match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObraOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token ou token inválido"
+          },
+          "402": {
+            "description": "Limite de obras ativas do plano (Problem Details com limite e uso)"
+          },
+          "403": {
+            "description": "Token sem empresa ativa, ou papel sem permissão para a ação"
+          },
+          "404": {
+            "description": "Obra inexistente, removida, de outra empresa ou sem acesso"
+          },
+          "409": {
+            "description": "A obra mudou depois de lida (versão divergente)"
+          },
+          "422": {
+            "description": "Dados inválidos ou regra da obra violada (ex.: transição de status)"
+          }
+        },
+        "summary": "Alterar Status",
+        "tags": [
+          "obras"
+        ]
+      }
+    },
+    "/api/perfis/me": {
+      "get": {
+        "description": "Perfil do usuário logado.",
+        "operationId": "meu_perfil",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Meu Perfil",
+        "tags": [
+          "perfis"
+        ]
+      }
+    },
+    "/api/perfis/{usuario_id}": {
+      "get": {
+        "description": "Perfil de qualquer usuário (leitura aberta a quem está logado).",
+        "operationId": "ver_perfil",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "usuario_id",
+            "required": true,
+            "schema": {
+              "title": "Usuario Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Usuário não encontrado"
+                }
+              }
+            },
+            "description": "Usuário não encontrado"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Ver Perfil",
+        "tags": [
+          "perfis"
+        ]
+      },
+      "put": {
+        "description": "Atualiza a bio (até 280 caracteres; vazia vira null). Só o dono.",
+        "operationId": "atualizar_bio",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "usuario_id",
+            "required": true,
+            "schema": {
+              "title": "Usuario Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerfilBioUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Você só pode editar o próprio perfil"
+                }
+              }
+            },
+            "description": "Perfil de outro usuário — inclusive para admin (evento 'acesso.negado' é registrado)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Atualizar Bio",
+        "tags": [
+          "perfis"
+        ]
+      }
+    },
+    "/api/perfis/{usuario_id}/foto": {
+      "delete": {
+        "description": "Remove a foto (idempotente: sem foto também devolve 204).",
+        "operationId": "remover_foto",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "usuario_id",
+            "required": true,
+            "schema": {
+              "title": "Usuario Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Você só pode editar o próprio perfil"
+                }
+              }
+            },
+            "description": "Perfil de outro usuário — inclusive para admin (evento 'acesso.negado' é registrado)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remover Foto",
+        "tags": [
+          "perfis"
+        ]
+      },
+      "put": {
+        "description": "Envia/troca a foto. O arquivo vai para o object storage; o banco guarda só a chave.",
+        "operationId": "enviar_foto",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "usuario_id",
+            "required": true,
+            "schema": {
+              "title": "Usuario Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_enviar_foto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Arquivo vazio"
+                }
+              }
+            },
+            "description": "Arquivo vazio"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Você só pode editar o próprio perfil"
+                }
+              }
+            },
+            "description": "Perfil de outro usuário — inclusive para admin (evento 'acesso.negado' é registrado)"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Imagem maior que o limite de 2 MB"
+                }
+              }
+            },
+            "description": "Arquivo maior que PERFIL_FOTO_MAX_BYTES"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Envie uma imagem JPEG, PNG ou WEBP"
+                }
+              }
+            },
+            "description": "Conteúdo não é JPEG/PNG/WEBP (conferido pelos bytes, não pela extensão)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Muitos envios de foto; aguarde um minuto"
+                }
+              }
+            },
+            "description": "Muitos uploads em pouco tempo"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Storage indisponível"
+                }
+              }
+            },
+            "description": "Object storage indisponível (banco não é alterado)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Enviar Foto",
+        "tags": [
+          "perfis"
+        ]
+      }
+    },
+    "/api/premium/checkout": {
+      "post": {
+        "description": "Cria a sessão de checkout e devolve a URL do Stripe; o Angular redireciona para ela.",
+        "operationId": "criar_checkout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Você já é Premium"
+                }
+              }
+            },
+            "description": "Usuário já é Premium"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Não foi possível iniciar o pagamento"
+                }
+              }
+            },
+            "description": "Stripe recusou ou não respondeu"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Pagamentos não configurados neste ambiente"
+                }
+              }
+            },
+            "description": "Stripe não configurado neste ambiente (STRIPE_* ausentes) ou auth-service inacessível"
+          }
+        },
+        "summary": "Criar Checkout",
+        "tags": [
+          "premium"
+        ]
+      }
+    },
+    "/api/premium/status": {
+      "get": {
+        "description": "Plano do usuário logado, lido do banco (não do JWT).",
+        "operationId": "status_premium",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremiumStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "sem_token": {
+                    "value": {
+                      "detail": "Token não enviado"
+                    }
+                  },
+                  "token_invalido": {
+                    "value": {
+                      "detail": "Token inválido ou expirado"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Não autenticado (token ausente ou inválido)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Serviço de autenticação inacessível: ..."
+                }
+              }
+            },
+            "description": "auth-service inacessível"
+          }
+        },
+        "summary": "Status Premium",
+        "tags": [
+          "premium"
+        ]
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "description": "Recebe eventos do Stripe. Público (sem JWT), mas só aceita corpo assinado com STRIPE_WEBHOOK_SECRET.",
+        "operationId": "stripe_webhook",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Assinatura inválida"
+                }
+              }
+            },
+            "description": "Assinatura ausente ou inválida"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Falha ao processar o evento"
+                }
+              }
+            },
+            "description": "Falha ao aplicar o evento (o Stripe reenvia)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Pagamentos não configurados neste ambiente"
+                }
+              }
+            },
+            "description": "Stripe não configurado neste ambiente (STRIPE_* ausentes) ou auth-service inacessível"
+          }
+        },
+        "summary": "Stripe Webhook",
+        "tags": [
+          "premium"
+        ]
+      }
+    }
+  }
+}
