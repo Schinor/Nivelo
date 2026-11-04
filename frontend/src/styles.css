@@ -89,3 +89,77 @@ a {
   outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
+
+/* ── Componentes de tela do Nivelo (mobile-first: 390 px primeiro) ─────────── */
+
+.pagina { width: 100%; max-width: 760px; margin: 0 auto; padding: var(--space-4) var(--space-4) var(--space-12); }
+.pagina-larga { max-width: 1040px; }
+.pagina h1 { font-family: var(--font-display); font-size: 2rem; letter-spacing: .5px; line-height: 1.05; }
+.pagina h2 { font-size: 1.05rem; font-weight: 700; margin: var(--space-6) 0 var(--space-3); }
+.cabecalho { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
+.cabecalho .sub { color: var(--ink-muted); font-size: .9rem; margin-top: var(--space-1); }
+.voltar { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--ink-muted); font-size: .9rem; }
+.voltar:hover { color: var(--ink); }
+
+.cartao { background: var(--surface-200); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); }
+.cartao + .cartao { margin-top: var(--space-3); }
+a.cartao { display: block; transition: border-color .15s ease, transform .15s ease; }
+a.cartao:hover { border-color: var(--border-strong); }
+a.cartao:active { transform: scale(.99); }
+.lista { display: grid; gap: var(--space-3); list-style: none; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 var(--space-6); border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: transparent; color: var(--ink); font-size: 1rem; font-weight: 600; line-height: 1; text-align: center; transition: background .15s ease, border-color .15s ease, opacity .15s ease; }
+.btn:hover:not(:disabled) { border-color: var(--ink-muted); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-primario { background: var(--gold); border-color: var(--gold); color: var(--surface-100); }
+.btn-primario:hover:not(:disabled) { background: var(--gold-hover); border-color: var(--gold-hover); }
+.btn-perigo { border-color: var(--danger); color: #ff8a8e; }
+.btn-perigo:hover:not(:disabled) { background: var(--red-soft); border-color: var(--danger); }
+.btn-perigo.cheio { background: var(--danger); color: #fff; }
+.btn-texto { border-color: transparent; padding: 0 var(--space-3); }
+.btn-bloco { width: 100%; }
+.btn-pequeno { min-height: 40px; padding: 0 var(--space-4); font-size: .9rem; }
+.acoes { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+.acoes-fixas { position: sticky; bottom: 0; z-index: 5; display: grid; gap: var(--space-2); padding: var(--space-3) 0; background: linear-gradient(transparent, var(--bg) 30%); }
+@media (max-width: 860px) { .acoes-fixas { bottom: 56px; } }
+
+form.formulario { display: grid; gap: var(--space-4); }
+.campo { display: grid; gap: 6px; }
+.campo > label, .rotulo { font-size: .9rem; font-weight: 600; color: var(--ink); }
+.campo .ajuda { font-size: .8rem; color: var(--ink-faint); }
+.campo input, .campo select, .campo textarea { width: 100%; min-height: 48px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: var(--surface-300); color: var(--ink); font-size: 1rem; }
+.campo textarea { padding: var(--space-3); min-height: 110px; resize: vertical; line-height: 1.45; }
+.campo input:focus, .campo select:focus, .campo textarea:focus { border-color: var(--gold); outline: none; }
+.campo.invalido input, .campo.invalido textarea, .campo.invalido select { border-color: var(--danger); }
+.erro-campo { color: #ff8a8e; font-size: .82rem; }
+.duas-colunas { display: grid; gap: var(--space-4); grid-template-columns: 1fr 1fr; }
+.opcoes { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.opcao { position: relative; }
+.opcao input { position: absolute; opacity: 0; pointer-events: none; }
+.opcao span { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--space-4); border-radius: var(--radius-full); border: 1px solid var(--border-strong); color: var(--ink-muted); font-size: .92rem; cursor: pointer; }
+.opcao input:checked + span { border-color: var(--gold); background: var(--gold-soft); color: var(--ink); }
+.opcao input:focus-visible + span { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+.alerta { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: .92rem; line-height: 1.4; }
+.alerta-erro { background: var(--red-soft); color: #ffc2c4; border: 1px solid #6a2427; }
+.alerta-info { background: var(--surface-300); color: var(--ink-muted); border: 1px solid var(--border); }
+.alerta-sucesso { background: #13261b; color: #a9dfbd; border: 1px solid #285a3b; }
+
+.selo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); font-size: .72rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+.selo::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.selo-ativa, .selo-publicado { background: #13261b; color: #7ed39d; }
+.selo-pausada, .selo-rascunho { background: #2e2410; color: var(--warning); }
+.selo-concluida { background: var(--tier-neutro-soft); color: var(--tier-neutro); }
+.selo-apos { background: var(--tier-encarregado-soft); color: #9cc3d8; text-transform: none; letter-spacing: 0; font-weight: 600; border-radius: var(--radius-md); }
+.selo-apos::before { display: none; }
+
+.meta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); color: var(--ink-muted); font-size: .88rem; }
+.vazio { padding: var(--space-8) var(--space-4); text-align: center; color: var(--ink-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); }
+.vazio p + .btn, .vazio p + a.btn { margin-top: var(--space-4); }
+.carregando { padding: var(--space-8) 0; text-align: center; color: var(--ink-faint); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.texto-longo { white-space: pre-wrap; line-height: 1.55; }
+dl.dados { display: grid; grid-template-columns: auto 1fr; gap: var(--space-2) var(--space-4); font-size: .95rem; }
+dl.dados dt { color: var(--ink-muted); }
+
+@media (max-width: 420px) { .duas-colunas { grid-template-columns: 1fr; } .pagina h1 { font-size: 1.75rem; } }
