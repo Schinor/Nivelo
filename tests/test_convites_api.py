@@ -5,6 +5,9 @@ import pytest
 from test_autenticacao_api import auth, token
 from test_obras_api import DONO_A, EMPRESA_A, EMPRESA_B, ENC_A, OBRA_A2, OBRA_B1, nomes, tk
 
+# Tenancy, papéis e plano: rodam também no MariaDB (tests/banco_de_teste.py)
+pytestmark = pytest.mark.mariadb
+
 
 @pytest.fixture
 def ctx(obras_ctx):

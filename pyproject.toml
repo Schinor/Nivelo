@@ -60,6 +60,9 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "mariadb: tenancy, política de plano e constraints; rodam também no MariaDB (NIVELO_TESTES_NO_MARIADB=1)",
+]
 
 [tool.importlinter]
 root_package = "app"

@@ -61,6 +61,12 @@ jobs:
           MARIADB_URL: mysql+pymysql://root:ci-descartavel@127.0.0.1:3306
         run: pytest -q
 
+      - name: Tenancy, política de plano e constraints de novo, agora no MariaDB 11.8
+        env:
+          MARIADB_URL: mysql+pymysql://root:ci-descartavel@127.0.0.1:3306
+          NIVELO_TESTES_NO_MARIADB: "1"
+        run: pytest -q -m mariadb
+
       - name: Migrações no MariaDB 11.8 (Alembic, db/*.sql e seed)
         env:
           MARIADB_URL: mysql+pymysql://root:ci-descartavel@127.0.0.1:3306

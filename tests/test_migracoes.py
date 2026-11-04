@@ -210,45 +210,8 @@ def test_dominio_tem_tres_ou_mais_tabelas_com_chave_estrangeira(dominio):
     assert {"obra_membros", "diarios", "ocorrencias", "diario_fotos", "diario_revisoes", "comentarios"} <= com_fk
 
 
-def test_banco_recusa_diario_de_uma_empresa_na_obra_de_outra(dominio):
-    with conectar(dominio) as conn:
-        _obra(conn)
-        with pytest.raises(sqlite3.IntegrityError):
-            _diario(conn, empresa=EMPRESA_B)  # a obra é da empresa A
-
-
-def test_um_diario_por_obra_por_dia(dominio):
-    with conectar(dominio) as conn:
-        _obra(conn)
-        _diario(conn)
-        with pytest.raises(sqlite3.IntegrityError):
-            _diario(conn, diario_id="0190f3a0-0000-7000-8000-0000000000d2")
-
-
-def test_previsao_de_termino_nao_pode_ser_antes_do_inicio(dominio):
-    with conectar(dominio) as conn, pytest.raises(sqlite3.IntegrityError):
-        _obra(conn, inicio="2026-12-01", termino="2026-11-01")
-
-
-def test_ocorrencias_saem_com_o_diario_e_revisao_impede_apagar(dominio):
-    with conectar(dominio) as conn:
-        _obra(conn)
-        _diario(conn)
-        conn.execute(
-            "INSERT INTO ocorrencias (id, empresa_id, diario_id, tipo, descricao) VALUES ('o1', ?, ?, 'chuva', 'Chuva forte')",
-            (EMPRESA_A, DIARIO_A),
-        )
-        conn.execute("DELETE FROM diarios WHERE id = ?", (DIARIO_A,))
-        assert conn.execute("SELECT COUNT(*) FROM ocorrencias").fetchone()[0] == 0
-
-        _diario(conn)
-        conn.execute(
-            "INSERT INTO diario_revisoes (id, empresa_id, diario_id, versao_anterior, snapshot, motivo, autor_id)"
-            " VALUES ('r1', ?, ?, 1, '{}', 'Corrigir efetivo', 1)",
-            (EMPRESA_A, DIARIO_A),
-        )
-        with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("DELETE FROM diarios WHERE id = ?", (DIARIO_A,))
+# As constraints (FK composta, únicos, CHECKs, cascatas) estão em test_constraints_dominio.py,
+# que roda no SQLite e no MariaDB.
 
 
 def test_dominio_downgrade_e_upgrade_de_novo(dominio):

@@ -2,9 +2,8 @@ import os
 import sys
 
 import pytest
-from sqlalchemy import create_engine
+from banco_de_teste import motor_da_api
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_12345678901234567890"
@@ -26,13 +25,9 @@ def setup_api_app():
     from app.main import app
     from app.shared.api.autenticacao import identidade as current_user
 
-    engine_test = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    # SQLite em memória, ou o MariaDB migrado com NIVELO_TESTES_NO_MARIADB=1 (ver banco_de_teste.py)
+    engine_test = motor_da_api(Base.metadata)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
-    Base.metadata.create_all(bind=engine_test)
 
     def override_get_db():
         db = TestingSessionLocal()

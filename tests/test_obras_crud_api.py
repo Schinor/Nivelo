@@ -10,6 +10,9 @@ import pytest
 from conftest import CLI_A, DONO_A, DONO_B, EMPRESA_A, EMPRESA_B, ENC_A, OBRA_A1, OBRA_A2
 from test_obras_api import tk
 
+# Tenancy, papéis e plano: rodam também no MariaDB (tests/banco_de_teste.py)
+pytestmark = pytest.mark.mariadb
+
 EMPRESA_C = "0190f3a0-0000-7000-8000-00000000000c"
 DONO_C, ENC_C, CLI_C = 21, 22, 23
 
@@ -275,17 +278,21 @@ def test_editar_sem_mudanca_nao_muda_a_versao(ctx):
 
 def test_update_concorrente_no_repositorio_vira_conflito(ctx):
     """Duas transações leem a versão 1; a segunda a gravar recebe ConflitoDeVersao (WHERE versao)."""
+    from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
     from app.obras.domain.ids import ObraId
-    from app.obras.infrastructure.repositorio import RepositorioDeObrasSQL
+    from app.obras.infrastructure.unidade_de_trabalho import UnidadeDeTrabalhoDeObrasSQL
     from app.shared.domain.erros import ConflitoDeVersao
     from app.shared.domain.ids import EmpresaId, UsuarioId
     from app.shared.infrastructure.tenancy import definir_tenant
 
+    # Pela unidade de trabalho, como na produção: no MariaDB ela roda em READ COMMITTED (ADR 011)
+    empresa = EmpresaId(uuid.UUID(EMPRESA_A))
     sessoes = [ctx.SessionLocal(), ctx.SessionLocal()]
-    obras = []
+    uows = []
     for s in sessoes:
-        definir_tenant(s, uuid.UUID(EMPRESA_A))
-        obras.append(RepositorioDeObrasSQL(s, EmpresaId(uuid.UUID(EMPRESA_A))))
+        definir_tenant(s, empresa.valor)
+        uows.append(UnidadeDeTrabalhoDeObrasSQL(s, empresa, ConsultaDireitosSQL(s)).__enter__())
+    obras = [u.obras for u in uows]
     primeira, segunda = (repo.obter(ObraId(uuid.UUID(OBRA_A1))) for repo in obras)
     for obra, nome in ((primeira, "Primeira"), (segunda, "Segunda")):
         obra.editar(

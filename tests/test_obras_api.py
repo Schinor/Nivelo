@@ -7,6 +7,9 @@ import uuid
 import pytest
 from test_autenticacao_api import auth, token
 
+# Tenancy, papéis e plano: rodam também no MariaDB (tests/banco_de_teste.py)
+pytestmark = pytest.mark.mariadb
+
 EMPRESA_A = "0190f3a0-0000-7000-8000-00000000000a"
 EMPRESA_B = "0190f3a0-0000-7000-8000-00000000000b"
 OBRA_A1 = "0190f3a0-0000-7000-8000-0000000000a1"
