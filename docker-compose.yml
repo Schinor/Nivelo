@@ -1,6 +1,7 @@
 services:
   api:
     image: ghcr.io/schinor/nivelo-api:${IMAGE_TAG:-latest}
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     container_name: nivelo-api-schinor
     ports:
       # Se a porta 8000 já estiver em uso por outro aluno, troque a porta da esquerda (ex: 8050:8000)
@@ -30,6 +31,9 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
+      # Preços dos planos pagos (Fase 9); vazios até lá
+      - STRIPE_PRICE_PRO=${STRIPE_PRICE_PRO:-}
+      - STRIPE_PRICE_CONSTRUTORA=${STRIPE_PRICE_CONSTRUTORA:-}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8000}
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
       # Dados de desenvolvimento (db/900_seed_dev.sql). Nunca true em produção.
@@ -58,6 +62,7 @@ services:
 
   auth-service:
     image: ghcr.io/schinor/nivelo-auth-service:${IMAGE_TAG:-latest}
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     container_name: auth-service-schinor
     expose:
       - "8001"
@@ -99,6 +104,7 @@ services:
 
   log-service:
     image: ghcr.io/schinor/nivelo-log-service:${IMAGE_TAG:-latest}
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     container_name: log-service-schinor
     expose:
       - "8002"                # Sem "ports:" — não é publicado no host
@@ -121,6 +127,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     command: ["redis-server", "--appendonly", "yes"]
     # Sem "ports:" — só o log-service acessa o Redis, pela rede interna
     volumes:
@@ -136,6 +143,7 @@ services:
 
   garage:
     image: ghcr.io/schinor/nivelo-garage:${IMAGE_TAG:-latest}
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     container_name: garage-schinor
     # --single-node: layout de 1 nó automático
     # --default-bucket: cria chave de acesso + bucket a partir das variáveis (idempotente no restart)
@@ -164,6 +172,7 @@ services:
 
   prometheus:
     image: ghcr.io/schinor/nivelo-prometheus:${IMAGE_TAG:-latest}
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     # --web.external-url: portas dedicadas (9090) não chegam pelo proxy do domínio público
     # (ver /prometheus na api), então os links gerados pelo próprio Prometheus
     # precisam já vir com esse prefixo. --web.route-prefix mantém as rotas internas
@@ -180,6 +189,12 @@ services:
     # ("port is already allocated") e o container nem sobe. Acesso: /prometheus na api.
     expose:
       - "9090"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     depends_on:
       - api
       - auth-service
@@ -190,6 +205,7 @@ services:
 
   grafana:
     image: ghcr.io/schinor/nivelo-grafana:${IMAGE_TAG:-latest}
+    mem_limit: 1g             # regra da infra: no máximo 1 GB por container
     # Sem "ports:" pelo mesmo motivo do Prometheus — acesso via /grafana na api.
     expose:
       - "3000"
@@ -202,6 +218,12 @@ services:
       - GF_SERVER_ROOT_URL=${CATALOGO_URL:-http://localhost:8000}/grafana/
     volumes:
       - grafana-data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       - prometheus
     networks:
