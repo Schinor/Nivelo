@@ -33,3 +33,6 @@ Thumbs.db
 
 # Guia pessoal de deploy (não versionado)
 COMO_SUBIR_A_APLICACAO.md
+
+# Prints e estado do roteiro e2e (podem ter dados de produção)
+e2e/prints/
