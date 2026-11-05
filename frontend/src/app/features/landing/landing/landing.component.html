@@ -1,72 +1,160 @@
-<div class="landing">
-  <header class="topo">
-    <a class="marca" routerLink="/">Nivelo</a>
-    <nav aria-label="Principal">
-      <button type="button" class="link" (click)="irParaPlanos()">Planos</button>
-      @if (auth.isLoggedIn()) {
-        <a routerLink="/obras" class="btn btn-primario btn-pequeno">Minhas obras</a>
-      } @else {
-        <a routerLink="/login" class="link">Entrar</a>
-      }
+<header class="topo">
+  <div class="faixa">
+    <a routerLink="/" class="marca" aria-label="Nivelo, página inicial"><app-marca /></a>
+    <nav aria-label="Principal" class="ancoras">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#planos">Planos</a>
+      <a href="#duvidas">Dúvidas</a>
     </nav>
-  </header>
+    <div class="entrar">
+      @if (auth.isLoggedIn()) {
+        <a routerLink="/obras" class="btn btn-primario btn-pequeno">Ir para as obras</a>
+      } @else {
+        <a routerLink="/login" class="link-entrar">Entrar</a>
+        <a routerLink="/cadastro" class="btn btn-primario btn-pequeno">Criar conta grátis</a>
+      }
+    </div>
+  </div>
+</header>
 
-  <main>
-    <section class="hero">
-      <p class="eyebrow">Diário de obra (RDO) para pequenos empreiteiros</p>
-      <h1>O diário da sua obra em 2 minutos, pelo celular.</h1>
-      <p class="proposta">
-        O Nivelo transforma as fotos que você já tira em um diário de obra com data, clima e registro que não se apaga,
-        que o cliente acompanha pelo app. Sem planilha e sem curso.
+<main>
+  <section class="heroi faixa">
+    <div class="heroi-texto">
+      <span class="sobretitulo-verde">Diário de obra · RDO</span>
+      <h1>Cada dia de obra registrado. Cada cliente por dentro.</h1>
+      <p class="lead">
+        O Nivelo é o diário de obra feito para pequenas construtoras e autônomos. Registre o dia pelo celular em poucos
+        minutos, com fotos, clima e ocorrências, e deixe o cliente acompanhar a obra sem precisar ligar.
       </p>
-      <div class="cta">
-        @if (auth.isLoggedIn()) {
-          <a routerLink="/obras" class="btn btn-primario">Abrir minhas obras</a>
-        } @else {
-          <a routerLink="/login" [queryParams]="{ cadastro: '' }" class="btn btn-primario">Criar conta grátis</a>
-          <span class="nota">Free para sempre com 1 obra ativa. Sem cartão.</span>
-        }
+      <div class="acoes">
+        <a routerLink="/cadastro" class="btn btn-primario btn-grande">Criar conta grátis</a>
+        <a href="#como-funciona" class="btn btn-contorno btn-grande">Ver como funciona</a>
       </div>
-    </section>
+      <p class="nota">Plano Free sem cartão de crédito. Diários ilimitados na sua primeira obra.</p>
+    </div>
 
-    <section class="bloco">
-      <h2>Como funciona</h2>
-      <ol class="passos">
-        @for (p of passos; track p.titulo) {
-          <li class="cartao"><span class="icone" aria-hidden="true">{{ p.icone }}</span><h3>{{ p.titulo }}</h3><p>{{ p.texto }}</p></li>
+    <div class="heroi-ilustracao" aria-label="Exemplo de diário publicado" role="img">
+      <div class="diario-exemplo" aria-hidden="true">
+        <div class="ex-topo">
+          <div>
+            <span class="mono pequeno">QUA · 04/11</span>
+            <strong>Residência Alves</strong>
+          </div>
+          <span class="selo selo-publicado">Publicado</span>
+        </div>
+        <div class="ex-numeros">
+          <div><span>Clima</span><strong>Ensolarado</strong></div>
+          <div><span>Condição</span><strong>Praticável</strong></div>
+          <div><span>Efetivo</span><strong class="mono">6 pessoas</strong></div>
+        </div>
+        <div class="ex-atividades">
+          <span class="rotulo-mini">Atividades</span>
+          <div><i class="ponto"></i>Concretagem da laje do 2º pavimento</div>
+          <div><i class="ponto"></i>Instalação de eletrodutos na cozinha</div>
+          <div class="ex-fotos"><i class="ph"></i><i class="ph"></i><i class="ph mono">+5</i></div>
+        </div>
+        <div class="ex-ocorrencia"><app-icone nome="alerta" [tamanho]="16" />1 ocorrência: entrega de areia atrasou 2 h</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divisor faixa" aria-hidden="true"><i></i><span><b></b></span><i></i></div>
+
+  <section class="faixa secao">
+    <h2>Obra boa também precisa de prova.</h2>
+    <div class="tres">
+      @for (d of dores; track d.titulo) {
+        <div class="dor"><strong>{{ d.titulo }}</strong><p>{{ d.texto }}</p></div>
+      }
+    </div>
+  </section>
+
+  <section id="como-funciona" class="escura">
+    <div class="faixa secao">
+      <div class="titulo-secao">
+        <span class="sobretitulo-verde menta">Como funciona</span>
+        <h2>Três passos, do canteiro ao cliente.</h2>
+      </div>
+      <ol class="tres passos">
+        @for (p of passos; track p.titulo; let i = $index) {
+          <li>
+            <span class="mono numero-passo">0{{ i + 1 }}</span>
+            <strong>{{ p.titulo }}</strong>
+            <p>{{ p.texto }}</p>
+          </li>
         }
       </ol>
-    </section>
+    </div>
+  </section>
 
-    <section class="bloco">
-      <h2>Feito para quem toca 2 a 10 obras ao mesmo tempo</h2>
-      <div class="dores">
-        @for (d of dores; track d.titulo) {
-          <article class="cartao"><h3>{{ d.titulo }}</h3><p>{{ d.texto }}</p></article>
-        }
+  <section id="recursos" class="faixa secao">
+    <h2>Tudo o que o diário de obra precisa. Nada que atrapalhe.</h2>
+    <div class="recursos">
+      @for (r of recursos; track r.titulo) {
+        <article class="recurso">
+          <span class="icone-verde"><app-icone [nome]="r.icone" [tamanho]="28" /></span>
+          <div class="titulo-com-selo">
+            <h3>{{ r.titulo }}</h3>
+            @if (r.emBreve) { <span class="selo selo-pendente">Em breve</span> }
+          </div>
+          <p>{{ r.texto }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section id="planos" class="planos-fundo">
+    <div class="faixa secao">
+      <div class="titulo-secao estreito">
+        <span class="sobretitulo-verde">Planos</span>
+        <h2>Comece grátis. Pague só quando tiver a segunda obra.</h2>
+        <p>A assinatura é da empresa. Clientes acompanhando a obra nunca pagam e nunca contam no limite.</p>
       </div>
-    </section>
-
-    <section class="bloco" id="planos">
-      <h2>Planos</h2>
-      <p class="sub">A cobrança é por empresa: encarregados e clientes não pagam.</p>
-      <div class="grade">
-        @for (plano of planos; track plano.codigo) {
-          <article class="cartao plano" [class.destaque]="plano.destaque">
-            @if (plano.destaque) { <span class="etiqueta">Mais escolhido</span> }
-            <h3>{{ plano.nome }}</h3>
-            <strong>{{ plano.preco }}</strong>
+      <div class="planos">
+        @for (p of planos; track p.codigo) {
+          <article class="plano" [class.destaque]="p.destaque">
+            <div class="plano-topo">
+              <div>
+                <h3>{{ p.nome }}</h3>
+                <span class="descricao">{{ p.descricao }}</span>
+              </div>
+              @if (p.destaque) { <span class="selo selo-destaque">Mais escolhido</span> }
+            </div>
+            <div class="preco"><strong>{{ p.valor }}</strong><span>/mês</span></div>
             <ul>
-              @for (item of plano.itens; track item) { <li>{{ item }}</li> }
+              @for (i of p.itens; track i) { <li>{{ i }}</li> }
             </ul>
+            <a routerLink="/cadastro" class="btn btn-bloco" [class.btn-primario]="p.destaque" [class.btn-contorno]="!p.destaque">
+              {{ p.codigo === 'free' ? 'Criar conta grátis' : 'Assinar o ' + p.nome }}
+            </a>
           </article>
         }
       </div>
-      @if (!auth.isLoggedIn()) {
-        <a routerLink="/login" [queryParams]="{ cadastro: '' }" class="btn btn-primario btn-bloco final">Criar conta grátis</a>
-      }
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer class="rodape">Nivelo · diário de obra para pequenos empreiteiros</footer>
-</div>
+  <section id="duvidas" class="faixa secao estreita">
+    <h2>Dúvidas frequentes</h2>
+    <div class="duvidas">
+      @for (d of duvidas; track d.p) {
+        <details>
+          <summary>{{ d.p }}</summary>
+          <p>{{ d.r }}</p>
+        </details>
+      }
+    </div>
+  </section>
+
+  <section class="chamada">
+    <div class="faixa">
+      <h2>Registre o dia de hoje no Nivelo.</h2>
+      <a routerLink="/cadastro" class="btn btn-grande branco">Criar conta grátis</a>
+    </div>
+  </section>
+</main>
+
+<footer class="faixa rodape">
+  <span>© {{ ano }} Nivelo · Diário de obra para pequenos empreiteiros</span>
+  <a routerLink="/login">Entrar</a>
+</footer>

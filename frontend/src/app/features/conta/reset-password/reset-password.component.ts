@@ -1,18 +1,62 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth.service';
 import { paraErroDaApi } from '../../../core/http/erro-da-api';
+import { ESTILOS_DE_ACESSO } from '../estilos-de-acesso';
+import { TelaDeAcessoComponent } from '../tela-de-acesso.component';
 
+/** Link do e-mail (/reset-password?token=): confere o token e grava a senha nova. */
 @Component({
   selector: 'app-reset-password',
-  imports: [FormsModule, RouterLink],
-  templateUrl: './reset-password.component.html',
-  styleUrl: './reset-password.component.css',
+  imports: [FormsModule, RouterLink, TelaDeAcessoComponent],
+  template: `
+    <app-tela-de-acesso frase="Crie uma senha nova e volte para as suas obras.">
+      @if (verificando()) {
+        <p class="carregando">Conferindo o link…</p>
+      } @else if (!tokenValido()) {
+        <div class="titulo">
+          <h1>Link expirado</h1>
+          <p>{{ erro() || 'Este link de redefinição não vale mais. Ele dura 30 minutos e só pode ser usado uma vez.' }}</p>
+        </div>
+        <a routerLink="/recuperar-senha" class="btn btn-primario btn-grande btn-bloco">Pedir um link novo</a>
+        <p class="rodape-form"><a routerLink="/login">Voltar para entrar</a></p>
+      } @else if (sucesso()) {
+        <div class="titulo">
+          <h1>Senha alterada</h1>
+          <p>{{ sucesso() }}</p>
+        </div>
+        <a routerLink="/login" class="btn btn-primario btn-grande btn-bloco">Entrar</a>
+      } @else {
+        <form class="formulario" (ngSubmit)="redefinir()" #f="ngForm">
+          <div class="titulo">
+            <h1>Criar senha nova</h1>
+            @if (emailUsuario()) { <p>Para a conta <strong>{{ emailUsuario() }}</strong>.</p> }
+          </div>
+          <div class="campo">
+            <label for="nova">Senha nova</label>
+            <input id="nova" name="nova" type="password" required minlength="6" maxlength="72" autocomplete="new-password"
+                   aria-describedby="nova-ajuda" [(ngModel)]="novaSenha" [disabled]="carregando()" />
+            <span id="nova-ajuda" class="ajuda">Mínimo de 6 caracteres.</span>
+          </div>
+          <div class="campo" [class.invalido]="confirmacaoSenha && confirmacaoSenha !== novaSenha">
+            <label for="repetir">Repita a senha nova</label>
+            <input id="repetir" name="repetir" type="password" required autocomplete="new-password"
+                   [(ngModel)]="confirmacaoSenha" [disabled]="carregando()" />
+            @if (confirmacaoSenha && confirmacaoSenha !== novaSenha) { <span class="erro-campo">As senhas não são iguais.</span> }
+          </div>
+          @if (erro()) { <p class="alerta alerta-erro" role="alert">{{ erro() }}</p> }
+          <button type="submit" class="btn btn-primario btn-grande btn-bloco" [disabled]="carregando() || f.invalid">
+            {{ carregando() ? 'Salvando…' : 'Salvar senha nova' }}
+          </button>
+        </form>
+      }
+    </app-tela-de-acesso>
+  `,
+  styles: ESTILOS_DE_ACESSO,
 })
 export class ResetPasswordComponent implements OnInit {
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private auth = inject(AuthService);
 
   token = signal<string>('');
@@ -82,12 +126,9 @@ export class ResetPasswordComponent implements OnInit {
 
     this.carregando.set(true);
     this.auth.redefinirSenha(this.token(), this.novaSenha).subscribe({
-      next: (res) => {
+      next: () => {
         this.carregando.set(false);
-        this.sucesso.set(res.message || 'Senha alterada com sucesso! Redirecionando para login...');
-        setTimeout(() => {
-          this.router.navigate(['/login']);
-        }, 2500);
+        this.sucesso.set('Pronto. Entre com o seu e-mail e a senha nova.');
       },
       error: (e) => {
         this.carregando.set(false);

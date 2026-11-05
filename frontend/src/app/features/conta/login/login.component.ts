@@ -1,143 +1,73 @@
-import { Component, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth.service';
 import { paraErroDaApi } from '../../../core/http/erro-da-api';
+import { ESTILOS_DE_ACESSO } from '../estilos-de-acesso';
+import { TelaDeAcessoComponent } from '../tela-de-acesso.component';
 
+/** Entrar com e-mail e senha. Volta para a tela de onde a sessão expirou (?voltar=). */
 @Component({
   selector: 'app-login',
-  imports: [FormsModule],
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, RouterLink, TelaDeAcessoComponent],
+  template: `
+    <app-tela-de-acesso frase="Bom te ver de novo. Hoje tem diário para registrar?"
+                        [itens]="['O diário de hoje em poucos minutos', 'Fotos direto da câmera', 'O cliente acompanha sem ligar']">
+      <form class="formulario" (ngSubmit)="entrar()" #f="ngForm">
+        <div class="titulo">
+          <h1>Entrar</h1>
+          <p>Use o e-mail e a senha da sua conta.</p>
+        </div>
+        @if (erro()) { <p class="alerta alerta-erro" role="alert">{{ erro() }}</p> }
+        <div class="campo">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" inputmode="email" autocomplete="username" required
+                 [(ngModel)]="email" [disabled]="carregando()" />
+        </div>
+        <div class="campo">
+          <div class="linha-rotulo">
+            <label for="senha" class="rotulo">Senha</label>
+            <a routerLink="/recuperar-senha">Esqueci a senha</a>
+          </div>
+          <input id="senha" name="senha" type="password" autocomplete="current-password" required
+                 [(ngModel)]="senha" [disabled]="carregando()" />
+        </div>
+        <button type="submit" class="btn btn-primario btn-grande btn-bloco" [disabled]="carregando() || f.invalid">
+          {{ carregando() ? 'Entrando…' : 'Entrar' }}
+        </button>
+        <p class="rodape-form">Ainda não tem conta? <a routerLink="/cadastro">Criar conta grátis</a></p>
+      </form>
+    </app-tela-de-acesso>
+  `,
+  styles: ESTILOS_DE_ACESSO,
 })
 export class LoginComponent {
-  auth = inject(AuthService);
-  router = inject(Router);
+  private auth = inject(AuthService);
+  private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  modo = signal<'login' | 'cadastro' | 'esqueci-senha'>('login');
   carregando = signal(false);
   erro = signal('');
-  sucesso = signal('');
-
   email = '';
   senha = '';
-  nome = '';
-  empresaNome = '';
-  tipoPessoa: 'PF' | 'PJ' = 'PF';
-  documento = '';
-  emailRecuperacao = '';
 
-  constructor() {
-    if (this.route.snapshot.queryParamMap.get('cadastro') !== null) {
-      this.modo.set('cadastro');
-    }
-  }
-
-  mudarModo(novoModo: 'login' | 'cadastro' | 'esqueci-senha') {
-    this.modo.set(novoModo);
+  entrar(): void {
     this.erro.set('');
-    this.sucesso.set('');
-  }
-
-  entrar() {
-    this.erro.set('');
-    this.sucesso.set('');
-
-    const emailTrimmed = this.email.trim();
-    if (!emailTrimmed || !this.senha) {
-      this.erro.set('Por favor, preencha todos os campos.');
-      return;
-    }
-
     this.carregando.set(true);
-    this.auth.login(emailTrimmed, this.senha).subscribe({
+    this.auth.login(this.email.trim(), this.senha).subscribe({
       next: () => {
         this.carregando.set(false);
-        this.router.navigate(['/obras']);
+        const voltar = this.route.snapshot.queryParamMap.get('voltar');
+        // Só caminho interno: nunca redireciona para fora do app
+        const destino = voltar && voltar.startsWith('/') && !voltar.startsWith('//') ? voltar : '/obras';
+        void this.router.navigateByUrl(destino);
       },
       error: (e) => {
         this.carregando.set(false);
-        this.erro.set(this.extrairErro(e, 'Erro ao fazer login. Verifique seu e-mail e senha.'));
+        const erro = paraErroDaApi(e);
+        this.erro.set(erro.status === 401 && !erro.problema.detail ? 'E-mail ou senha incorretos.' : erro.mensagem);
       },
     });
-  }
-
-  registrar() {
-    this.erro.set('');
-    this.sucesso.set('');
-
-    const nomeTrimmed = this.nome.trim();
-    const emailTrimmed = this.email.trim();
-
-    if (!nomeTrimmed || !emailTrimmed || !this.senha || !this.empresaNome.trim()) {
-      this.erro.set('Por favor, preencha todos os campos.');
-      return;
-    }
-
-    if (this.senha.length < 6) {
-      this.erro.set('A senha deve ter pelo menos 6 caracteres.');
-      return;
-    }
-
-    this.carregando.set(true);
-    this.auth
-      .cadastrar({
-        nome: nomeTrimmed,
-        email: emailTrimmed,
-        senha: this.senha,
-        empresa_nome: this.empresaNome.trim(),
-        tipo_pessoa: this.tipoPessoa,
-        documento: this.documento.trim() || null,
-      })
-      .subscribe({
-      next: () => {
-        this.carregando.set(false);
-        this.sucesso.set('Conta criada com sucesso! Entrando...');
-        this.auth.login(emailTrimmed, this.senha).subscribe({
-          next: () => this.router.navigate(['/obras']),
-          error: () => {
-            this.modo.set('login');
-            this.sucesso.set('Conta criada! Faça login com suas credenciais.');
-          },
-        });
-      },
-      error: (e) => {
-        this.carregando.set(false);
-        this.erro.set(this.extrairErro(e, 'Erro ao criar conta.'));
-      },
-    });
-  }
-
-  solicitarRecuperacao() {
-    this.erro.set('');
-    this.sucesso.set('');
-
-    const emailTrimmed = this.emailRecuperacao.trim();
-    if (!emailTrimmed) {
-      this.erro.set('Por favor, informe seu e-mail.');
-      return;
-    }
-
-    this.carregando.set(true);
-    this.auth.esqueciSenha(emailTrimmed).subscribe({
-      next: (res) => {
-        this.carregando.set(false);
-        this.sucesso.set(
-          res.message || 'Se o e-mail estiver cadastrado, enviaremos um link de redefinição. Verifique sua caixa de entrada e o spam.'
-        );
-        this.emailRecuperacao = '';
-      },
-      error: (e) => {
-        this.carregando.set(false);
-        this.erro.set(this.extrairErro(e, 'Erro ao solicitar recuperação de senha.'));
-      },
-    });
-  }
-
-  /** O interceptor já traduziu o Problem Details; sem `detail`, usa o texto da tela. */
-  private extrairErro(e: unknown, fallback: string): string {
-    const erro = paraErroDaApi(e);
-    return (erro.problema.detail || erro.status === 0) ? erro.mensagem : fallback;
   }
 }

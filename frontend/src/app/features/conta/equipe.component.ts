@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MembroDaEquipeOut } from '../../api/models/membro-da-equipe-out';
 import { ObraResumoOut } from '../../api/models/obra-resumo-out';
@@ -12,77 +13,87 @@ import { EquipeService } from './equipe.service';
 /** Equipe da empresa ativa e convites por e-mail. Só o dono (guard e API). */
 @Component({
   selector: 'app-equipe',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
-    <main class="pagina">
-      <h1>Equipe</h1>
-      <p class="sub">{{ auth.contexto()?.empresa_nome }}. Encarregados registram os diários; clientes acompanham as obras e não pagam.</p>
+    <div class="pagina">
+      <header class="cabecalho">
+        <div>
+          <h1>Equipe</h1>
+          <p class="sub">Quem trabalha nas obras da {{ auth.contexto()?.empresa_nome }} e quem as acompanha.</p>
+        </div>
+      </header>
 
-      <section class="cartao">
-        <h2>Convidar por e-mail</h2>
-        <form class="formulario" (ngSubmit)="convidar()" #f="ngForm">
-          <div class="campo" [class.invalido]="erro()?.campo('email')">
+      <section aria-labelledby="conv-t" class="cartao cartao-g">
+        <h2 id="conv-t">Convidar pessoa</h2>
+        <form class="convite" (ngSubmit)="convidar()" #f="ngForm">
+          <div class="campo email" [class.invalido]="erro()?.campo('email')">
             <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" inputmode="email" autocomplete="off" [(ngModel)]="email" required />
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="off" placeholder="pessoa@email.com" [(ngModel)]="email" required />
             @if (erro()?.campo('email')) { <span class="erro-campo">E-mail inválido.</span> }
           </div>
-          <fieldset class="campo">
-            <legend class="rotulo">Como essa pessoa entra</legend>
-            <div class="opcoes">
-              <label class="opcao"><input type="radio" name="papel" value="encarregado" [(ngModel)]="papel" /><span>Encarregado</span></label>
-              <label class="opcao"><input type="radio" name="papel" value="cliente" [(ngModel)]="papel" /><span>Cliente</span></label>
-            </div>
-          </fieldset>
           <div class="campo">
-            <label for="obra">Obra <span class="opcional">(opcional)</span></label>
+            <label for="papel">Papel</label>
+            <select id="papel" name="papel" [(ngModel)]="papel">
+              <option value="encarregado">Encarregado</option>
+              <option value="cliente">Cliente</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="obra">Obra</label>
             <select id="obra" name="obra" [(ngModel)]="obraId">
               <option [ngValue]="null">Nenhuma por enquanto</option>
               @for (o of obras(); track o.id) { <option [ngValue]="o.id">{{ o.nome }}</option> }
             </select>
-            <span class="ajuda">Ao aceitar, a pessoa já entra nessa obra.</span>
           </div>
-          @if (erro(); as e) { <p class="alerta alerta-erro" role="alert">{{ e.mensagem }}</p> }
-          <button type="submit" class="btn btn-primario btn-bloco" [disabled]="enviando() || f.invalid">
-            {{ enviando() ? 'Enviando…' : 'Enviar convite' }}
-          </button>
+          <button type="submit" class="btn btn-primario" [disabled]="enviando() || f.invalid">{{ enviando() ? 'Enviando…' : 'Enviar convite' }}</button>
         </form>
+        @if (erro(); as e) { <p class="alerta alerta-erro" role="alert">{{ e.mensagem }}</p> }
+        <div class="papeis">
+          <div><strong>Dono</strong><span>Gerencia obras, equipe e assinatura.</span></div>
+          <div><strong>Encarregado</strong><span>Registra os diários das obras em que está.</span></div>
+          <div><strong>Cliente</strong><span>Acompanha e comenta. Grátis e fora do limite.</span></div>
+        </div>
+        <p class="alerta alerta-aviso">
+          O convite vale por 72 horas. Com obra escolhida, a pessoa já entra nela ao aceitar. No plano Free, a equipe é o dono e
+          1 encarregado; <a routerLink="/assinatura">assine o Pro</a> para ter até 5 pessoas. Clientes não contam no limite.
+        </p>
       </section>
 
-      <h2>Pessoas na empresa</h2>
-      @if (equipe() === null) {
-        <p class="carregando">Carregando…</p>
-      } @else {
-        <ul class="lista pessoas">
-          @for (p of equipe(); track p.usuario_id) {
-            <li class="cartao pessoa">
-              <div>
-                <strong>{{ p.nome }}{{ p.usuario_id === auth.usuarioId() ? ' (você)' : '' }}</strong>
-                <span class="email">{{ p.email }}</span>
-              </div>
-              <div class="direita">
-                <span class="papel">{{ PAPEL[p.papel] }}</span>
-                <span class="desde">desde {{ data(p.desde) }}</span>
-              </div>
-            </li>
-          }
-        </ul>
-        <p class="ajuda">Para colocar alguém numa obra, abra a obra e use “Quem acompanha a obra”.</p>
-      }
-    </main>
+      <section aria-labelledby="mem-t" class="cartao cartao-g">
+        <h2 id="mem-t">Pessoas</h2>
+        @if (equipe() === null) {
+          <p class="carregando">Carregando…</p>
+        } @else {
+          <div class="tabela-rolagem">
+            <table class="tabela">
+              <thead><tr><th scope="col">Nome</th><th scope="col">Papel</th><th scope="col">Na equipe desde</th><th scope="col">Situação</th></tr></thead>
+              <tbody>
+                @for (p of equipe(); track p.usuario_id) {
+                  <tr>
+                    <td><strong class="bloco">{{ p.nome }}{{ p.usuario_id === auth.usuarioId() ? ' (você)' : '' }}</strong><span class="ajuda">{{ p.email }}</span></td>
+                    <td>{{ PAPEL[p.papel] }}</td>
+                    <td class="mono">{{ data(p.desde) }}</td>
+                    <td><span class="selo selo-ativa">Ativo</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="ajuda">Para colocar alguém numa obra, abra a obra e use a aba Pessoas da obra.</p>
+        }
+      </section>
+    </div>
   `,
   styles: `
-    .sub { color: var(--ink-muted); margin: 6px 0 var(--space-4); }
-    .cartao h2 { margin-top: 0; }
-    fieldset { border: 0; }
-    .opcional { color: var(--ink-faint); font-weight: 400; }
-    .ajuda { color: var(--ink-faint); font-size: .85rem; }
-    .pessoas { list-style: none; margin-bottom: var(--space-3); }
-    .pessoa { display: flex; justify-content: space-between; gap: var(--space-3); align-items: center; }
-    .pessoa > div { display: grid; gap: 2px; min-width: 0; }
-    .email { color: var(--ink-muted); font-size: .85rem; overflow-wrap: anywhere; }
-    .direita { text-align: right; }
-    .papel { font-weight: 600; }
-    .desde { color: var(--ink-faint); font-size: .78rem; }
+    .convite { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+    .convite .campo { flex: 1 1 180px; }
+    .convite .email { flex: 2 1 260px; }
+    .convite .btn { flex: 1 1 160px; }
+    .papeis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; }
+    .papeis div { padding: 12px 14px; border-radius: var(--raio); background: var(--papel); display: flex; flex-direction: column; }
+    .papeis span { color: var(--tinta-2); }
+    .tabela { min-width: 560px; font-size: 15px; }
+    .bloco { display: block; }
   `,
 })
 export class EquipeComponent implements OnInit {
@@ -101,7 +112,13 @@ export class EquipeComponent implements OnInit {
   enviando = signal(false);
   erro = signal<ErroDaApi | null>(null);
 
+  /** ?papel=cliente&obra=... vindo da aba Pessoas da obra */
+  readonly papelInicial = input<string | undefined>(undefined, { alias: 'papel' });
+  readonly obraInicial = input<string | undefined>(undefined, { alias: 'obra' });
+
   ngOnInit(): void {
+    if (this.papelInicial() === 'cliente' || this.papelInicial() === 'encarregado') this.papel = this.papelInicial() as 'encarregado' | 'cliente';
+    if (this.obraInicial()) this.obraId = this.obraInicial()!;
     void this.carregar();
     this.obrasServico.listar(null, 1, 100).then((r) => this.obras.set(r.itens)).catch(() => undefined);
   }

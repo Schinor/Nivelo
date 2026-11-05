@@ -15,8 +15,36 @@ const TIMEOUT_MS = 15000;
 @Component({
   selector: 'app-premium-sucesso',
   imports: [RouterLink],
-  templateUrl: './premium-sucesso.component.html',
-  styleUrl: './premium.component.css',
+  template: `
+    <div class="pagina pagina-estreita">
+      <div class="vazio branco" role="status" aria-live="polite">
+        @switch (estado()) {
+          @case ('processando') {
+            <span class="icone"><span class="girando" aria-hidden="true"></span></span>
+            <h2>Confirmando o pagamento…</h2>
+            <p>O Stripe recebeu o checkout. O plano muda assim que a confirmação da assinatura chegar, o que leva poucos segundos.</p>
+          }
+          @case ('ativo') {
+            <span class="nivel-vazio" aria-hidden="true"></span>
+            <h2>Assinatura confirmada</h2>
+            <p>O plano da empresa foi atualizado. Os novos limites já valem para toda a equipe.</p>
+            <div class="acoes"><a routerLink="/obras" class="btn btn-primario">Ir para as obras</a><a routerLink="/assinatura" class="btn">Ver a assinatura</a></div>
+          }
+          @case ('demorando') {
+            <span class="icone ambar"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+            <h2>Quase lá</h2>
+            <p>O pagamento foi recebido, mas a confirmação ainda não chegou. Nada foi cobrado em dobro. Atualize a página em instantes.</p>
+            <div class="acoes"><a routerLink="/assinatura" class="btn btn-primario">Ver a assinatura</a></div>
+          }
+        }
+      </div>
+    </div>
+  `,
+  styles: `
+    .girando { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--linha); border-top-color: var(--verde); animation: girar 1s linear infinite; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .girando { animation: none; } }
+  `,
 })
 export class PremiumSucessoComponent implements OnInit, OnDestroy {
   private premium = inject(PremiumService);

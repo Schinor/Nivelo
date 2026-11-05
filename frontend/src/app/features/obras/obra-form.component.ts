@@ -14,67 +14,90 @@ const UFS = 'AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO R
   selector: 'app-obra-form',
   imports: [FormsModule, RouterLink],
   template: `
-    <main class="pagina">
-      <a class="voltar" [routerLink]="obraId() ? ['/obras', obraId()] : ['/obras']">← Voltar</a>
-      <h1>{{ obraId() ? 'Editar obra' : 'Nova obra' }}</h1>
+    <div class="pagina pagina-estreita">
+      <nav aria-label="Caminho" class="migalhas">
+        <a routerLink="/obras">Obras</a><span aria-hidden="true">/</span>
+        @if (obraId()) { <a [routerLink]="['/obras', obraId()]">{{ obra.nome || 'Obra' }}</a><span aria-hidden="true">/</span><span>Editar</span> }
+        @else { <span>Nova obra</span> }
+      </nav>
+      <header class="cabecalho">
+        <div>
+          @if (!obraId() && primeira()) { <span class="sobretitulo">Passo 2 de 2 · Primeira obra</span> }
+          <h1>{{ obraId() ? 'Editar obra' : 'Nova obra' }}</h1>
+          <p class="sub">{{ obraId() ? 'As mudanças ficam no histórico da obra.' : 'Nome, endereço e cliente. Menos de um minuto.' }}</p>
+        </div>
+      </header>
 
       @if (carregando()) {
         <p class="carregando">Carregando…</p>
       } @else {
         <form class="formulario" (ngSubmit)="salvar()" #f="ngForm">
-          <div class="campo" [class.invalido]="campo('nome')">
-            <label for="nome">Nome da obra</label>
-            <input id="nome" name="nome" [(ngModel)]="obra.nome" required maxlength="160" placeholder="Ex.: Reforma da casa do Jorge" />
-            @if (campo('nome')) { <span class="erro-campo">{{ campo('nome') }}</span> }
-          </div>
-          <div class="campo">
-            <label for="cliente">Cliente</label>
-            <input id="cliente" name="cliente" [(ngModel)]="obra.cliente_nome" required maxlength="160" placeholder="Quem contratou a obra" />
-          </div>
-          <div class="campo">
-            <label for="logradouro">Endereço</label>
-            <input id="logradouro" name="logradouro" [(ngModel)]="obra.endereco.logradouro" required maxlength="200" placeholder="Rua e número" autocomplete="street-address" />
-          </div>
-          <div class="duas-colunas cidade">
+          <section class="cartao cartao-g">
+            <h2>A obra</h2>
+            <div class="campo" [class.invalido]="campo('nome')">
+              <label for="nome">Nome da obra</label>
+              <input id="nome" name="nome" [(ngModel)]="obra.nome" required maxlength="160" placeholder="Ex.: Residência Alves" />
+              @if (campo('nome')) { <span class="erro-campo">{{ campo('nome') }}</span> }
+            </div>
+            <div class="campo" [class.invalido]="campo('cliente_nome')">
+              <label for="cliente">Cliente</label>
+              <input id="cliente" name="cliente" [(ngModel)]="obra.cliente_nome" required maxlength="160" placeholder="Quem contratou a obra" />
+              <span class="ajuda">Para o cliente acompanhar pelo Nivelo, convide-o depois pela aba Pessoas da obra.</span>
+            </div>
+          </section>
+
+          <section class="cartao cartao-g">
+            <h2>Endereço</h2>
             <div class="campo">
-              <label for="cidade">Cidade</label>
-              <input id="cidade" name="cidade" [(ngModel)]="obra.endereco.cidade" required maxlength="120" autocomplete="address-level2" />
+              <label for="logradouro">Rua e número</label>
+              <input id="logradouro" name="logradouro" [(ngModel)]="obra.endereco.logradouro" required maxlength="200" autocomplete="street-address" />
             </div>
-            <div class="campo">
-              <label for="uf">UF</label>
-              <select id="uf" name="uf" [(ngModel)]="obra.endereco.uf" required>
-                @for (uf of ufs; track uf) { <option [value]="uf">{{ uf }}</option> }
-              </select>
+            <div class="cidade">
+              <div class="campo">
+                <label for="cidade">Cidade</label>
+                <input id="cidade" name="cidade" [(ngModel)]="obra.endereco.cidade" required maxlength="120" autocomplete="address-level2" />
+              </div>
+              <div class="campo">
+                <label for="uf">UF</label>
+                <select id="uf" name="uf" [(ngModel)]="obra.endereco.uf" required>
+                  @for (uf of ufs; track uf) { <option [value]="uf">{{ uf }}</option> }
+                </select>
+              </div>
             </div>
-          </div>
-          <div class="duas-colunas">
-            <div class="campo">
-              <label for="inicio">Início</label>
-              <input id="inicio" name="inicio" type="date" [(ngModel)]="obra.data_inicio" required />
+          </section>
+
+          <section class="cartao cartao-g">
+            <h2>Prazos</h2>
+            <div class="duas-colunas">
+              <div class="campo">
+                <label for="inicio">Início</label>
+                <input id="inicio" name="inicio" type="date" [(ngModel)]="obra.data_inicio" required />
+              </div>
+              <div class="campo" [class.invalido]="erro()?.codigo === 'obra-periodo-invalido'">
+                <label for="termino">Entrega prevista</label>
+                <input id="termino" name="termino" type="date" [(ngModel)]="obra.previsao_termino" [min]="obra.data_inicio" required />
+              </div>
             </div>
-            <div class="campo" [class.invalido]="erro()?.codigo === 'obra-periodo-invalido'">
-              <label for="termino">Previsão de término</label>
-              <input id="termino" name="termino" type="date" [(ngModel)]="obra.previsao_termino" [min]="obra.data_inicio" required />
-            </div>
-          </div>
+          </section>
 
           @if (erro(); as e) {
             <div class="alerta alerta-erro" role="alert">
-              {{ e.mensagem }}
-              @if (e.status === 409) { <button type="button" class="btn btn-texto" (click)="recarregar()">Recarregar</button> }
+              <span>{{ e.mensagem }}</span>
+              @if (e.status === 409) { <button type="button" class="btn btn-texto btn-pequeno" (click)="recarregar()">Recarregar</button> }
             </div>
           }
 
           <div class="acoes-fixas">
-            <button type="submit" class="btn btn-primario btn-bloco" [disabled]="salvando() || f.invalid">
+            <a class="btn" [routerLink]="obraId() ? ['/obras', obraId()] : ['/obras']">Cancelar</a>
+            <button type="submit" class="btn btn-primario" [disabled]="salvando() || f.invalid">
               {{ salvando() ? 'Salvando…' : obraId() ? 'Salvar alterações' : 'Cadastrar obra' }}
             </button>
           </div>
         </form>
       }
-    </main>
+    </div>
   `,
-  styles: `.cidade { grid-template-columns: 1fr 96px; } h1 { margin-bottom: var(--space-4); }`,
+  styles: `.cidade { display: grid; gap: var(--space-4); grid-template-columns: 1fr 104px; }`,
 })
 export class ObraFormComponent implements OnInit {
   /** Parâmetro da rota (/obras/:obraId/editar); ausente ao criar. */
@@ -93,12 +116,15 @@ export class ObraFormComponent implements OnInit {
     previsao_termino: '',
   };
   private versao = 0;
+  /** Vindo do cadastro (passo 2 de 2) */
+  primeira = signal(false);
   carregando = signal(false);
   salvando = signal(false);
   erro = signal<ErroDaApi | null>(null);
 
   ngOnInit(): void {
     if (this.obraId()) void this.recarregar();
+    this.primeira.set(history.state?.primeira === true);
   }
 
   campo(nome: string): string | null {
@@ -135,8 +161,8 @@ export class ObraFormComponent implements OnInit {
       await this.router.navigate(['/obras', salva.id]);
     } catch (e) {
       const erro = paraErroDaApi(e);
-      // O 402 já abriu o modal "Limite do plano"; aqui fica só o texto
-      this.erro.set(erro);
+      // O 402 já abriu o modal "Limite do plano"; repetir o texto embaixo só polui
+      this.erro.set(erro.status === 402 ? null : erro);
     } finally {
       this.salvando.set(false);
     }

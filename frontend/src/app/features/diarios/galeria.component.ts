@@ -1,6 +1,6 @@
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { FotoOut } from '../../api/models/foto-out';
-import { dataHora } from '../../shared/formatos';
+import { dataHora, hora } from '../../shared/formatos';
 import { DiariosService } from './diarios.service';
 
 /** Fotos do diário. Cada imagem vem por URL pré-assinada (10 min), pedida à API. A foto que
@@ -11,21 +11,19 @@ import { DiariosService } from './diarios.service';
     <ul class="galeria">
       @for (f of fotos(); track f.id) {
         <li>
-          <button type="button" class="miniatura" (click)="ampliar(f)" [attr.aria-label]="'Ampliar ' + (f.legenda || 'foto')">
+          <button type="button" class="miniatura ph" (click)="ampliar(f)" [attr.aria-label]="'Ampliar ' + (f.legenda || 'foto')">
             @if (urls()[f.id]; as url) {
               <img [src]="url" [alt]="f.legenda || 'Foto do diário'" loading="lazy" />
-            } @else {
-              <span class="sem-imagem">…</span>
+            }
+            @if (f.adicionada_apos_publicacao) {
+              <span class="selo selo-apos">Adicionada após a publicação</span>
             }
           </button>
-          @if (f.adicionada_apos_publicacao) {
-            <span class="selo selo-apos" [title]="'Adicionada em ' + dataHora(f.adicionada_em)">
-              Adicionada após a publicação · {{ dataHora(f.adicionada_em) }}
-            </span>
-          }
-          @if (f.legenda) { <span class="legenda">{{ f.legenda }}</span> }
+          <span class="legenda">
+            {{ f.legenda || 'Foto' }} · {{ f.adicionada_apos_publicacao ? 'enviada ' + dataHora(f.adicionada_em) : hora(f.adicionada_em) }}
+          </span>
           @if (podeRemover()) {
-            <button type="button" class="btn btn-pequeno btn-texto" (click)="remover.emit(f)">Remover</button>
+            <button type="button" class="btn btn-pequeno btn-texto" (click)="remover.emit(f)">Remover foto</button>
           }
         </li>
       }
@@ -38,20 +36,20 @@ import { DiariosService } from './diarios.service';
           {{ f.legenda }}
           @if (f.adicionada_apos_publicacao) { <br /><small>Adicionada após a publicação, em {{ dataHora(f.adicionada_em) }}</small> }
         </p>
+        <button type="button" class="btn">Fechar</button>
       </div>
     }
   `,
   styles: `
-    .galeria { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-3); }
-    .galeria li { display: grid; gap: 6px; align-content: start; }
-    .miniatura { aspect-ratio: 1; padding: 0; border: 0; border-radius: var(--radius-md); overflow: hidden; background: var(--surface-300); }
-    .miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .sem-imagem { color: var(--ink-faint); }
-    .selo-apos { white-space: normal; font-size: .72rem; line-height: 1.3; }
-    .legenda { font-size: .85rem; color: var(--ink-muted); }
-    .fundo { position: fixed; inset: 0; z-index: 250; background: rgba(0,0,0,.92); display: grid; place-items: center; align-content: center; gap: var(--space-3); padding: var(--space-4); }
-    .fundo img { max-width: 100%; max-height: 80vh; object-fit: contain; }
-    .fundo p { color: var(--ink); text-align: center; }
+    .galeria { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .galeria li { display: flex; flex-direction: column; gap: 6px; }
+    .miniatura { position: relative; aspect-ratio: 4 / 3; padding: 0; border: 0; border-radius: var(--raio); overflow: hidden; }
+    .miniatura img { width: 100%; height: 100%; object-fit: cover; }
+    .miniatura .selo-apos { position: absolute; left: 8px; top: 8px; right: 8px; padding: 3px 8px; text-align: left; }
+    .legenda { font-size: 13px; color: var(--tinta-2); }
+    .fundo { position: fixed; inset: 0; z-index: 250; background: rgba(27, 30, 28, .94); display: grid; place-items: center; align-content: center; gap: 12px; padding: 16px; }
+    .fundo img { max-width: 100%; max-height: 78vh; object-fit: contain; border-radius: var(--raio); }
+    .fundo p { color: var(--escuro-tinta); text-align: center; }
   `,
 })
 export class GaleriaComponent {
@@ -61,6 +59,7 @@ export class GaleriaComponent {
 
   private servico = inject(DiariosService);
   readonly dataHora = dataHora;
+  readonly hora = hora;
   urls = signal<Record<string, string>>({});
   ampliada = signal<FotoOut | null>(null);
 
