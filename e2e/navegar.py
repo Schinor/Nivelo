@@ -166,7 +166,11 @@ def dono(r: Roteiro, p: Playwright, args: argparse.Namespace) -> None:
     r.foto(pag, "diario-revisado")
 
     pag.goto(obra_url)
-    for aba, nome in (("Fotos", "obra-aba-fotos"), ("Ocorrências", "obra-aba-ocorrencias"), ("Histórico", "obra-aba-historico")):
+    for aba, nome in (
+        ("Fotos", "obra-aba-fotos"),
+        ("Ocorrências", "obra-aba-ocorrencias"),
+        ("Histórico", "obra-aba-historico"),
+    ):
         pag.get_by_role("tab", name=re.compile(aba)).click()
         pag.wait_for_timeout(600)
         r.foto(pag, nome)
