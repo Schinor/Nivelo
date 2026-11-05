@@ -2,8 +2,8 @@
 
 Dois roteiros, em dois passos, porque o cliente só entra pelo link do convite:
 
-- ``dono``: landing → cadastro → obra → registrar o dia com foto → publicar → foto depois da
-  publicação → revisão com motivo → convite do cliente → limite do plano (402).
+- ``dono``: landing → cadastro → primeira obra → registrar o dia com foto → publicar → foto depois
+  da publicação → revisão com motivo → abas da obra → convite do cliente → limite do plano (402).
 - ``cliente``: aceite do convite → login → obra → diário publicado com as fotos, sem os
   controles de escrita → comentário.
 
@@ -85,23 +85,23 @@ def dono(r: Roteiro, p: Playwright, args: argparse.Namespace) -> None:
     pag = r.pagina(p)
 
     pag.goto(r.base + "/")
-    expect(pag.get_by_role("heading", name="O diário da sua obra em 2 minutos, pelo celular.")).to_be_visible()
-    expect(pag.get_by_text("R$ 29,90/mês")).to_be_visible()
-    expect(pag.get_by_text("R$ 69,90/mês")).to_be_visible()
+    expect(pag.get_by_role("heading", name="Cada dia de obra registrado. Cada cliente por dentro.")).to_be_visible()
+    expect(pag.get_by_text("R$ 29,90", exact=True)).to_be_visible()
+    expect(pag.get_by_text("R$ 69,90", exact=True)).to_be_visible()
     r.foto(pag, "landing")
 
     pag.get_by_role("link", name="Criar conta grátis").first.click()
-    pag.fill("#cad-nome", args.nome_dono)
-    pag.fill("#cad-empresa", args.empresa)
-    pag.fill("#cad-email", args.email_dono)
-    pag.fill("#cad-senha", args.senha)
+    pag.wait_for_url("**/cadastro")
+    pag.get_by_text("Autônomo", exact=True).click()
+    pag.fill("#org", args.empresa)
+    pag.fill("#nome", args.nome_dono)
+    pag.fill("#email", args.email_dono)
+    pag.fill("#senha", args.senha)
     r.foto(pag, "cadastro")
     pag.locator("form button[type=submit]").click()
-    pag.wait_for_url("**/obras")
-    expect(pag.get_by_text("Você ainda não cadastrou nenhuma obra.")).to_be_visible()
-    r.foto(pag, "obras-vazia")
-
-    pag.get_by_role("link", name="Cadastrar a primeira obra").click()
+    # Passo 2 de 2: o cadastro leva direto para a primeira obra
+    pag.wait_for_url("**/obras/nova")
+    expect(pag.get_by_text("Passo 2 de 2")).to_be_visible()
     pag.fill("#nome", args.obra)
     pag.fill("#cliente", args.nome_cliente)
     pag.fill("#logradouro", "Rua das Acácias, 120")
@@ -114,19 +114,29 @@ def dono(r: Roteiro, p: Playwright, args: argparse.Namespace) -> None:
     expect(pag.get_by_role("heading", name=args.obra)).to_be_visible()
     r.foto(pag, "obra-detalhe")
 
-    pag.get_by_role("link", name="Registrar o dia de hoje").click()
-    pag.get_by_text("☀️ Ensolarado").first.click()
-    pag.get_by_text("🌧️ Chuvoso").nth(1).click()
+    pag.goto(r.base + "/obras")
+    expect(pag.get_by_text(args.obra).first).to_be_visible()
+    r.foto(pag, "obras")
+    pag.goto(obra_url)
+
+    pag.get_by_role("link", name="Registrar o dia de hoje").first.click()
+    pag.locator("fieldset", has_text="Manhã").get_by_text("Sol", exact=True).click()
+    pag.locator("fieldset", has_text="Tarde").get_by_text("Chuva", exact=True).click()
     for _ in range(4):
-        pag.get_by_role("button", name="Mais uma pessoa").click()
-    pag.fill("#atividades", "Demolição da parede da cozinha e retirada do entulho.")
-    pag.get_by_role("button", name="+ Registrar ocorrência").click()
+        pag.get_by_role("button", name="Aumentar").click()
+    pag.fill("#nova-at", "Demolição da parede da cozinha")
+    pag.get_by_role("button", name="Adicionar atividade").click()
+    pag.fill("#nova-at", "Retirada do entulho")
+    pag.keyboard.press("Enter")
+    expect(pag.locator(".lista-atividades li")).to_have_count(2)
+    pag.get_by_text("Sim", exact=True).click()
+    pag.get_by_role("button", name="Chuva", exact=True).click()
     pag.fill("#oc-desc-0", "Chuva forte às 15h, serviço externo parado")
     pag.fill("#oc-imp-0", "1")
     pag.locator("app-seletor-de-fotos input[type=file]").set_input_files(str(canteiro))
     expect(pag.locator(".previas img")).to_have_count(1)
     r.foto(pag, "diario-formulario")
-    pag.get_by_role("button", name="Salvar e publicar").click()
+    pag.get_by_role("button", name="Publicar o dia").click()
     pag.wait_for_url(re.compile(rf"/diarios/{UUID}$"))
     diario_url = pag.url
     expect(pag.locator(".selo-publicado")).to_be_visible()
@@ -137,26 +147,40 @@ def dono(r: Roteiro, p: Playwright, args: argparse.Namespace) -> None:
     r.foto(pag, "diario-publicado-com-foto")
 
     pag.locator("app-seletor-de-fotos input[type=file]").set_input_files(str(depois))
-    expect(pag.locator("app-galeria img")).to_have_count(2)
+    # Comprimir 4000 px no navegador e enviar leva alguns segundos
+    expect(pag.locator("app-galeria img")).to_have_count(2, timeout=30_000)
     expect(pag.get_by_text("Adicionada após a publicação").first).to_be_visible()
     r.foto(pag, "foto-apos-publicacao")
 
-    pag.get_by_role("link", name="Revisar (com motivo)").click()
+    pag.get_by_role("button", name="Revisar diário").click()
     pag.fill("#motivo", "Faltou contar o ajudante que chegou às 9h")
-    pag.get_by_role("button", name="Mais uma pessoa").click()
+    r.foto(pag, "revisao-motivo")
+    pag.get_by_role("button", name="Continuar para edição").click()
+    expect(pag.locator("#motivo")).to_have_value("Faltou contar o ajudante que chegou às 9h")
+    pag.get_by_role("button", name="Aumentar").click()
     r.foto(pag, "revisao-formulario")
     pag.get_by_role("button", name="Salvar revisão").click()
     pag.wait_for_url(diario_url)
-    expect(pag.get_by_text("Histórico de revisões")).to_be_visible()
+    expect(pag.get_by_text("Faltou contar o ajudante").first).to_be_visible()
+    expect(pag.locator(".selo-revisado")).to_be_visible()
     r.foto(pag, "diario-revisado")
 
-    pag.goto(r.base + "/equipe")
+    pag.goto(obra_url)
+    for aba, nome in (("Fotos", "obra-aba-fotos"), ("Ocorrências", "obra-aba-ocorrencias"), ("Histórico", "obra-aba-historico")):
+        pag.get_by_role("tab", name=re.compile(aba)).click()
+        pag.wait_for_timeout(600)
+        r.foto(pag, nome)
+    pag.get_by_role("tab", name=re.compile("Ocorrências")).click()
+    expect(pag.get_by_text("Chuva forte às 15h")).to_be_visible()
+    pag.get_by_role("tab", name=re.compile("Pessoas da obra")).click()
+    r.foto(pag, "obra-aba-pessoas")
+    pag.get_by_role("link", name="Convidar cliente").click()
+    pag.wait_for_url("**/equipe**")
     pag.fill("#email", args.email_cliente)
-    pag.get_by_text("Cliente", exact=True).click()
-    pag.select_option("#obra", label=args.obra)
+    expect(pag.locator("#papel")).to_have_value("cliente")
     r.foto(pag, "equipe-convite")
     pag.get_by_role("button", name="Enviar convite").click()
-    expect(pag.get_by_text("Convite enviado")).to_be_visible()
+    expect(pag.get_by_text("Convite enviado")).to_be_visible(timeout=30_000)
 
     # Free: uma obra ativa. A segunda esbarra no limite (402) e abre o modal.
     pag.goto(r.base + "/obras/nova")
@@ -166,7 +190,7 @@ def dono(r: Roteiro, p: Playwright, args: argparse.Namespace) -> None:
     pag.fill("#cidade", "Marília")
     pag.fill("#termino", "2027-01-31")
     pag.get_by_role("button", name="Cadastrar obra").click()
-    expect(pag.get_by_text("Limite do plano", exact=True)).to_be_visible()
+    expect(pag.get_by_role("dialog").get_by_text("Assinar o Pro")).to_be_visible()
     r.foto(pag, "limite-do-plano-402")
 
     estado = {"cliente": args.email_cliente, "obra": args.obra, "obra_url": obra_url, "diario_url": diario_url}
@@ -183,24 +207,27 @@ def cliente(r: Roteiro, p: Playwright, args: argparse.Namespace) -> None:
     r.foto(pag, "convite-aceite")
     pag.get_by_role("button", name="Aceitar convite").click()
     pag.wait_for_url("**/login")
-    pag.fill("#login-email", estado["cliente"])
-    pag.fill("#login-senha", args.senha)
+    pag.fill("#email", estado["cliente"])
+    pag.fill("#senha", args.senha)
     pag.locator("form button[type=submit]").click()
     pag.wait_for_url("**/obras")
-    expect(pag.get_by_text(estado["obra"])).to_be_visible()
-    expect(pag.get_by_role("link", name="+ Nova obra")).to_have_count(0)
+    expect(pag.get_by_text(estado["obra"]).first).to_be_visible()
+    expect(pag.get_by_role("link", name="Nova obra")).to_have_count(0)
+    expect(pag.get_by_role("link", name=re.compile("Registrar o dia"))).to_have_count(0)
     r.foto(pag, "cliente-obras")
 
-    pag.get_by_text(estado["obra"]).click()
-    expect(pag.get_by_role("link", name="Registrar o dia de hoje")).to_have_count(0)
-    expect(pag.get_by_role("button", name="Remover")).to_have_count(0)
+    pag.get_by_text(estado["obra"]).first.click()
+    expect(pag.get_by_role("link", name=re.compile("Registrar o dia"))).to_have_count(0)
+    expect(pag.get_by_role("link", name="Editar obra")).to_have_count(0)
+    expect(pag.get_by_role("tab", name=re.compile("Histórico"))).to_have_count(0)
+    expect(pag.get_by_role("button", name=re.compile("Remover"))).to_have_count(0)
     r.foto(pag, "cliente-obra")
 
     pag.goto(estado["diario_url"])
     expect(pag.locator("app-galeria img")).to_have_count(2)
     pag.wait_for_function("[...document.querySelectorAll('app-galeria img')].every(i => i.naturalWidth > 0)")
     expect(pag.get_by_text("Adicionada após a publicação").first).to_be_visible()
-    for proibido in ("Publicar para o cliente", "Revisar (com motivo)", "Adicionar fotos", "Remover rascunho"):
+    for proibido in ("Publicar o dia", "Revisar diário", "Adicionar fotos", "Remover rascunho"):
         assert pag.get_by_text(proibido).count() == 0, f"o cliente vê um controle de escrita: {proibido}"
     pag.fill("#comentario", "Obrigado! Pode seguir com o contrapiso quando secar.")
     pag.get_by_role("button", name="Comentar").click()
