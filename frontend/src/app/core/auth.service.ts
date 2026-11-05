@@ -7,8 +7,6 @@ export interface Usuario {
   nome: string;
   email: string;
   admin?: boolean;
-  premium?: boolean;
-  premium_desde?: string | null;
 }
 
 export type Papel = 'dono' | 'encarregado' | 'cliente';

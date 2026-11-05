@@ -65,16 +65,6 @@ export const routes: Routes = [
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/usuarios/usuarios.component').then((m) => m.UsuariosComponent),
       },
-      {
-        path: 'premium/sucesso',
-        loadComponent: () =>
-          import('./features/assinatura/premium/premium-sucesso.component').then((m) => m.PremiumSucessoComponent),
-      },
-      {
-        path: 'premium/cancelado',
-        loadComponent: () =>
-          import('./features/assinatura/premium/premium-cancelado.component').then((m) => m.PremiumCanceladoComponent),
-      },
     ],
   },
   { path: 'planos', redirectTo: '/', pathMatch: 'full' },

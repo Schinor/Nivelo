@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService, Vinculo } from '../../../core/auth.service';
 import { AvisosService } from '../../../core/avisos.service';
@@ -7,15 +6,14 @@ import { ErroDaApi, mensagemDe } from '../../../core/http/erro-da-api';
 import { iniciais, PAPEL } from '../../../shared/formatos';
 import { Perfil, PerfilService } from './perfil.service';
 
-const BIO_MAX = 280;
 const FOTO_MAX_BYTES = 2 * 1024 * 1024;
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Minha conta: foto e apresentação, senha (por link no e-mail), empresas em que participa e sair. */
+/** Minha conta: foto, nome e e-mail, senha (por link no e-mail), empresas em que participa e sair. */
 @Component({
   selector: 'app-perfil',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink],
   template: `
     <div class="pagina pagina-estreita">
       <h1>Minha conta</h1>
@@ -55,15 +53,7 @@ const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
             </div>
           </div>
           <span id="fixo-ajuda" class="ajuda">Nome e e-mail são os do cadastro.</span>
-          <form class="formulario" (ngSubmit)="salvarBio()">
-            <div class="campo">
-              <label for="bio">Sobre você <span class="opcional">(opcional)</span></label>
-              <textarea id="bio" name="bio" rows="2" [maxLength]="bioMax" [(ngModel)]="bio" placeholder="Ex.: mestre de obras há 15 anos, especialista em reformas"></textarea>
-              <span class="ajuda">{{ bio.length }}/{{ bioMax }}</span>
-            </div>
-            @if (erroPerfil()) { <p class="alerta alerta-erro" role="alert">{{ erroPerfil() }}</p> }
-            <button type="submit" class="btn btn-primario direita" [disabled]="salvando() || bio === (perfil()?.bio ?? '')">Salvar perfil</button>
-          </form>
+          @if (erroPerfil()) { <p class="alerta alerta-erro" role="alert">{{ erroPerfil() }}</p> }
         }
       </section>
 
@@ -112,7 +102,6 @@ const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
     .foto-acoes { display: flex; flex-direction: column; gap: 8px; }
     label.btn { cursor: pointer; }
     .campo input[readonly] { background: var(--papel); color: var(--tinta-2); }
-    .direita { align-self: flex-end; }
     .esquerda { align-self: flex-start; }
     .empresa { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--linha-suave); }
     .empresa > div { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -129,7 +118,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
   private avisos = inject(AvisosService);
   private router = inject(Router);
 
-  readonly bioMax = BIO_MAX;
   readonly tiposAceitos = TIPOS_ACEITOS.join(',');
   readonly iniciais = iniciais;
   readonly PAPEL = PAPEL;
@@ -138,7 +126,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
   carregando = signal(true);
   salvando = signal(false);
   erroPerfil = signal<string | null>(null);
-  bio = '';
   vinculos = signal<Vinculo[] | null>(null);
   trocando = signal(false);
   enviandoSenha = signal(false);
@@ -163,7 +150,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
     this.perfilService.getMeu().subscribe({
       next: (p) => {
         this.perfil.set(p);
-        this.bio = p.bio ?? '';
         this.carregando.set(false);
       },
       error: () => {
@@ -177,21 +163,6 @@ export class PerfilComponent implements OnInit, OnDestroy {
     if (this.recarregouFoto) return;
     this.recarregouFoto = true;
     this.carregar();
-  }
-
-  salvarBio(): void {
-    const p = this.perfil();
-    if (!p) return;
-    this.salvando.set(true);
-    this.erroPerfil.set(null);
-    this.perfilService.atualizarBio(p.usuario_id, this.bio.trim()).subscribe({
-      next: (atualizado) => {
-        this.perfil.set(atualizado);
-        this.salvando.set(false);
-        this.avisos.sucesso('Perfil salvo.');
-      },
-      error: (e) => this.falha(e),
-    });
   }
 
   trocarFoto(evento: Event): void {
@@ -271,10 +242,9 @@ export class PerfilComponent implements OnInit, OnDestroy {
     const mensagens: Record<number, string> = {
       413: 'A imagem passa de 2 MB.',
       415: 'Formato não suportado. Envie JPG, PNG ou WEBP.',
-      422: `A apresentação pode ter no máximo ${BIO_MAX} caracteres.`,
       429: 'Muitos envios de foto; aguarde um minuto.',
       502: 'Armazenamento indisponível. Tente de novo.',
     };
-    this.erroPerfil.set(mensagens[e.status] ?? e.mensagem ?? 'Não foi possível salvar o perfil.');
+    this.erroPerfil.set(mensagens[e.status] ?? e.mensagem ?? 'Não foi possível salvar a foto.');
   }
 }
