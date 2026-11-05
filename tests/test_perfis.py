@@ -124,33 +124,27 @@ def test_url_assinada_aponta_para_a_ponte_storage(ctx):
 
 
 def test_get_perfil_exige_token(ctx):
-    assert ctx.client.get("/api/perfis/1").status_code == 401
     assert ctx.client.get("/api/perfis/me").status_code == 401
 
 
-def test_get_perfil_inexistente_retorna_404(ctx):
+def test_perfil_de_outro_usuario_nao_e_exposto(ctx):
+    # Sem leitura do perfil alheio: o usuário é global e não pertence a uma empresa só
     ctx.logar(1)
-    assert ctx.client.get("/api/perfis/404").status_code == 404
+    assert ctx.client.get("/api/perfis/2").status_code == 405
 
 
-def test_get_perfil_sem_linha_e_pode_editar_so_para_o_dono(ctx):
-    # Usuário 1 vê o perfil do 2
-    ctx.logar(1)
-    resp = ctx.client.get("/api/perfis/2")
+def test_meu_perfil_sem_linha(ctx):
+    ctx.logar(2)
+    resp = ctx.client.get("/api/perfis/me")
     assert resp.status_code == 200
     assert resp.json() == {
         "usuario_id": 2,
         "nome": "Beto",
         "bio": None,
         "foto_url": None,
-        "pode_editar": False,
+        "pode_editar": True,
         "premium": False,
     }
-
-    ctx.logar(2)
-    assert ctx.client.get("/api/perfis/2").json()["pode_editar"] is True
-    me = ctx.client.get("/api/perfis/me").json()
-    assert me["usuario_id"] == 2 and me["pode_editar"] is True
 
 
 # ── PUT bio ───────────────────────────────────────────────────────────────────

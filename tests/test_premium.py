@@ -256,6 +256,6 @@ def test_perfil_exibe_selo_premium(ctx, monkeypatch):
         return dict(ctx.usuarios[1])
 
     monkeypatch.setattr("app.routes.perfis.forward_request", fake_conta)
-    assert ctx.client.get("/api/perfis/1").json()["premium"] is False
+    assert ctx.client.get("/api/perfis/me").json()["premium"] is False
     ctx.webhook(_evento_checkout("evt_selo", 1))
-    assert ctx.client.get("/api/perfis/1").json()["premium"] is True
+    assert ctx.client.get("/api/perfis/me").json()["premium"] is True

@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from app.clients import log_client
 from app.clients.auth_client import forward_request
-from app.core.api_responses import AUTH_SERVICE_INDISPONIVEL, NOT_FOUND_USER, UNAUTHORIZED
+from app.core.api_responses import AUTH_SERVICE_INDISPONIVEL, UNAUTHORIZED
 from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies import negar_acesso, usuario_com_empresa
@@ -181,16 +181,6 @@ def _apagar_em_best_effort(chave: str) -> None:
 async def meu_perfil(user: dict = Depends(usuario_com_empresa), db: Session = Depends(get_db)):
     """Perfil do usuário logado."""
     return await _montar_perfil(db, user["id"], user)
-
-
-@router.get(
-    "/{usuario_id}",
-    response_model=PerfilOut,
-    responses={**UNAUTHORIZED, **NOT_FOUND_USER, **AUTH_SERVICE_INDISPONIVEL},
-)
-async def ver_perfil(usuario_id: int, user: dict = Depends(usuario_com_empresa), db: Session = Depends(get_db)):
-    """Perfil de qualquer usuário (leitura aberta a quem está logado)."""
-    return await _montar_perfil(db, usuario_id, user)
 
 
 @router.put(

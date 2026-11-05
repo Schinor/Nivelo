@@ -81,8 +81,6 @@ export type { AlterarStatus$Params as AlterarStatus$Params } from './fn/obras/al
 export { alterarStatus as alterarStatus } from './fn/obras/alterar-status';
 export type { MeuPerfil$Params as MeuPerfil$Params } from './fn/perfis/meu-perfil';
 export { meuPerfil as meuPerfil } from './fn/perfis/meu-perfil';
-export type { VerPerfil$Params as VerPerfil$Params } from './fn/perfis/ver-perfil';
-export { verPerfil as verPerfil } from './fn/perfis/ver-perfil';
 export type { AtualizarBio$Params as AtualizarBio$Params } from './fn/perfis/atualizar-bio';
 export { atualizarBio as atualizarBio } from './fn/perfis/atualizar-bio';
 export type { EnviarFoto$Params as EnviarFoto$Params } from './fn/perfis/enviar-foto';
