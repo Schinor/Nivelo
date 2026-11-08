@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any
 
@@ -7,6 +8,8 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 from app.shared.api.request_id import HEADER as REQUEST_ID_HEADER
 from app.shared.api.request_id import obter_request_id
+
+logger = logging.getLogger("nivelo.api.auth_client")
 
 AUTH_SERVICE_URL = getattr(
     settings, "AUTH_SERVICE_URL", os.getenv("AUTH_SERVICE_URL", "http://auth-service:8001")
@@ -41,6 +44,19 @@ async def forward_request(
                 data=data,
                 headers=req_headers,
             )
+            if interno and resp.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN):
+                # Quem foi recusado é a API, não o usuário: o 401 chegaria ao navegador como
+                # sessão expirada, e o front derrubaria uma sessão válida
+                logger.error(
+                    "auth-service recusou a chamada interna %s %s (%s): confira AUTH_INTERNAL_TOKEN na stack",
+                    method,
+                    path,
+                    resp.status_code,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Serviço de autenticação indisponível",
+                )
             if resp.status_code >= 400:
                 try:
                     err_json = resp.json()

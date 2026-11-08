@@ -368,14 +368,19 @@ def test_admin_remove_usuario_apaga_perfil_e_foto(ctx, monkeypatch):
     ctx.logar(1)
     _enviar(ctx, 1, _imagem())
 
+    chamadas = []
+
     async def auth_ok(method, path, **kw):
-        return None
+        chamadas.append((method, kw))
 
     monkeypatch.setattr("app.routes.auth.forward_request", auth_ok)
     ctx.logar(9, "admin", ["gerenciar:usuarios"])
     assert ctx.client.delete("/api/auth/users/1").status_code == 204
     assert _perfil_no_banco(ctx, 1) is None
     assert _objetos(ctx.s3) == []
+    # Com o token do próprio admin: não depende do token interno entre os serviços
+    assert [m for m, _ in chamadas] == ["GET", "DELETE"]
+    assert not any(kw.get("interno") for _, kw in chamadas)
 
 
 # ── Ponte /storage ────────────────────────────────────────────────────────────
@@ -460,3 +465,26 @@ def test_ponte_storage_upstream_fora_retorna_502(ctx, monkeypatch):
 
     _mock_garage(monkeypatch, handler)
     assert ctx.client.get(f"/storage/{BUCKET}/x.webp?X-Amz-Signature=abc").status_code == 502
+
+
+# ── Falha entre serviços não pode derrubar a sessão ───────────────────────────
+
+
+def test_token_interno_recusado_nao_vira_401_para_o_navegador(ctx, monkeypatch):
+    # O 401 entre a API e o auth-service é erro de configuração, não sessão expirada: repassado
+    # ao navegador, o front limpava a sessão e o login voltava para a mesma tela, sem fim.
+    import httpx
+
+    from app.clients import auth_client
+
+    async def auth_service_recusa(self, method, url, **kw):
+        return httpx.Response(401, json={"detail": "Token não enviado"})
+
+    monkeypatch.setattr("app.routes.perfis.forward_request", auth_client.forward_request)
+    monkeypatch.setattr(httpx.AsyncClient, "request", auth_service_recusa)
+
+    ctx.logar(1)
+    resp = ctx.client.get("/api/perfis/me")
+
+    assert resp.status_code == 503
+    assert "Token" not in resp.json()["detail"]
