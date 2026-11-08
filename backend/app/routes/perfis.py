@@ -2,7 +2,8 @@
 
 Requisito central: cada um só edita o PRÓPRIO perfil. O `{usuario_id}` da rota
 existe só para ser comparado com o id do JWT — nunca é a fonte da identidade.
-Admin não é exceção (decisão documentada no README).
+Admin não é exceção (decisão documentada no README). O perfil é da pessoa, não da empresa:
+vale qualquer token válido, inclusive o do admin e o de quem ainda não tem empresa.
 """
 
 import logging
@@ -32,7 +33,7 @@ from app.clients.auth_client import forward_request
 from app.core.api_responses import AUTH_SERVICE_INDISPONIVEL, UNAUTHORIZED
 from app.core.config import settings
 from app.core.database import get_db
-from app.dependencies import negar_acesso, usuario_com_empresa
+from app.dependencies import current_user, negar_acesso
 from app.models.perfil import Perfil
 from app.repositories import perfil_repo
 from app.schemas.perfil import PerfilBioUpdate, PerfilOut
@@ -178,7 +179,7 @@ def _apagar_em_best_effort(chave: str) -> None:
     response_model=PerfilOut,
     responses={**UNAUTHORIZED, **AUTH_SERVICE_INDISPONIVEL},
 )
-async def meu_perfil(user: dict = Depends(usuario_com_empresa), db: Session = Depends(get_db)):
+async def meu_perfil(user: dict = Depends(current_user), db: Session = Depends(get_db)):
     """Perfil do usuário logado."""
     return await _montar_perfil(db, user["id"], user)
 
@@ -193,7 +194,7 @@ async def atualizar_bio(
     payload: PerfilBioUpdate,
     request: Request,
     background: BackgroundTasks,
-    user: dict = Depends(usuario_com_empresa),
+    user: dict = Depends(current_user),
     db: Session = Depends(get_db),
 ):
     """Atualiza a bio (até 280 caracteres; vazia vira null). Só o dono."""
@@ -215,7 +216,7 @@ async def enviar_foto(
     request: Request,
     background: BackgroundTasks,
     foto: UploadFile = File(..., description="JPEG, PNG ou WEBP (máx. PERFIL_FOTO_MAX_BYTES)"),
-    user: dict = Depends(usuario_com_empresa),
+    user: dict = Depends(current_user),
     db: Session = Depends(get_db),
 ):
     """Envia/troca a foto. O arquivo vai para o object storage; o banco guarda só a chave."""
@@ -272,7 +273,7 @@ async def remover_foto(
     usuario_id: int,
     request: Request,
     background: BackgroundTasks,
-    user: dict = Depends(usuario_com_empresa),
+    user: dict = Depends(current_user),
     db: Session = Depends(get_db),
 ):
     """Remove a foto (idempotente: sem foto também devolve 204)."""

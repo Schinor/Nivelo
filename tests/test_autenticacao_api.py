@@ -26,7 +26,7 @@ def api(monkeypatch):
 
 def test_token_sem_tenant_recebe_403_com_type_proprio_e_e_auditado(api):
     client, eventos = api
-    resp = client.get("/api/perfis/me", headers=auth(token(empresa_id=None, papel=None)))
+    resp = client.get("/api/obras", headers=auth(token(empresa_id=None, papel=None)))
 
     assert resp.status_code == 403
     assert resp.json()["type"] == "https://nivelo/erros/sem-empresa-ativa"
@@ -41,7 +41,7 @@ def test_token_sem_tenant_ainda_faz_logout(api):
 
 def test_admin_sem_tenant_tambem_nao_entra_em_rota_de_empresa(api):
     client, _ = api
-    resp = client.get("/api/perfis/me", headers=auth(token(admin=True)))
+    resp = client.get("/api/obras", headers=auth(token(admin=True)))
     assert resp.status_code == 403
 
 

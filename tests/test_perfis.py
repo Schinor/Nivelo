@@ -127,6 +127,23 @@ def test_get_perfil_exige_token(ctx):
     assert ctx.client.get("/api/perfis/me").status_code == 401
 
 
+def test_admin_sem_empresa_ve_e_troca_a_propria_foto(ctx):
+    # O admin da plataforma não tem vínculo com empresa, e o perfil não depende de empresa
+    ctx.logar(9, "admin")
+    assert ctx.client.get("/api/perfis/me").status_code == 200
+
+    resp = _enviar(ctx, 9, _imagem())
+
+    assert resp.status_code == 200 and resp.json()["foto_url"]
+    assert len(_objetos(ctx.s3)) == 1
+
+
+def test_admin_nao_troca_a_foto_de_outro_usuario(ctx):
+    ctx.logar(9, "admin")
+    assert _enviar(ctx, 1, _imagem()).status_code == 403
+    assert _objetos(ctx.s3) == []
+
+
 def test_perfil_de_outro_usuario_nao_e_exposto(ctx):
     # Sem leitura do perfil alheio: o usuário é global e não pertence a uma empresa só
     ctx.logar(1)
