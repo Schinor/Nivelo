@@ -156,7 +156,7 @@ interface OcorrenciaDaObra {
 
             @case ('fotos') {
               <section class="secao" aria-label="Fotos da obra">
-                <div class="barra">
+                <div class="barra-filtros">
                   <div class="pilulas" role="group" aria-label="Filtrar fotos">
                     <button type="button" class="pilula" [attr.aria-pressed]="!soApos()" (click)="soApos.set(false)">Todas</button>
                     <button type="button" class="pilula" [attr.aria-pressed]="soApos()" (click)="soApos.set(true)">Adicionadas após a publicação</button>
@@ -238,7 +238,7 @@ interface OcorrenciaDaObra {
     .meta-dia { font-size: 14px; color: var(--tinta-2); }
     .titulo-lateral { font-family: var(--fonte-titulo); font-size: 17px; }
     .secao { display: flex; flex-direction: column; gap: 20px; }
-    .barra { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+    .barra-filtros { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
     .contagem { font-size: 13px; color: var(--tinta-2); }
     .grupo { display: flex; flex-direction: column; gap: 10px; }
     .grupo-titulo { display: flex; gap: 10px; align-items: baseline; }

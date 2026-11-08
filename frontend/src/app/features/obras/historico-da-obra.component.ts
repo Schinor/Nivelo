@@ -42,7 +42,7 @@ const CATEGORIAS = [
   imports: [FormsModule, IconeComponent],
   template: `
     <section aria-label="Histórico da obra" class="historico">
-      <div class="barra">
+      <div class="barra-filtros">
         <span class="selo"><app-icone nome="cadeado" [tamanho]="14" [traco]="2.2" />Visível só para o dono</span>
         <div class="filtro">
           <label for="evento" class="rotulo">Evento</label>
@@ -80,7 +80,7 @@ const CATEGORIAS = [
   `,
   styles: `
     .historico { display: flex; flex-direction: column; gap: 16px; }
-    .barra { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+    .barra-filtros { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
     .filtro { display: flex; gap: 10px; align-items: center; }
     .filtro .entrada { min-height: 44px; width: auto; padding: 0 12px; }
     .sem-padding { padding: 0; }
