@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Plano Construtora do Nivelo: canteiro com guindaste">
+  <rect width="1024" height="1024" fill="#1B1E1C"/>
+  <rect x="80" y="832" width="864" height="24" rx="12" fill="#F4F2EE"/>
+  <g fill="none" stroke="#E8A317" stroke-width="20" stroke-linejoin="round">
+    <path d="M228 832V196M308 832V196"/>
+    <path d="M228 832L308 736L228 640L308 544L228 448L308 352L228 256"/>
+  </g>
+  <rect x="120" y="164" width="760" height="44" rx="8" fill="#E8A317"/>
+  <rect x="96" y="208" width="128" height="72" rx="8" fill="#9FC9B0"/>
+  <path d="M268 164L268 88" stroke="#E8A317" stroke-width="24" stroke-linecap="round"/>
+  <path d="M268 92L140 164M268 92L840 164" stroke="#F4F2EE" stroke-width="6"/>
+  <path d="M736 208V396" stroke="#F4F2EE" stroke-width="8"/>
+  <rect x="656" y="396" width="160" height="28" rx="6" fill="#9FC9B0"/>
+  <path d="M672 424l-16 72M800 424l16 72" stroke="#F4F2EE" stroke-width="6"/>
+  <g>
+    <rect x="432" y="560" width="384" height="272" fill="#2F6B4F"/>
+    <rect x="408" y="536" width="432" height="32" rx="8" fill="#9FC9B0"/>
+    <g fill="#E3EEE7"><rect x="476" y="608" width="72" height="72" rx="6"/><rect x="588" y="608" width="72" height="72" rx="6"/><rect x="700" y="608" width="72" height="72" rx="6"/><rect x="476" y="720" width="72" height="72" rx="6"/><rect x="700" y="720" width="72" height="72" rx="6"/></g>
+    <rect x="588" y="720" width="72" height="112" rx="6" fill="#E8A317"/>
+  </g>
+</svg>
