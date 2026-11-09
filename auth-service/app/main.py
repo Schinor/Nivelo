@@ -20,10 +20,10 @@ from app.core.database import SessionLocal, engine
 from app.routes.auth import router as auth_router
 from app.routes.convites import router as convites_router
 from app.routes.identidade import router as identidade_router
-from app.routes.premium import router as premium_router
+from app.routes.internos import router as internos_router
 from app.routes.users import router as users_router
 
-# Loggers "auth-service.*" em INFO no stdout (ex.: eventos do Stripe aplicados).
+# Loggers "auth-service.*" em INFO no stdout (ex.: e-mails enviados).
 # Sem isso só WARNING+ aparece, pelo handler de último recurso do Python.
 _log_handler = logging.StreamHandler()
 _log_handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
@@ -96,4 +96,4 @@ app.include_router(auth_router)
 app.include_router(identidade_router)
 app.include_router(convites_router)
 app.include_router(users_router)
-app.include_router(premium_router)
+app.include_router(internos_router)

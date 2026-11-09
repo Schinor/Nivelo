@@ -15,13 +15,6 @@ class Usuario(Base):
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Plano Premium (atividade 7). Só muda pelo webhook do Stripe com assinatura validada.
-    # Do Stripe guardamos apenas os IDs — nenhum dado de cartão passa por aqui.
-    premium: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
-    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    premium_desde: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-
     # Admin da plataforma: não pertence a empresa nenhuma e não lê dados de obras (ADR 004)
     admin_plataforma: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
 

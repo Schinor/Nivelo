@@ -477,7 +477,7 @@ def test_admin_remove_usuario_e_nao_age_sobre_si_mesmo(emails_enviados):
     assert alvo_id not in ids and admin_id in ids
 
 
-# ── Plano Premium (rotas internas chamadas pelo webhook da API) ──
+# ── Rotas internas chamadas pela API ──
 
 TOKEN_INTERNO = "token-interno-de-teste"
 
@@ -490,123 +490,43 @@ def interno(monkeypatch):
     return {"X-Internal-Token": TOKEN_INTERNO}
 
 
-def _evento(event_id, tipo="checkout.session.completed", **campos):
-    return {"event_id": event_id, "tipo": tipo, **campos}
+def test_aviso_de_inadimplencia_exige_o_token_interno(interno):
+    corpo = {"empresa_id": "0190f3a0-0000-7000-8000-00000000000a"}
+    assert client.post("/internal/avisos/inadimplencia", json=corpo).status_code == 401
+    errado = {"X-Internal-Token": "errado"}
+    assert client.post("/internal/avisos/inadimplencia", json=corpo, headers=errado).status_code == 401
 
 
-def _usuario_no_banco(user_id):
-    db = TestingSessionLocal()
-    try:
-        u = db.get(Usuario, user_id)
-        return {
-            "premium": u.premium,
-            "customer": u.stripe_customer_id,
-            "subscription": u.stripe_subscription_id,
-            "desde": u.premium_desde,
-        }
-    finally:
-        db.close()
-
-
-def test_usuario_novo_nao_e_premium():
-    user_id, headers = _criar_e_logar("free@exemplo.com")
-    assert client.get("/me", headers=headers).json()["premium"] is False
-    assert _usuario_no_banco(user_id)["premium"] is False
-
-
-def test_rota_interna_exige_token(monkeypatch, interno):
-    corpo = _evento("evt_sem_token", usuario_id=1)
-    assert client.post("/internal/premium/eventos", json=corpo).status_code == 401
-    assert (
-        client.post("/internal/premium/eventos", json=corpo, headers={"X-Internal-Token": "errado"}).status_code == 401
-    )
-
+def test_rotas_internas_desligadas_sem_token_configurado(monkeypatch, interno):
     from app.core.config import settings
 
     monkeypatch.setattr(settings, "AUTH_INTERNAL_TOKEN", "")
-    assert client.post("/internal/premium/eventos", json=corpo, headers=interno).status_code == 503
+    corpo = {"empresa_id": "0190f3a0-0000-7000-8000-00000000000a"}
+    assert client.post("/internal/avisos/inadimplencia", json=corpo, headers=interno).status_code == 503
 
 
-def test_checkout_concluido_ativa_premium_e_guarda_so_ids(interno):
-    user_id, headers = _criar_e_logar("assinante@exemplo.com")
+def test_aviso_de_inadimplencia_vai_so_para_os_donos_da_empresa(monkeypatch, interno):
+    from types import SimpleNamespace
+
+    from app.repositories import identidade_repo
+    from app.routes import internos
+
+    enviados = []
+    monkeypatch.setattr(
+        internos, "send_aviso_de_inadimplencia_email", lambda email, nome: enviados.append((email, nome))
+    )
+    empresa = SimpleNamespace(nome="Construtora X")
+    equipe = [
+        (SimpleNamespace(papel="dono", empresa=empresa), SimpleNamespace(id=1, email="dono@x.com")),
+        (SimpleNamespace(papel="encarregado", empresa=empresa), SimpleNamespace(id=2, email="enc@x.com")),
+    ]
+    monkeypatch.setattr(identidade_repo, "equipe", lambda db, empresa_id: equipe)
 
     resp = client.post(
-        "/internal/premium/eventos",
-        json=_evento("evt_1", usuario_id=user_id, customer_id="cus_123", subscription_id="sub_123"),
-        headers=interno,
-    )
-    assert resp.status_code == 200
-    assert resp.json() == {"duplicado": False, "aplicado": True, "usuario_id": user_id, "premium": True}
-
-    banco = _usuario_no_banco(user_id)
-    assert banco["premium"] is True
-    assert (banco["customer"], banco["subscription"]) == ("cus_123", "sub_123")
-    assert banco["desde"] is not None
-    assert client.get("/me", headers=headers).json()["premium"] is True
-
-
-def test_evento_repetido_e_processado_uma_vez(interno):
-    user_id, _ = _criar_e_logar("repetido@exemplo.com")
-    corpo = _evento("evt_dup", usuario_id=user_id, customer_id="cus_d", subscription_id="sub_d")
-
-    assert client.post("/internal/premium/eventos", json=corpo, headers=interno).json()["aplicado"] is True
-
-    # Cancela por outro evento e reenvia o primeiro: o reenvio não pode reativar
-    client.post(
-        "/internal/premium/eventos",
-        json=_evento("evt_cancel", tipo="customer.subscription.deleted", subscription_id="sub_d"),
-        headers=interno,
-    )
-    reenvio = client.post("/internal/premium/eventos", json=corpo, headers=interno)
-    assert reenvio.json() == {"duplicado": True, "aplicado": False, "usuario_id": None, "premium": None}
-    assert _usuario_no_banco(user_id)["premium"] is False
-
-
-def test_assinatura_cancelada_remove_premium(interno):
-    user_id, _ = _criar_e_logar("cancela@exemplo.com")
-    client.post(
-        "/internal/premium/eventos",
-        json=_evento("evt_a", usuario_id=user_id, customer_id="cus_c", subscription_id="sub_c"),
-        headers=interno,
+        "/internal/avisos/inadimplencia", json={"empresa_id": "0190f3a0-0000-7000-8000-00000000000a"}, headers=interno
     )
 
-    # Assinatura que não é a atual do usuário: nada muda
-    outra = client.post(
-        "/internal/premium/eventos",
-        json=_evento("evt_b", tipo="customer.subscription.deleted", subscription_id="sub_antiga"),
-        headers=interno,
-    )
-    assert outra.json()["aplicado"] is False
-    assert _usuario_no_banco(user_id)["premium"] is True
-
-    resp = client.post(
-        "/internal/premium/eventos",
-        json=_evento("evt_c", tipo="customer.subscription.deleted", subscription_id="sub_c"),
-        headers=interno,
-    )
-    assert resp.json() == {"duplicado": False, "aplicado": True, "usuario_id": user_id, "premium": False}
-    banco = _usuario_no_banco(user_id)
-    assert banco["premium"] is False and banco["subscription"] is None
-    # O customer fica: numa nova assinatura o Stripe reaproveita o mesmo cliente
-    assert banco["customer"] == "cus_c"
-
-
-def test_evento_de_usuario_inexistente_e_registrado_sem_erro(interno):
-    resp = client.post("/internal/premium/eventos", json=_evento("evt_fantasma", usuario_id=99999), headers=interno)
-    assert resp.status_code == 200
-    assert resp.json()["aplicado"] is False
-    # Registrado: o reenvio do Stripe não fica em loop
-    assert (
-        client.post(
-            "/internal/premium/eventos", json=_evento("evt_fantasma", usuario_id=99999), headers=interno
-        ).json()["duplicado"]
-        is True
-    )
-
-
-def test_rota_interna_recusa_tipo_de_evento_desconhecido(interno):
-    resp = client.post("/internal/premium/eventos", json=_evento("evt_x", tipo="invoice.paid"), headers=interno)
-    assert resp.status_code == 422
+    assert resp.json() == {"enviados": 1} and enviados == [("dono@x.com", "Construtora X")]
 
 
 # ── Identidade por vínculo (Fase 3, ADR 004) ─────────────────────────────────
@@ -1035,7 +955,6 @@ def test_equipe_segue_a_empresa_ativa_de_quem_tem_varios_vinculos(convites_envia
 
 def test_equipe_confere_o_vinculo_no_banco_e_nao_mostra_vinculo_desativado(convites_enviados):
     from app.models.empresa import Vinculo
-    from app.models.usuario import Usuario
 
     _, dono = _dono("dono-desl@exemplo.com", "Rocha Reformas")
     client.post("/convites", json={"email": "saiu@exemplo.com", "papel": "encarregado"}, headers=dono)

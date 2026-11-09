@@ -235,3 +235,26 @@ def send_convite_email(to_email: str, token: str, empresa_nome: str, papel: str,
         "Se você não esperava este convite, ignore este e-mail.\n"
     )
     return _enviar_email(to_email, f"Convite de {empresa_nome} no Nivelo", texto, html_content, link)
+
+
+def send_aviso_de_inadimplencia_email(to_email: str, empresa_nome: str) -> bool:
+    """O pagamento falhou: a empresa está com os limites do Free até regularizar."""
+    base = (settings.APP_BASE_URL or settings.CATALOGO_URL or "http://localhost:8000").strip(" \"'").rstrip("/")
+    link = f"{base}/assinatura"
+    empresa = html.escape(empresa_nome)
+    html_content = f"""<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; background: #F4F2EE; color: #1B1E1C; padding: 20px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #FFFFFF; padding: 32px; border-radius: 12px;">
+    <h2 style="margin-top: 0;">Não conseguimos cobrar a assinatura</h2>
+    <p>O pagamento da assinatura de <strong>{empresa}</strong> falhou. Enquanto ele não for regularizado,
+       a empresa fica com os limites do plano Free. Nenhum diário é apagado.</p>
+    <p><a href="{link}" style="display: inline-block; background: #2F6B4F; color: #FFFFFF; padding: 12px 20px;
+       border-radius: 6px; text-decoration: none; font-weight: bold;">Atualizar pagamento</a></p>
+  </div>
+</body></html>"""
+    texto = (
+        f"O pagamento da assinatura de {empresa_nome} falhou. Enquanto ele não for regularizado, a empresa "
+        f"fica com os limites do plano Free. Nenhum diário é apagado.\nAtualize em: {link}\n"
+    )
+    return _enviar_email(to_email, f"Pagamento não aprovado — {empresa_nome}", texto, html_content, link)

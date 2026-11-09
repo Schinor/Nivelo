@@ -106,7 +106,7 @@ def test_reset_token_vira_hash_e_invalida_os_tokens_antigos(banco):
     assert "token" not in colunas and "token_hash" in colunas
     assert restantes == 0  # o token em claro emitido antes não vale mais
 
-    alembic("auth", banco, "downgrade", "-1")
+    alembic("auth", banco, "downgrade", "006_contrai_papel_antigo")
     with conectar(banco) as conn:
         assert "token" in {r[1] for r in conn.execute("PRAGMA table_info(reset_tokens)")}
     alembic("auth", banco, "upgrade", "head")
@@ -235,3 +235,15 @@ def test_dominio_downgrade_e_upgrade_de_novo(dominio):
     alembic("api", dominio, "upgrade", "head")
     assert TABELAS_DO_DOMINIO <= tabelas(dominio)
     assert "Running upgrade" not in alembic("api", dominio, "upgrade", "head")
+
+
+def test_premium_por_usuario_sai_e_o_downgrade_recria_a_estrutura(banco):
+    alembic("auth", banco, "upgrade", "head")
+    assert "stripe_eventos_processados" not in tabelas(banco)
+    with conectar(banco) as conn:
+        colunas = {linha[1] for linha in conn.execute("PRAGMA table_info(usuarios)")}
+    assert not colunas & {"premium", "premium_desde", "stripe_customer_id", "stripe_subscription_id"}
+
+    alembic("auth", banco, "downgrade", "007_reset_token_hash")
+    assert "stripe_eventos_processados" in tabelas(banco)
+    alembic("auth", banco, "upgrade", "head")
