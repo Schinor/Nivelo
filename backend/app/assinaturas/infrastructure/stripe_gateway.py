@@ -154,5 +154,13 @@ class _traduzindo_erros:
 
     def __exit__(self, _tipo: object, erro: BaseException | None, _rastro: object) -> None:
         if isinstance(erro, stripe.StripeError):
-            logger.warning("Stripe recusou a chamada: %s", type(erro).__name__)
+            # A mensagem do Stripe mascara a chave e aponta o campo recusado (preço, URL, customer)
+            logger.warning(
+                "Stripe recusou a chamada: %s http=%s codigo=%s campo=%s: %s",
+                type(erro).__name__,
+                erro.http_status,
+                erro.code,
+                getattr(erro, "param", None),
+                erro.user_message,
+            )
             raise DependenciaIndisponivel("Não foi possível falar com o meio de pagamento. Tente de novo.") from None

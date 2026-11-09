@@ -322,3 +322,25 @@ def test_so_o_dono_assina_ou_gerencia(ctx, rota, uid, papel):
 def test_sem_stripe_configurado_responde_503(obras_ctx):
     resp = obras_ctx.client.post("/api/assinaturas/checkout", json={"plano": "pro"}, headers=DONO)
     assert resp.status_code == 503
+
+
+def test_recusa_do_stripe_responde_503_e_deixa_o_motivo_no_log(monkeypatch, caplog):
+    import stripe
+
+    from app.assinaturas.infrastructure.stripe_gateway import StripeGateway
+    from app.shared.application.erros import DependenciaIndisponivel
+    from app.shared.domain.ids import EmpresaId, UsuarioId
+
+    def recusa(**_):
+        raise stripe.InvalidRequestError(
+            "No such price: 'prod_x'", param="line_items[0][price]", code="resource_missing", http_status=400
+        )
+
+    monkeypatch.setattr(stripe.checkout.Session, "create", recusa)
+    gateway = StripeGateway("chave", SEGREDO, "https://nivelo.test")
+    with caplog.at_level("WARNING", logger="nivelo.api.stripe"), pytest.raises(DependenciaIndisponivel) as erro:
+        gateway.criar_checkout_assinatura("cus_1", EmpresaId.de_texto(str(uuid.uuid4())), UsuarioId(1), "prod_x")
+
+    assert "prod_x" not in str(erro.value), "o motivo técnico fica no log, não na resposta"
+    assert "InvalidRequestError http=400 codigo=resource_missing campo=line_items[0][price]" in caplog.text
+    assert "No such price" in caplog.text
