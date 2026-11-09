@@ -1,6 +1,7 @@
 import hashlib
 import os
 import sys
+import uuid
 
 # Define variáveis de ambiente para a suíte de testes
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
@@ -495,6 +496,34 @@ def test_aviso_de_inadimplencia_exige_o_token_interno(interno):
     assert client.post("/internal/avisos/inadimplencia", json=corpo).status_code == 401
     errado = {"X-Internal-Token": "errado"}
     assert client.post("/internal/avisos/inadimplencia", json=corpo, headers=errado).status_code == 401
+
+
+def test_contas_do_painel_exigem_o_token_interno(interno):
+    assert client.get("/internal/metricas/contas").status_code == 401
+    assert client.get("/internal/metricas/contas", headers={"X-Internal-Token": "errado"}).status_code == 401
+
+
+def test_contas_do_painel_trazem_so_vinculos_ativos_e_nenhum_email(interno):
+    from app.models.empresa import Vinculo
+
+    cadastro = _cadastrar("painel-dono@exemplo.com", empresa="Painel Obras").json()
+    empresa_id = cadastro["empresa"]["id"]
+    saiu_id, _ = _criar_e_logar("painel-saiu@exemplo.com")
+    _, _ = _criar_e_logar("painel-admin@exemplo.com", admin=True)
+    db = TestingSessionLocal()
+    db.add(Vinculo(usuario_id=saiu_id, empresa_id=uuid.UUID(empresa_id), papel="encarregado", ativo=False))
+    db.commit()
+    db.close()
+
+    resp = client.get("/internal/metricas/contas", headers=interno)
+
+    assert resp.status_code == 200, resp.text
+    corpo = resp.json()
+    [empresa] = [e for e in corpo["empresas"] if e["id"] == empresa_id]
+    assert empresa["nome"] == "Painel Obras" and saiu_id not in empresa["usuario_ids"]
+    assert len(empresa["usuario_ids"]) == 1
+    assert any(u["admin"] for u in corpo["usuarios"])
+    assert "@" not in resp.text
 
 
 def test_rotas_internas_desligadas_sem_token_configurado(monkeypatch, interno):

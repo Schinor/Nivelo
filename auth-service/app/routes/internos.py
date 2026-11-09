@@ -34,6 +34,23 @@ class AvisoDeInadimplenciaOut(BaseModel):
     enviados: int
 
 
+class EmpresaDaPlataformaOut(BaseModel):
+    id: uuid.UUID
+    nome: str
+    usuario_ids: list[int]
+
+
+class UsuarioDaPlataformaOut(BaseModel):
+    id: int
+    nome: str
+    admin: bool
+
+
+class ContasDaPlataformaOut(BaseModel):
+    empresas: list[EmpresaDaPlataformaOut]
+    usuarios: list[UsuarioDaPlataformaOut]
+
+
 @router.post("/avisos/inadimplencia", response_model=AvisoDeInadimplenciaOut)
 def avisar_inadimplencia(payload: AvisoDeInadimplenciaIn, db: Session = Depends(get_db)):
     """Avisa os donos da empresa de que o pagamento da assinatura falhou."""
@@ -47,3 +64,13 @@ def avisar_inadimplencia(payload: AvisoDeInadimplenciaIn, db: Session = Depends(
         except Exception:
             logger.exception("aviso de inadimplência não enviado ao usuario_id=%s", usuario.id)
     return AvisoDeInadimplenciaOut(enviados=enviados)
+
+
+@router.get("/metricas/contas", response_model=ContasDaPlataformaOut)
+def contas_da_plataforma(db: Session = Depends(get_db)):
+    """Empresas com seus vínculos ativos e as contas, para o painel do admin. Sem e-mails."""
+    empresas, usuarios = identidade_repo.contas_da_plataforma(db)
+    return ContasDaPlataformaOut(
+        empresas=[EmpresaDaPlataformaOut(id=e.id, nome=e.nome, usuario_ids=ids) for e, ids in empresas],
+        usuarios=[UsuarioDaPlataformaOut(id=u.id, nome=u.nome, admin=u.admin) for u in usuarios],
+    )

@@ -1,6 +1,7 @@
 """Empresas, vínculos e o vínculo ativo do login."""
 
 import uuid
+from collections import defaultdict
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -42,6 +43,16 @@ def criar_empresa_com_dono(db: Session, usuario_id: int, nome: str, tipo_pessoa:
     db.add(novo)
     db.flush()
     return novo
+
+
+def contas_da_plataforma(db: Session) -> tuple[list[tuple[Empresa, list[int]]], list[Usuario]]:
+    """Todas as empresas com quem tem vínculo ativo em cada uma, e todas as contas."""
+    usuarios_por_empresa: dict[uuid.UUID, list[int]] = defaultdict(list)
+    vinculos = db.execute(select(Vinculo.empresa_id, Vinculo.usuario_id).where(Vinculo.ativo.is_(True)))
+    for empresa_id, usuario_id in vinculos:
+        usuarios_por_empresa[empresa_id].append(usuario_id)
+    empresas = db.scalars(select(Empresa)).all()
+    return [(e, usuarios_por_empresa[e.id]) for e in empresas], list(db.scalars(select(Usuario)))
 
 
 def equipe(db: Session, empresa_id: uuid.UUID) -> list[tuple[Vinculo, Usuario]]:
