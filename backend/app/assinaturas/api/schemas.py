@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -29,3 +30,11 @@ class AssinaturaOut(BaseModel):
     cancelar_no_fim: bool
     direitos: DireitosOut
     uso: UsoOut
+
+
+class CheckoutIn(BaseModel):
+    plano: Literal["pro", "construtora"]
+
+
+class UrlOut(BaseModel):
+    url: str

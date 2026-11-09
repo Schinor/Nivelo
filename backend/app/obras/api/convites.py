@@ -13,8 +13,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.clients.auth_client import forward_request
 from app.assinaturas.domain.planos import PoliticaDePlano
+from app.clients.auth_client import forward_request
 from app.core.database import get_db
 from app.obras.api.dependencias import equipe_da_empresa
 from app.obras.application.portas import EquipeDaEmpresa

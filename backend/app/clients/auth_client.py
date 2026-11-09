@@ -29,7 +29,7 @@ async def forward_request(
     if headers and "authorization" in headers:
         req_headers["authorization"] = headers["authorization"]
     if interno:
-        # Rotas /internal do auth-service (ex.: gravar o status premium vindo do webhook do Stripe)
+        # Rotas internas do auth-service, autenticadas pelo token compartilhado
         req_headers["X-Internal-Token"] = settings.AUTH_INTERNAL_TOKEN
     request_id = obter_request_id()
     if request_id:
@@ -74,9 +74,3 @@ async def forward_request(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Serviço de autenticação inacessível: {str(exc)}",
             )
-
-
-async def usuario_premium(usuario_id: int) -> bool:
-    """Status premium lido do BANCO (via auth-service), nunca da claim do JWT, que pode estar velha."""
-    usuario = await forward_request("GET", f"/users/{usuario_id}", interno=True)
-    return bool(usuario.get("premium"))

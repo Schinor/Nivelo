@@ -30,7 +30,6 @@ services:
       # Plano Premium (Stripe em modo de teste). Sem as chaves, checkout/webhook respondem 503.
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
       # Preços dos planos pagos (Fase 9); vazios até lá
       - STRIPE_PRICE_PRO=${STRIPE_PRICE_PRO:-}
       - STRIPE_PRICE_CONSTRUTORA=${STRIPE_PRICE_CONSTRUTORA:-}

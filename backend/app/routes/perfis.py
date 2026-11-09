@@ -81,7 +81,7 @@ ERROS_UPLOAD = {
 
 
 async def _dados_da_conta(usuario_id: int) -> dict:
-    """Nome e plano vêm do auth-service (dono da tabela usuarios); 404 se o usuário não existir."""
+    """O nome vem do auth-service (dono da tabela usuarios); 404 se o usuário não existir."""
     return await forward_request("GET", f"/users/{usuario_id}", interno=True)
 
 
@@ -100,7 +100,6 @@ async def _montar_perfil(db: Session, usuario_id: int, user: dict, perfil: Perfi
         bio=perfil.bio if perfil else None,
         foto_url=foto_url,
         pode_editar=usuario_id == user["id"],
-        premium=bool(conta.get("premium")),
     )
 
 

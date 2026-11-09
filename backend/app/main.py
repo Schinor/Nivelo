@@ -19,10 +19,11 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.models  # noqa: F401 — força o registro dos models no metadata
+from app.assinaturas.api.rotas import router as assinaturas_router
+from app.assinaturas.api.rotas import webhook_router as stripe_webhook_router
 from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
 from app.clients import log_client
 from app.core.database import SessionLocal
-from app.assinaturas.api.rotas import router as assinaturas_router
 from app.dependencies import auditar_acesso_negado
 from app.obras.api.convites import router as convites_router
 from app.obras.api.diarios import router as diarios_router
@@ -32,8 +33,6 @@ from app.routes.auth import router as auth_router
 from app.routes.logs import router as logs_router
 from app.routes.observability_proxy import router as observability_router
 from app.routes.perfis import router as perfis_router
-from app.routes.premium import router as premium_router
-from app.routes.premium import webhook_router as stripe_webhook_router
 from app.routes.storage_proxy import router as storage_router
 from app.shared.api.health import router as health_router
 from app.shared.api.problem_details import registrar_handlers
@@ -108,7 +107,6 @@ app.include_router(diarios_router)
 app.include_router(convites_router)
 app.include_router(logs_router)
 app.include_router(perfis_router)
-app.include_router(premium_router)
 app.include_router(stripe_webhook_router)
 # Precisam vir antes do fallback da SPA (abaixo) para /grafana, /prometheus e /storage não caírem no index.html.
 app.include_router(observability_router)

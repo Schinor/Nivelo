@@ -160,7 +160,6 @@ def test_meu_perfil_sem_linha(ctx):
         "bio": None,
         "foto_url": None,
         "pode_editar": True,
-        "premium": False,
     }
 
 

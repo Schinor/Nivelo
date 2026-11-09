@@ -40,7 +40,6 @@ services:
       # Plano Premium (Stripe em modo de teste). Sem as chaves, checkout/webhook respondem 503.
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8000}
       - AUTH_INTERNAL_TOKEN=${AUTH_INTERNAL_TOKEN:-}
       # Dados de desenvolvimento (db/900_seed_dev.sql). Nunca true em produção.

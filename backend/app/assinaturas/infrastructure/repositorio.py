@@ -51,3 +51,10 @@ class RepositorioDeAssinaturasSQL:
         if modelo is None:  # pragma: no cover - a linha acabou de ser gravada
             raise LookupError(f"assinatura da empresa {empresa_id} não encontrada")
         return para_dominio(modelo)
+
+    def guardar_customer(self, empresa_id: EmpresaId, customer_id: str) -> None:
+        modelo = self._session.get(AssinaturaModel, empresa_id.valor)
+        if modelo is None:  # pragma: no cover - `obter` já garantiu a linha
+            raise LookupError(f"assinatura da empresa {empresa_id} não encontrada")
+        modelo.stripe_customer_id = customer_id
+        self._session.commit()

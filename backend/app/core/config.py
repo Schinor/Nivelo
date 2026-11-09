@@ -28,10 +28,11 @@ class Settings(BaseSettings):
     # e o resto da API segue funcionando (CI e deploys antigos não têm Stripe).
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
-    STRIPE_PRICE_ID: str = ""
+    STRIPE_PRICE_PRO: str = ""
+    STRIPE_PRICE_CONSTRUTORA: str = ""
     # Para onde o Stripe devolve o usuário depois do checkout (a SPA é servida pela própria API)
     FRONTEND_URL: str = "http://localhost:8000"
-    # Token compartilhado com o auth-service para as rotas /internal (gravar o status premium)
+    # Token compartilhado com o auth-service para as rotas internas
     AUTH_INTERNAL_TOKEN: str = ""
 
     @field_validator("STRIPE_SECRET_KEY")
@@ -46,7 +47,12 @@ class Settings(BaseSettings):
 
     @property
     def stripe_configurado(self) -> bool:
-        return bool(self.STRIPE_SECRET_KEY and self.STRIPE_WEBHOOK_SECRET and self.STRIPE_PRICE_ID)
+        return bool(
+            self.STRIPE_SECRET_KEY
+            and self.STRIPE_WEBHOOK_SECRET
+            and self.STRIPE_PRICE_PRO
+            and self.STRIPE_PRICE_CONSTRUTORA
+        )
 
     model_config = SettingsConfigDict(env_file=(".env", "../.env", "../../.env"), extra="ignore")
 

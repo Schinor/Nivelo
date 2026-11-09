@@ -7,8 +7,6 @@ class PerfilOut(BaseModel):
     bio: str | None = None
     # URL relativa à API (/storage/...), pré-assinada e com expiração; null sem foto
     foto_url: str | None = None
-    # Selo "Premium" (visual); os limites do plano são checados no backend
-    premium: bool = False
     # Só para a UI esconder/mostrar os botões — não é controle de acesso
     pode_editar: bool = False
 
