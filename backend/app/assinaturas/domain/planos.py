@@ -157,3 +157,22 @@ class PoliticaDePlano:
             plano_atual=efetivos.plano,
             plano_sugerido=sugerido,
         )
+
+    @staticmethod
+    def exigir_vaga_na_equipe(efetivos: DireitosEfetivos, pessoas_na_equipe: int) -> None:
+        """A equipe que conta no plano é o dono mais os encarregados; clientes nunca contam."""
+        limite = efetivos.direitos.max_membros_equipe
+        if limite is None or pessoas_na_equipe < limite:
+            return
+        sugerido = PROXIMO_PLANO[efetivos.plano]
+        convite = f" Assine o {sugerido.rotulo} para ter uma equipe maior." if sugerido else ""
+        raise LimiteDoPlanoExcedido(
+            mensagem=(
+                f"O plano {efetivos.plano.rotulo} permite {_no_plural(limite, 'pessoa', 'pessoas')} na equipe"
+                f" (dono e encarregados) e a sua já tem {pessoas_na_equipe}.{convite}"
+            ),
+            limite=limite,
+            atual=pessoas_na_equipe,
+            plano_atual=efetivos.plano,
+            plano_sugerido=sugerido,
+        )

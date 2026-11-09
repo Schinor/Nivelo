@@ -14,7 +14,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.clients.auth_client import forward_request
+from app.assinaturas.domain.planos import PoliticaDePlano
 from app.core.database import get_db
+from app.obras.api.dependencias import equipe_da_empresa
+from app.obras.application.portas import EquipeDaEmpresa
 from app.obras.infrastructure.membros import adicionar_membro, obra_existe
 from app.schemas.convite import AceiteIn, AceiteOut, ConviteIn, ConviteOut
 from app.shared.api.autenticacao import requer_papel
@@ -30,17 +33,26 @@ router = APIRouter(prefix="/api/convites", tags=["convites"])
     "",
     response_model=ConviteOut,
     status_code=status.HTTP_201_CREATED,
-    responses={403: {"description": "Só o dono convida"}, 404: {"description": "Obra não encontrada"}},
+    responses={
+        402: {"description": "A equipe já está no limite do plano"},
+        403: {"description": "Só o dono convida"},
+        404: {"description": "Obra não encontrada"},
+    },
 )
 async def convidar(
     payload: ConviteIn,
     request: Request,
-    _ctx: TenantContext = Depends(requer_papel("dono")),
+    ctx: TenantContext = Depends(requer_papel("dono")),
     db: Session = Depends(sessao_do_tenant),
+    equipe: EquipeDaEmpresa = Depends(equipe_da_empresa),
 ) -> Any:
-    """Só o dono. A obra, se informada, precisa ser da empresa ativa (senão 404)."""
+    """Só o dono. A obra, se informada, precisa ser da empresa ativa (senão 404). Convidar um
+    encarregado passa pela política de plano; clientes são ilimitados."""
     if payload.obra_id is not None and not obra_existe(db, payload.obra_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obra não encontrada")
+    if payload.papel == "encarregado":
+        efetivos = request.app.state.consulta_direitos(db).travar_e_obter(ctx.empresa_id)
+        PoliticaDePlano.exigir_vaga_na_equipe(efetivos, equipe.pessoas_que_contam_no_plano())
     return await forward_request(
         "POST",
         "/convites",

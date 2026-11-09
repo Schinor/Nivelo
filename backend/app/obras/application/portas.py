@@ -24,6 +24,10 @@ class EquipeDaEmpresa(Protocol):
         """Papel do vínculo ativo da pessoa na empresa ativa, ou None se ela não faz parte."""
         ...
 
+    def pessoas_que_contam_no_plano(self) -> int:
+        """Dono mais encarregados da empresa ativa (clientes não contam no limite do plano)."""
+        ...
+
 
 @dataclass(frozen=True, slots=True)
 class MetadadosDoObjeto:

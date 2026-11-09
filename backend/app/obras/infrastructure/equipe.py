@@ -43,3 +43,8 @@ class EquipeViaAuthService:
         if self._equipe is None:
             self._equipe = self._carregar()
         return self._equipe.get(usuario_id.valor)
+
+    def pessoas_que_contam_no_plano(self) -> int:
+        if self._equipe is None:
+            self._equipe = self._carregar()
+        return sum(1 for papel in self._equipe.values() if papel in ("dono", "encarregado"))

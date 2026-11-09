@@ -72,3 +72,21 @@ def test_pro_ativo_tem_obras_ilimitadas_e_pro_inadimplente_cai_no_free(p):
     atrasado = p.direitos_efetivos(p.Plano.PRO, p.StatusAssinatura.PAST_DUE)
     with pytest.raises(p.LimiteDoPlanoExcedido):
         p.PoliticaDePlano.exigir_vaga_de_obra_ativa(atrasado, 1)
+
+
+def test_equipe_no_limite_do_free_sugere_o_pro():
+    from app.assinaturas.domain.planos import LimiteDoPlanoExcedido, Plano, PoliticaDePlano, direitos_efetivos
+    from app.assinaturas.domain.planos import StatusAssinatura as S
+
+    free = direitos_efetivos(Plano.FREE, S.ACTIVE)
+    PoliticaDePlano.exigir_vaga_na_equipe(free, 1)
+    with pytest.raises(LimiteDoPlanoExcedido) as erro:
+        PoliticaDePlano.exigir_vaga_na_equipe(free, 2)
+    assert erro.value.limite == 2 and erro.value.plano_sugerido is Plano.PRO
+
+
+def test_construtora_nao_tem_limite_de_equipe():
+    from app.assinaturas.domain.planos import Plano, PoliticaDePlano, direitos_efetivos
+    from app.assinaturas.domain.planos import StatusAssinatura as S
+
+    PoliticaDePlano.exigir_vaga_na_equipe(direitos_efetivos(Plano.CONSTRUTORA, S.ACTIVE), 500)

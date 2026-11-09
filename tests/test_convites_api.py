@@ -9,9 +9,23 @@ from test_obras_api import DONO_A, EMPRESA_A, EMPRESA_B, ENC_A, OBRA_A2, OBRA_B1
 pytestmark = pytest.mark.mariadb
 
 
+class EquipeFalsa:
+    pessoas = 1
+
+    def pessoas_que_contam_no_plano(self):
+        return self.pessoas
+
+
 @pytest.fixture
 def ctx(obras_ctx):
-    return obras_ctx
+    from app.main import app
+    from app.obras.api.dependencias import equipe_da_empresa
+
+    equipe = EquipeFalsa()
+    app.dependency_overrides[equipe_da_empresa] = lambda: equipe
+    obras_ctx.equipe = equipe
+    yield obras_ctx
+    app.dependency_overrides.pop(equipe_da_empresa, None)
 
 
 class Chamadas(list):
@@ -104,3 +118,47 @@ def test_aceite_com_obra_de_outra_empresa_nao_cria_membro(ctx, chamadas):
     assert ctx.client.post("/api/convites/aceitar", json={"token": "t" * 43}).status_code == 200
     assert nomes(ctx.client.get("/api/obras", headers=tk(43, EMPRESA_A, "cliente"))) == []
     assert nomes(ctx.client.get("/api/obras", headers=tk(43, EMPRESA_B, "cliente"))) == []
+
+
+def _assinar(ctx, empresa, plano):
+    import uuid
+
+    from app.assinaturas.infrastructure.modelos import AssinaturaModel
+    from app.shared.infrastructure.tenancy import sem_tenant
+
+    db = ctx.SessionLocal()
+    with sem_tenant(db, "carga dos dados de teste"):
+        db.merge(AssinaturaModel(empresa_id=uuid.UUID(empresa), plano=plano, status="active"))
+        db.commit()
+    db.close()
+
+
+def test_equipe_cheia_no_free_recusa_convite_de_encarregado_com_402(ctx, chamadas):
+    ctx.equipe.pessoas = 2
+
+    resp = ctx.client.post(
+        "/api/convites", json={"email": "ze@exemplo.com", "papel": "encarregado"}, headers=tk(DONO_A, EMPRESA_A, "dono")
+    )
+
+    assert resp.status_code == 402
+    assert resp.json()["type"] == "https://nivelo/erros/plano-limite-excedido"
+    assert resp.json()["limite"] == 2 and resp.json()["plano_sugerido"] == "pro"
+    assert chamadas == []
+
+
+def test_cliente_nunca_conta_no_limite_da_equipe(ctx, chamadas):
+    ctx.equipe.pessoas = 2
+    resp = ctx.client.post(
+        "/api/convites", json={"email": "c@exemplo.com", "papel": "cliente"}, headers=tk(DONO_A, EMPRESA_A, "dono")
+    )
+    assert resp.status_code == 201
+
+
+def test_pro_tem_vaga_para_cinco_pessoas_na_equipe(ctx, chamadas):
+    _assinar(ctx, EMPRESA_A, "pro")
+    corpo = {"email": "ze@exemplo.com", "papel": "encarregado"}
+
+    ctx.equipe.pessoas = 4
+    assert ctx.client.post("/api/convites", json=corpo, headers=tk(DONO_A, EMPRESA_A, "dono")).status_code == 201
+    ctx.equipe.pessoas = 5
+    assert ctx.client.post("/api/convites", json=corpo, headers=tk(DONO_A, EMPRESA_A, "dono")).status_code == 402

@@ -1,1 +1,1 @@
-"""Routers e schemas Pydantic de entrada e saída."""
+"""Rotas de Assinaturas."""

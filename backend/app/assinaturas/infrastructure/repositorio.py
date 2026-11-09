@@ -5,9 +5,25 @@ from __future__ import annotations
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.assinaturas.domain.assinatura import AssinaturaDaEmpresa
+from app.assinaturas.domain.planos import Plano, StatusAssinatura
 from app.assinaturas.infrastructure.modelos import AssinaturaModel
 from app.shared.domain.ids import EmpresaId
 from app.shared.infrastructure.tenancy import definir_tenant
+
+
+def para_dominio(m: AssinaturaModel) -> AssinaturaDaEmpresa:
+    return AssinaturaDaEmpresa(
+        empresa_id=EmpresaId(m.empresa_id),
+        plano=Plano(m.plano),
+        status=StatusAssinatura.de_texto(m.status),
+        stripe_customer_id=m.stripe_customer_id,
+        stripe_subscription_id=m.stripe_subscription_id,
+        stripe_price_id=m.stripe_price_id,
+        valor_mensal_centavos=m.valor_mensal_centavos,
+        periodo_fim=m.periodo_fim,
+        cancelar_no_fim=m.cancelar_no_fim,
+    )
 
 
 class RepositorioDeAssinaturasSQL:
@@ -27,3 +43,11 @@ class RepositorioDeAssinaturasSQL:
             self._session.rollback()
             return False
         return True
+
+    def obter(self, empresa_id: EmpresaId) -> AssinaturaDaEmpresa:
+        """A assinatura da empresa; a linha Free nasce aqui se ainda não existir."""
+        self.garantir_free(empresa_id)
+        modelo = self._session.get(AssinaturaModel, empresa_id.valor, populate_existing=True)
+        if modelo is None:  # pragma: no cover - a linha acabou de ser gravada
+            raise LookupError(f"assinatura da empresa {empresa_id} não encontrada")
+        return para_dominio(modelo)

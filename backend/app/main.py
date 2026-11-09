@@ -22,10 +22,12 @@ import app.models  # noqa: F401 — força o registro dos models no metadata
 from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
 from app.clients import log_client
 from app.core.database import SessionLocal
+from app.assinaturas.api.rotas import router as assinaturas_router
 from app.dependencies import auditar_acesso_negado
 from app.obras.api.convites import router as convites_router
 from app.obras.api.diarios import router as diarios_router
 from app.obras.api.rotas import router as obras_router
+from app.obras.infrastructure.uso_do_plano import UsoDoPlanoSQL
 from app.routes.auth import router as auth_router
 from app.routes.logs import router as logs_router
 from app.routes.observability_proxy import router as observability_router
@@ -94,11 +96,14 @@ app.add_middleware(RequestIdMiddleware)
 # Raiz de composição: Obras pede os direitos do plano pela porta `ConsultaDireitos` e não pode
 # importar a infraestrutura de Assinaturas (import-linter). A implementação é ligada aqui.
 app.state.consulta_direitos = ConsultaDireitosSQL
+# O contrário vale para o uso do plano: Assinaturas pergunta a Obras pela porta `UsoDoPlano`
+app.state.uso_do_plano = UsoDoPlanoSQL
 
 # Rotas da API
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(obras_router)
+app.include_router(assinaturas_router)
 app.include_router(diarios_router)
 app.include_router(convites_router)
 app.include_router(logs_router)
