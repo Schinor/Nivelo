@@ -19,6 +19,8 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.models  # noqa: F401 — força o registro dos models no metadata
+from app.admin.api.rotas import router as admin_router
+from app.admin.infrastructure.prometheus import ColetorDeAssinaturas
 from app.assinaturas.api.rotas import router as assinaturas_router
 from app.assinaturas.api.rotas import webhook_router as stripe_webhook_router
 from app.assinaturas.infrastructure.direitos import ConsultaDireitosSQL
@@ -106,6 +108,7 @@ app.include_router(assinaturas_router)
 app.include_router(diarios_router)
 app.include_router(convites_router)
 app.include_router(logs_router)
+app.include_router(admin_router)
 app.include_router(perfis_router)
 app.include_router(stripe_webhook_router)
 # Precisam vir antes do fallback da SPA (abaixo) para /grafana, /prometheus e /storage não caírem no index.html.
@@ -144,8 +147,10 @@ registrar_handlers(app, antes_de_http=auditar_403, antes_de_dominio=auditar_erro
 
 # Registry próprio evita colisão de métricas quando mais de um app é importado no mesmo processo.
 # Registrado antes do fallback da SPA para que /metrics não caia no index.html.
+registro_de_metricas = CollectorRegistry()
+registro_de_metricas.register(ColetorDeAssinaturas(SessionLocal))
 Instrumentator(
-    registry=CollectorRegistry(),
+    registry=registro_de_metricas,
     excluded_handlers=["/metrics", "/health", "/health/live", "/health/ready", "/health/deps"],
 ).instrument(app).expose(app, include_in_schema=False)
 

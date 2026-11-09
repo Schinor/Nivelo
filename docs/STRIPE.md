@@ -51,7 +51,7 @@ Depois de criar, copie o **Signing secret** do destino.
 | `STRIPE_PRICE_CONSTRUTORA` | ID do preço da Construtora |
 | `FRONTEND_URL` | `https://marcio-mazega-isw055.lapps.studio` |
 
-| `AUTH_INTERNAL_TOKEN` | `openssl rand -hex 32` (sem ele, a Minha Conta não carrega e o e-mail de inadimplência não sai) |
+| `AUTH_INTERNAL_TOKEN` | `openssl rand -hex 32` (sem ele, a Minha Conta não carrega, o e-mail de inadimplência não sai e o painel admin fica sem usuários) |
 
 A variável antiga `STRIPE_PRICE_ID` não é mais usada e pode sair da stack. Sem qualquer uma das quatro
 variáveis `STRIPE_*`, o checkout e o webhook respondem 503.

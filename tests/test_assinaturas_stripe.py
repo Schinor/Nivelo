@@ -324,6 +324,44 @@ def test_sem_stripe_configurado_responde_503(obras_ctx):
     assert resp.status_code == 503
 
 
+def test_painel_admin_mostra_o_mrr_ao_assinar_e_zera_ao_cancelar(ctx):
+    from test_autenticacao_api import auth, token
+
+    from app.admin.api.rotas import contas_da_plataforma, eventos_da_plataforma
+    from app.admin.application.metricas import ContasDaPlataforma
+    from app.main import app
+
+    class Contas:
+        def contas(self):
+            return ContasDaPlataforma(empresas=[], nomes_de_usuarios={}, total_de_usuarios=0)
+
+    class Eventos:
+        def ultimos(self, limite):
+            return []
+
+    app.dependency_overrides[contas_da_plataforma] = Contas
+    app.dependency_overrides[eventos_da_plataforma] = Eventos
+    admin = auth(token("99", admin=True))
+
+    def painel():
+        corpo = ctx.client.get("/api/admin/metricas", headers=admin).json()
+        return corpo["mrr_formatado"], corpo["assinaturas_ativas"]
+
+    try:
+        assert painel() == ("R$ 0,00", 0)
+
+        _no_stripe(ctx)
+        _enviar(ctx, _checkout_concluido())
+        assert painel() == ("R$ 29,90", 1)
+
+        _no_stripe(ctx, status="canceled")
+        _enviar(ctx, _evento("customer.subscription.deleted", {"id": "sub_1", "customer": "cus_1"}))
+        assert painel() == ("R$ 0,00", 0)
+    finally:
+        app.dependency_overrides.pop(contas_da_plataforma, None)
+        app.dependency_overrides.pop(eventos_da_plataforma, None)
+
+
 def test_recusa_do_stripe_responde_503_e_deixa_o_motivo_no_log(monkeypatch, caplog):
     import stripe
 

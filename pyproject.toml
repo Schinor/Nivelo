@@ -97,6 +97,12 @@ containers = ["app.shared", "app.obras", "app.assinaturas"]
 layers = ["api", "infrastructure", "application", "domain"]
 
 [[tool.importlinter.contracts]]
+name = "Camadas do painel admin: api > infrastructure > application"
+type = "layers"
+containers = ["app.admin"]
+layers = ["api", "infrastructure", "application"]
+
+[[tool.importlinter.contracts]]
 name = "Gestão de Obras não importa a infraestrutura de Assinaturas"
 type = "forbidden"
 source_modules = ["app.obras"]
