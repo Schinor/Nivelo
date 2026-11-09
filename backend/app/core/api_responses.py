@@ -96,10 +96,3 @@ RESET_TOKEN_INVALIDO = {
         },
     }
 }
-
-STRIPE_NAO_CONFIGURADO = {
-    503: {
-        "description": "Stripe não configurado neste ambiente (STRIPE_* ausentes) ou auth-service inacessível",
-        "content": {"application/json": {"example": {"detail": "Pagamentos não configurados neste ambiente"}}},
-    }
-}
