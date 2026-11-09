@@ -3,8 +3,8 @@
 Tudo em **modo de teste** (a API recusa chave de produção no boot). Chaves e segredos ficam só nas
 variáveis da stack no Portainer, nunca no repositório.
 
-> **Estado do código:** a assinatura por empresa (Pro e Construtora) é a Fase 9 do roteiro. Até ela
-> entrar, os botões de `/assinatura` seguem desativados. O painel pode ser preparado antes.
+Quem muda o plano é só o webhook. Voltar do checkout não altera nada: a tela `/assinatura` aguarda a
+confirmação consultando a API.
 
 ## 1. Produtos e preços
 
@@ -49,10 +49,15 @@ Depois de criar, copie o **Signing secret** do destino.
 | `STRIPE_WEBHOOK_SECRET` | Signing secret do passo 3 |
 | `STRIPE_PRICE_PRO` | ID do preço do Pro |
 | `STRIPE_PRICE_CONSTRUTORA` | ID do preço da Construtora |
-| `STRIPE_PRICE_ID` | Até a Fase 9, o mesmo ID do Pro (sem ele o webhook responde 503) |
 | `FRONTEND_URL` | `https://marcio-mazega-isw055.lapps.studio` |
 
-Depois de salvar, faça **Pull and redeploy**.
+| `AUTH_INTERNAL_TOKEN` | `openssl rand -hex 32` (sem ele, a Minha Conta não carrega e o e-mail de inadimplência não sai) |
+
+A variável antiga `STRIPE_PRICE_ID` não é mais usada e pode sair da stack. Sem qualquer uma das quatro
+variáveis `STRIPE_*`, o checkout e o webhook respondem 503.
+
+Antes do **Pull and redeploy**, faça o dump do banco (`docs/DEPLOY.md`, passo 0): a migração
+`008_remove_premium` apaga as colunas e a tabela do premium antigo.
 
 ## 5. Teste
 
@@ -61,5 +66,14 @@ Depois de salvar, faça **Pull and redeploy**.
 | `4242 4242 4242 4242` | pagamento aprovado |
 | `4000 0000 0000 0341` | anexa, mas a cobrança falha (provoca `invoice.payment_failed`) |
 
-Data futura qualquer e CVC qualquer. Teste local:
+Data futura qualquer e CVC qualquer. O caminho completo, como dono de uma empresa:
+
+1. **Assinatura → Assinar Pro** abre o Checkout. Pague com o cartão aprovado.
+2. A tela volta com "Confirmando pagamento…" e passa para o Pro quando o webhook chegar.
+3. Em Developers → Webhooks, o evento aparece com resposta 200.
+4. **Gerenciar assinatura** abre o portal. Cancele: a empresa volta para o Free.
+
+Se a tela ficar em "Confirmando pagamento…" até o aviso de demora, veja em Developers → Webhooks a
+resposta recebida: 400 é `STRIPE_WEBHOOK_SECRET` errado, 503 é variável faltando, e 500 está no log
+do `api`. Teste local:
 `stripe listen --forward-to localhost:8000/webhooks/stripe`.

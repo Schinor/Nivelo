@@ -165,7 +165,7 @@ passo 5). Diferença em relação à stack de hoje:
 | `ADMIN_EMAIL` | seu e-mail (se já tiver conta, ela só vira admin; a senha não muda) |
 | `ADMIN_SENHA_INICIAL` | a do passo 4 (mínimo de 12 caracteres) |
 | `APP_BASE_URL` | `https://marcio-mazega-isw055.lapps.studio` (link do convite) |
-| `STRIPE_PRICE_PRO`, `STRIPE_PRICE_CONSTRUTORA` | vazias até a Fase 9 |
+| `STRIPE_PRICE_PRO`, `STRIPE_PRICE_CONSTRUTORA` | IDs dos preços (`docs/STRIPE.md`) |
 | `AUTH_INTERNAL_TOKEN` | se ainda não existir na stack (valor no passo 4) |
 | `IMAGE_TAG` | o `sha-<commit>` do passo 2 |
 
@@ -215,7 +215,7 @@ No painel do Stripe, **em modo de teste**:
    → Signing secret → Roll secret**, expiração **agora**. O valor novo vai para
    `STRIPE_WEBHOOK_SECRET`.
 
-A URL do webhook e o `STRIPE_PRICE_ID` não mudam. Entre o *roll* e o passo 5, o checkout antigo
+A URL do webhook e os IDs dos preços não mudam. Entre o *roll* e o passo 5, o checkout antigo
 fica sem Stripe; ninguém paga de verdade em modo de teste.
 
 ### 4.3 Garage (chave S3)
