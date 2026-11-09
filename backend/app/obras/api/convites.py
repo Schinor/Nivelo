@@ -23,6 +23,7 @@ from app.schemas.convite import AceiteIn, AceiteOut, ConviteIn, ConviteOut
 from app.shared.api.autenticacao import requer_papel
 from app.shared.api.sessao import sessao_do_tenant
 from app.shared.application.contexto import TenantContext
+from app.shared.infrastructure.transacao import abrir_transacao_de_comando
 
 logger = logging.getLogger("nivelo.api.convites")
 
@@ -51,6 +52,7 @@ async def convidar(
     if payload.obra_id is not None and not obra_existe(db, payload.obra_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Obra não encontrada")
     if payload.papel == "encarregado":
+        abrir_transacao_de_comando(db)
         efetivos = request.app.state.consulta_direitos(db).travar_e_obter(ctx.empresa_id)
         PoliticaDePlano.exigir_vaga_na_equipe(efetivos, equipe.pessoas_que_contam_no_plano())
     return await forward_request(

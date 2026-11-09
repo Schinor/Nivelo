@@ -17,6 +17,7 @@ from app.assinaturas.infrastructure.modelos import AssinaturaModel, StripeEvento
 from app.assinaturas.infrastructure.repositorio import para_dominio
 from app.shared.domain.ids import EmpresaId
 from app.shared.infrastructure.outbox import MetadadosDaRequisicao, gravar_na_outbox
+from app.shared.infrastructure.transacao import abrir_transacao_de_comando
 
 
 def _agora() -> datetime:
@@ -39,6 +40,7 @@ class LivroDoWebhookSQL:
         return existente is not None and existente.processado_em is None
 
     def marcar_processado(self, event_id: str) -> bool:
+        abrir_transacao_de_comando(self._session)
         resultado = self._session.execute(
             update(StripeEventoModel)
             .where(StripeEventoModel.event_id == event_id, StripeEventoModel.processado_em.is_(None))
