@@ -83,6 +83,60 @@
         "title": "AceiteOut",
         "type": "object"
       },
+      "AssinaturaOut": {
+        "properties": {
+          "cancelar_no_fim": {
+            "title": "Cancelar No Fim",
+            "type": "boolean"
+          },
+          "direitos": {
+            "$ref": "#/components/schemas/DireitosOut"
+          },
+          "periodo_fim": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Periodo Fim"
+          },
+          "plano": {
+            "title": "Plano",
+            "type": "string"
+          },
+          "plano_efetivo": {
+            "title": "Plano Efetivo",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tem_assinatura_vigente": {
+            "title": "Tem Assinatura Vigente",
+            "type": "boolean"
+          },
+          "uso": {
+            "$ref": "#/components/schemas/UsoOut"
+          }
+        },
+        "required": [
+          "plano",
+          "plano_efetivo",
+          "status",
+          "tem_assinatura_vigente",
+          "periodo_fim",
+          "cancelar_no_fim",
+          "direitos",
+          "uso"
+        ],
+        "title": "AssinaturaOut",
+        "type": "object"
+      },
       "Body_enviar_foto": {
         "properties": {
           "foto": {
@@ -233,17 +287,21 @@
         "title": "CadastroOut",
         "type": "object"
       },
-      "CheckoutOut": {
+      "CheckoutIn": {
         "properties": {
-          "url": {
-            "title": "Url",
+          "plano": {
+            "enum": [
+              "pro",
+              "construtora"
+            ],
+            "title": "Plano",
             "type": "string"
           }
         },
         "required": [
-          "url"
+          "plano"
         ],
-        "title": "CheckoutOut",
+        "title": "CheckoutIn",
         "type": "object"
       },
       "ClimaIn": {
@@ -837,6 +895,55 @@
           "ocorrencias"
         ],
         "title": "DiarioResumoOut",
+        "type": "object"
+      },
+      "DireitosOut": {
+        "properties": {
+          "logo_no_relatorio": {
+            "title": "Logo No Relatorio",
+            "type": "boolean"
+          },
+          "max_fotos_por_obra": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Fotos Por Obra"
+          },
+          "max_membros_equipe": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Membros Equipe"
+          },
+          "max_obras_ativas": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Obras Ativas"
+          }
+        },
+        "required": [
+          "max_obras_ativas",
+          "max_fotos_por_obra",
+          "max_membros_equipe",
+          "logo_no_relatorio"
+        ],
+        "title": "DireitosOut",
         "type": "object"
       },
       "EmpresaAtivaIn": {
@@ -1897,11 +2004,6 @@
             "title": "Pode Editar",
             "type": "boolean"
           },
-          "premium": {
-            "default": false,
-            "title": "Premium",
-            "type": "boolean"
-          },
           "usuario_id": {
             "title": "Usuario Id",
             "type": "integer"
@@ -1912,31 +2014,6 @@
           "nome"
         ],
         "title": "PerfilOut",
-        "type": "object"
-      },
-      "PremiumStatusOut": {
-        "properties": {
-          "premium": {
-            "title": "Premium",
-            "type": "boolean"
-          },
-          "premium_desde": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Premium Desde"
-          }
-        },
-        "required": [
-          "premium"
-        ],
-        "title": "PremiumStatusOut",
         "type": "object"
       },
       "ResetPasswordRequest": {
@@ -2146,6 +2223,49 @@
         "title": "UrlDaFotoOut",
         "type": "object"
       },
+      "UrlOut": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "UrlOut",
+        "type": "object"
+      },
+      "UsoOut": {
+        "properties": {
+          "fotos_na_obra_mais_cheia": {
+            "title": "Fotos Na Obra Mais Cheia",
+            "type": "integer"
+          },
+          "membros_equipe": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Membros Equipe"
+          },
+          "obras_ativas": {
+            "title": "Obras Ativas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "obras_ativas",
+          "fotos_na_obra_mais_cheia",
+          "membros_equipe"
+        ],
+        "title": "UsoOut",
+        "type": "object"
+      },
       "UsuarioOut": {
         "properties": {
           "admin": {
@@ -2176,23 +2296,6 @@
           "nome": {
             "title": "Nome",
             "type": "string"
-          },
-          "premium": {
-            "default": false,
-            "title": "Premium",
-            "type": "boolean"
-          },
-          "premium_desde": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Premium Desde"
           }
         },
         "required": [
@@ -2337,6 +2440,175 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/assinatura": {
+      "get": {
+        "description": "Plano, status, direitos e uso atual da empresa ativa.",
+        "operationId": "consultar_assinatura",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssinaturaOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Só o dono"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Consultar Assinatura",
+        "tags": [
+          "assinaturas"
+        ]
+      }
+    },
+    "/api/assinaturas/checkout": {
+      "post": {
+        "description": "Devolve a URL do checkout. O plano só muda quando o webhook confirmar o pagamento.",
+        "operationId": "criar_checkout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Só o dono"
+          },
+          "409": {
+            "description": "A empresa já tem assinatura"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Criar Checkout",
+        "tags": [
+          "assinaturas"
+        ]
+      }
+    },
+    "/api/assinaturas/portal": {
+      "post": {
+        "description": "Devolve a URL do portal, onde o dono troca de plano, atualiza o cartão ou cancela.",
+        "operationId": "criar_portal",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Só o dono"
+          },
+          "409": {
+            "description": "A empresa ainda não assinou"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Criar Portal",
+        "tags": [
+          "assinaturas"
+        ]
+      }
+    },
     "/api/auth/admin/status": {
       "get": {
         "operationId": "admin_status",
@@ -3326,7 +3598,7 @@
     },
     "/api/convites": {
       "post": {
-        "description": "Só o dono. A obra, se informada, precisa ser da empresa ativa (senão 404).",
+        "description": "Só o dono. A obra, se informada, precisa ser da empresa ativa (senão 404). Convidar um\nencarregado passa pela política de plano; clientes são ilimitados.",
         "operationId": "convidar",
         "parameters": [
           {
@@ -3334,15 +3606,9 @@
             "name": "authorization",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
             }
           }
         ],
@@ -3366,6 +3632,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "402": {
+            "description": "A equipe já está no limite do plano"
           },
           "403": {
             "description": "Só o dono convida"
@@ -5739,231 +6008,41 @@
         ]
       }
     },
-    "/api/premium/checkout": {
-      "post": {
-        "description": "Cria a sessão de checkout e devolve a URL do Stripe; o Angular redireciona para ela.",
-        "operationId": "criar_checkout",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "authorization",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckoutOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "sem_token": {
-                    "value": {
-                      "detail": "Token não enviado"
-                    }
-                  },
-                  "token_invalido": {
-                    "value": {
-                      "detail": "Token inválido ou expirado"
-                    }
-                  }
-                }
-              }
-            },
-            "description": "Não autenticado (token ausente ou inválido)"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Você já é Premium"
-                }
-              }
-            },
-            "description": "Usuário já é Premium"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "502": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Não foi possível iniciar o pagamento"
-                }
-              }
-            },
-            "description": "Stripe recusou ou não respondeu"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Pagamentos não configurados neste ambiente"
-                }
-              }
-            },
-            "description": "Stripe não configurado neste ambiente (STRIPE_* ausentes) ou auth-service inacessível"
-          }
-        },
-        "summary": "Criar Checkout",
-        "tags": [
-          "premium"
-        ]
-      }
-    },
-    "/api/premium/status": {
-      "get": {
-        "description": "Plano do usuário logado, lido do banco (não do JWT).",
-        "operationId": "status_premium",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "authorization",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PremiumStatusOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "sem_token": {
-                    "value": {
-                      "detail": "Token não enviado"
-                    }
-                  },
-                  "token_invalido": {
-                    "value": {
-                      "detail": "Token inválido ou expirado"
-                    }
-                  }
-                }
-              }
-            },
-            "description": "Não autenticado (token ausente ou inválido)"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Serviço de autenticação inacessível: ..."
-                }
-              }
-            },
-            "description": "auth-service inacessível"
-          }
-        },
-        "summary": "Status Premium",
-        "tags": [
-          "premium"
-        ]
-      }
-    },
     "/webhooks/stripe": {
       "post": {
-        "description": "Recebe eventos do Stripe. Público (sem JWT), mas só aceita corpo assinado com STRIPE_WEBHOOK_SECRET.",
-        "operationId": "stripe_webhook",
+        "description": "Público, sem JWT: só aceita corpo assinado com o segredo do webhook.",
+        "operationId": "receber_webhook",
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Receber Webhook",
+                  "type": "object"
+                }
               }
             },
             "description": "Successful Response"
           },
           "400": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Assinatura inválida"
-                }
-              }
-            },
             "description": "Assinatura ausente ou inválida"
           },
+          "429": {
+            "description": "Muitos avisos em pouco tempo"
+          },
           "500": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Falha ao processar o evento"
-                }
-              }
-            },
-            "description": "Falha ao aplicar o evento (o Stripe reenvia)"
+            "description": "Falha ao processar (o Stripe reenvia)"
           },
           "503": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Pagamentos não configurados neste ambiente"
-                }
-              }
-            },
-            "description": "Stripe não configurado neste ambiente (STRIPE_* ausentes) ou auth-service inacessível"
+            "description": "Stripe não configurado"
           }
         },
-        "summary": "Stripe Webhook",
+        "summary": "Receber Webhook",
         "tags": [
-          "premium"
+          "assinaturas"
         ]
       }
     }

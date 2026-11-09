@@ -7,14 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { PremiumStatusOut } from '../../models/premium-status-out';
+import { AssinaturaOut } from '../../models/assinatura-out';
 
-export interface StatusPremium$Params {
-  authorization?: (string | null);
+export interface ConsultarAssinatura$Params {
+  authorization?: string;
 }
 
-export function statusPremium(http: HttpClient, rootUrl: string, params?: StatusPremium$Params, context?: HttpContext): Observable<StrictHttpResponse<PremiumStatusOut>> {
-  const rb = new RequestBuilder(rootUrl, statusPremium.PATH, 'get');
+export function consultarAssinatura(http: HttpClient, rootUrl: string, params?: ConsultarAssinatura$Params, context?: HttpContext): Observable<StrictHttpResponse<AssinaturaOut>> {
+  const rb = new RequestBuilder(rootUrl, consultarAssinatura.PATH, 'get');
   if (params) {
     rb.header('authorization', params.authorization, {});
   }
@@ -24,9 +24,9 @@ export function statusPremium(http: HttpClient, rootUrl: string, params?: Status
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<PremiumStatusOut>;
+      return r as StrictHttpResponse<AssinaturaOut>;
     })
   );
 }
 
-statusPremium.PATH = '/api/premium/status';
+consultarAssinatura.PATH = '/api/assinatura';

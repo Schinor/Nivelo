@@ -11,7 +11,7 @@ import { ConviteIn } from '../../models/convite-in';
 import { ConviteOut } from '../../models/convite-out';
 
 export interface Convidar$Params {
-  authorization?: (string | null);
+  authorization?: string;
       body: ConviteIn
 }
 

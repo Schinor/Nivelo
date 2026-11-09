@@ -8,11 +8,13 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 
-export interface StripeWebhook$Params {
+export interface ReceberWebhook$Params {
 }
 
-export function stripeWebhook(http: HttpClient, rootUrl: string, params?: StripeWebhook$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
-  const rb = new RequestBuilder(rootUrl, stripeWebhook.PATH, 'post');
+export function receberWebhook(http: HttpClient, rootUrl: string, params?: ReceberWebhook$Params, context?: HttpContext): Observable<StrictHttpResponse<{
+[key: string]: boolean;
+}>> {
+  const rb = new RequestBuilder(rootUrl, receberWebhook.PATH, 'post');
   if (params) {
   }
 
@@ -21,9 +23,11 @@ export function stripeWebhook(http: HttpClient, rootUrl: string, params?: Stripe
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<any>;
+      return r as StrictHttpResponse<{
+      [key: string]: boolean;
+      }>;
     })
   );
 }
 
-stripeWebhook.PATH = '/webhooks/stripe';
+receberWebhook.PATH = '/webhooks/stripe';

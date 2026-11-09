@@ -6,6 +6,5 @@ export interface PerfilOut {
   foto_url?: (string | null);
   nome: string;
   pode_editar?: boolean;
-  premium?: boolean;
   usuario_id: number;
 }

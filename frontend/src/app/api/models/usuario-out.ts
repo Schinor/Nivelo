@@ -7,6 +7,4 @@ export interface UsuarioOut {
   email: string;
   id: number;
   nome: string;
-  premium?: boolean;
-  premium_desde?: (string | null);
 }

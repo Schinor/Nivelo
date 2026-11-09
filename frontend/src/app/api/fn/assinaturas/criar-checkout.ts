@@ -7,16 +7,19 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { CheckoutOut } from '../../models/checkout-out';
+import { CheckoutIn } from '../../models/checkout-in';
+import { UrlOut } from '../../models/url-out';
 
 export interface CriarCheckout$Params {
   authorization?: (string | null);
+      body: CheckoutIn
 }
 
-export function criarCheckout(http: HttpClient, rootUrl: string, params?: CriarCheckout$Params, context?: HttpContext): Observable<StrictHttpResponse<CheckoutOut>> {
+export function criarCheckout(http: HttpClient, rootUrl: string, params: CriarCheckout$Params, context?: HttpContext): Observable<StrictHttpResponse<UrlOut>> {
   const rb = new RequestBuilder(rootUrl, criarCheckout.PATH, 'post');
   if (params) {
     rb.header('authorization', params.authorization, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(
@@ -24,9 +27,9 @@ export function criarCheckout(http: HttpClient, rootUrl: string, params?: CriarC
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<CheckoutOut>;
+      return r as StrictHttpResponse<UrlOut>;
     })
   );
 }
 
-criarCheckout.PATH = '/api/premium/checkout';
+criarCheckout.PATH = '/api/assinaturas/checkout';
