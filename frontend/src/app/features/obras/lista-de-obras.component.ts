@@ -23,8 +23,8 @@ import { ObrasService, StatusObra } from './obras.service';
         <div class="vazio">
           <span class="icone"><app-icone nome="cadeado" [tamanho]="26" /></span>
           <h2>O admin não lê dados de obras</h2>
-          <p>Por privacidade dos clientes, as obras e os diários ficam só com as empresas. Use o menu Usuários.</p>
-          <a routerLink="/usuarios" class="btn btn-contorno">Ir para os usuários</a>
+          <p>Por privacidade dos clientes, as obras e os diários ficam só com as empresas. Use o Painel e o menu Usuários.</p>
+          <a routerLink="/admin" class="btn btn-contorno">Ir para o painel</a>
         </div>
       </div>
     } @else {

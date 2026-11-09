@@ -61,6 +61,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/conta/criar-empresa.component').then((m) => m.CriarEmpresaComponent),
       },
       {
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin/painel/painel.component').then((m) => m.PainelComponent),
+      },
+      {
         path: 'usuarios',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/usuarios/usuarios.component').then((m) => m.UsuariosComponent),

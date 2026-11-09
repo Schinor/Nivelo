@@ -1279,6 +1279,98 @@
         "title": "EventoDoHistoricoOut",
         "type": "object"
       },
+      "EventoNoPainelOut": {
+        "properties": {
+          "ator_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ator Id"
+          },
+          "ator_nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ator Nome"
+          },
+          "ator_papel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ator Papel"
+          },
+          "empresa_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empresa Id"
+          },
+          "empresa_nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empresa Nome"
+          },
+          "quando": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quando"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          }
+        },
+        "required": [
+          "tipo",
+          "ator_id",
+          "ator_nome",
+          "ator_papel",
+          "empresa_id",
+          "empresa_nome",
+          "quando"
+        ],
+        "title": "EventoNoPainelOut",
+        "type": "object"
+      },
       "ForgotPasswordRequest": {
         "properties": {
           "email": {
@@ -1505,6 +1597,75 @@
           "papel"
         ],
         "title": "MembroOut",
+        "type": "object"
+      },
+      "MetricasOut": {
+        "description": "`usuarios` e `eventos` vêm nulos quando o serviço que os guarda não responde.",
+        "properties": {
+          "assinaturas_ativas": {
+            "title": "Assinaturas Ativas",
+            "type": "integer"
+          },
+          "empresas_total": {
+            "title": "Empresas Total",
+            "type": "integer"
+          },
+          "eventos": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EventoNoPainelOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eventos"
+          },
+          "inadimplentes": {
+            "title": "Inadimplentes",
+            "type": "integer"
+          },
+          "mrr_centavos": {
+            "title": "Mrr Centavos",
+            "type": "integer"
+          },
+          "mrr_formatado": {
+            "title": "Mrr Formatado",
+            "type": "string"
+          },
+          "por_plano": {
+            "items": {
+              "$ref": "#/components/schemas/PlanoNoPainelOut"
+            },
+            "title": "Por Plano",
+            "type": "array"
+          },
+          "usuarios_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usuarios Total"
+          }
+        },
+        "required": [
+          "empresas_total",
+          "usuarios_total",
+          "por_plano",
+          "assinaturas_ativas",
+          "mrr_centavos",
+          "mrr_formatado",
+          "inadimplentes",
+          "eventos"
+        ],
+        "title": "MetricasOut",
         "type": "object"
       },
       "ObraEdicaoIn": {
@@ -2016,6 +2177,41 @@
         "title": "PerfilOut",
         "type": "object"
       },
+      "PlanoNoPainelOut": {
+        "properties": {
+          "empresas": {
+            "title": "Empresas",
+            "type": "integer"
+          },
+          "plano": {
+            "title": "Plano",
+            "type": "string"
+          },
+          "rotulo": {
+            "title": "Rotulo",
+            "type": "string"
+          },
+          "usuarios": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usuarios"
+          }
+        },
+        "required": [
+          "plano",
+          "rotulo",
+          "empresas",
+          "usuarios"
+        ],
+        "title": "PlanoNoPainelOut",
+        "type": "object"
+      },
       "ResetPasswordRequest": {
         "properties": {
           "nova_senha": {
@@ -2440,6 +2636,62 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/metricas": {
+      "get": {
+        "description": "Empresas e usuários por plano, assinaturas ativas, MRR de teste, inadimplentes e últimos eventos.",
+        "operationId": "consultar_painel",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricasOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sem token válido"
+          },
+          "403": {
+            "description": "Só o admin da plataforma"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Consultar Painel",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/assinatura": {
       "get": {
         "description": "Plano, status, direitos e uso atual da empresa ativa.",

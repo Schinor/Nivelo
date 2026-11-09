@@ -118,7 +118,8 @@ export class CascaComponent {
   readonly itens = computed<ItemDoMenu[]>(() => {
     const itens: ItemDoMenu[] = [];
     if (this.auth.isAdmin()) {
-      itens.push({ rota: '/usuarios', rotulo: 'Usuários', curto: 'Usuários', icone: 'admin' });
+      itens.push({ rota: '/admin', rotulo: 'Painel', curto: 'Painel', icone: 'admin' });
+      itens.push({ rota: '/usuarios', rotulo: 'Usuários', curto: 'Usuários', icone: 'equipe' });
     } else {
       itens.push({ rota: '/obras', rotulo: 'Obras', curto: 'Obras', icone: 'obras' });
     }
