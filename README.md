@@ -5,6 +5,8 @@
 > Projeto da disciplina ISW055 — professor [github.com/siriani](https://github.com/siriani).
 > Continuação do projeto HANK+, feito com espelhamento do repositório e todo o histórico de commits.
 
+**No ar:** <https://marcio-mazega-isw055.lapps.studio> · API documentada em [`/api/docs`](https://marcio-mazega-isw055.lapps.studio/api/docs). A cobrança está em modo de teste do Stripe.
+
 ---
 
 ## 1. A dor
@@ -138,6 +140,59 @@ Regras que valem para todas as linhas:
 
 Decisões e trade-offs: [ADR 004](docs/adr/004-tenancy-por-coluna-e-vinculos.md) (tenancy e vínculos) e [ADR 005](docs/adr/005-jwt-padrao-b-validade-2h.md) (token).
 
-## 10. Backlog
+## 10. Arquitetura
+
+Uma stack no Portainer, com uma única porta publicada, a do serviço `api`. Os demais serviços só existem na rede interna do Docker.
+
+```mermaid
+flowchart LR
+    nav["Navegador ou celular"]
+    stripe["Stripe (modo de teste)"]
+    cf["Cloudflare Tunnel<br/>subdomínio público"]
+    db[("MariaDB compartilhado<br/>fora da stack")]
+    mail["SMTP (Mailtrap)"]
+
+    subgraph stack["Stack no Portainer: rede interna"]
+        api["api<br/>Angular + FastAPI<br/>Gestão de Obras, Assinaturas, Admin"]
+        auth["auth-service<br/>Identidade e Acesso"]
+        log["log-service<br/>Auditoria"]
+        redis[("Redis Streams")]
+        garage[("Garage<br/>fotos, compatível com S3")]
+        prom["Prometheus"]
+        graf["Grafana"]
+    end
+
+    nav --> cf
+    stripe -- "webhook" --> cf
+    cf --> api
+    api -- "checkout e portal" --> stripe
+    api --> auth
+    api -- "outbox e relay" --> log
+    log --> redis
+    api --> garage
+    api --> db
+    auth --> db
+    auth --> mail
+    api -- "proxy /grafana e /prometheus" --> graf
+    graf --> prom
+    prom -- "coleta /metrics" --> api
+    prom --> auth
+    prom --> log
+```
+
+Decisões principais: [contextos](docs/adr/001-contextos-delimitados.md), [hexagonal](docs/adr/002-arquitetura-hexagonal.md), [outbox](docs/adr/003-outbox-para-eventos.md), [tenancy](docs/adr/004-tenancy-por-coluna-e-vinculos.md) e [lista completa dos ADRs](docs/adr/README.md).
+
+## 11. Documentação
+
+| Documento | Para quê |
+|---|---|
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Deploy no Portainer, backup e caminho de volta |
+| [`docs/STRIPE.md`](docs/STRIPE.md) | Configuração da assinatura, teste com cartões e diagnóstico de erros |
+| [`docs/GLOSSARIO.md`](docs/GLOSSARIO.md) | Linguagem do domínio |
+| [`db/README.md`](db/README.md) | Migrações e SQL exportado |
+| [`docs/ENTREGA_ATIVIDADE_10.md`](docs/ENTREGA_ATIVIDADE_10.md) | Checklist da Atividade 10 |
+| [`docs/ENTREGA_ATIVIDADE_11.md`](docs/ENTREGA_ATIVIDADE_11.md) | Checklist da Atividade 11 |
+
+## 12. Backlog
 
 As próximas entregas estão nas [issues](../../issues) deste repositório.
