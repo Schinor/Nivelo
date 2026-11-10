@@ -16,3 +16,4 @@ Uma página por decisão: contexto, decisão e consequências. Uma decisão nova
 | [010](010-esquema-do-dominio.md) | Esquema do domínio: UUID nativo, FK composta por empresa e soft delete | Aceito |
 | [011](011-read-committed-nos-comandos.md) | READ COMMITTED nas transações de comando (corrida do limite de plano) | Aceito |
 | [012](012-relay-entrega-ao-log-service.md) | O relay da outbox entrega os eventos ao log-service por HTTP | Aceito |
+| [013](013-painel-admin-le-contas-pelo-auth-service.md) | O painel admin lê as contas pelo auth-service | Proposto |

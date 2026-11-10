@@ -28,4 +28,7 @@ Os nomes abaixo valem para a conversa, o código do domínio, a API e as telas. 
 | **Plano** | `Plano` | O nível da assinatura da empresa: `free`, `pro` ou `construtora`. |
 | **Direitos** | `Direitos` | O que o plano permite: obras ativas, fotos por obra e tamanho da equipe. |
 | **Política de plano** | `PoliticaDePlano` | A regra que compara os direitos com o uso atual e recusa a ação que passaria do limite (`LimiteDoPlanoExcedido`). |
+| **Assinatura ativa** | `assinaturas_ativas` | Assinatura de plano pago com status `active`. |
+| **MRR** | `mrr_centavos` | Receita recorrente mensal: a soma do valor mensal das assinaturas ativas. Hoje é de teste, porque o Stripe está em modo de teste. |
+| **Inadimplente** | `inadimplentes` | Empresa de plano pago com pagamento pendente (`past_due` ou `unpaid`). Fica com os direitos do Free. |
 | **Evento de domínio** | `EventoDeDominio` | Algo que aconteceu no negócio, nomeado como `recurso.acao` no particípio (ex.: `diario.publicado`). Vai para a auditoria pela outbox. |
