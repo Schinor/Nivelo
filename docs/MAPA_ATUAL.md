@@ -45,7 +45,7 @@
 | `GRAFANA_INTERNAL_URL`, `PROMETHEUS_INTERNAL_URL`, `PROMETHEUS_PROXY_PASSWORD` | ✅ | | | | Pontes de observabilidade |
 | `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` | ✅ | | | garage | O Garage recebe as mesmas chaves como `GARAGE_DEFAULT_*` |
 | `STORAGE_BANDA_MINIMA_KBPS`, `STORAGE_MARGEM_USO_SEGUNDOS`, `STORAGE_EXPIRACAO_MAX_SEGUNDOS`, `PERFIL_FOTO_MAX_BYTES` | ✅ | | | | Expiração da URL pré-assinada e tamanho da foto de perfil |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID` | ✅ | | | | Recusa `sk_live_` no boot |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID` | ✅ | | | | Recusa chave de produção no boot |
 | `FRONTEND_URL` | ✅ | | | | Retorno do checkout |
 | `LIMITE_FAVORITOS_FREE` | ✅ | | | | Limite do Free do HANK+ (5 favoritos) |
 | `AUTH_INTERNAL_TOKEN` | ✅ | ✅ | | | Token catálogo → `/internal/premium` |

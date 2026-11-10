@@ -175,7 +175,7 @@ services:
 
   # Stripe CLI (só dev): escuta os eventos da conta de TESTE e encaminha para o webhook
   # da API pela rede interna. Ao subir, imprime "Ready! Your webhook signing secret
-  # is whsec_..." — esse valor vai em STRIPE_WEBHOOK_SECRET (e a API precisa ser
+  # is <segredo>" — esse valor vai em STRIPE_WEBHOOK_SECRET (e a API precisa ser
   # recriado para ler o novo valor). Fica atrás do profile "stripe" para não subir
   # em loop de erro quando não há chave configurada.
   stripe-cli:

@@ -166,7 +166,7 @@ passo 5). Diferença em relação à stack de hoje:
 | `ADMIN_SENHA_INICIAL` | a do passo 4 (mínimo de 12 caracteres) |
 | `APP_BASE_URL` | `https://marcio-mazega-isw055.lapps.studio` (link do convite) |
 | `STRIPE_PRICE_PRO`, `STRIPE_PRICE_CONSTRUTORA` | IDs dos preços (`docs/STRIPE.md`) |
-| `AUTH_INTERNAL_TOKEN` | se ainda não existir na stack (valor no passo 4) |
+| `AUTH_INTERNAL_TOKEN` | se ainda não existir na stack (valor no passo 4). Sem ela, a Minha Conta não carrega, o e-mail de inadimplência não sai e o painel admin fica sem usuários |
 | `IMAGE_TAG` | o `sha-<commit>` do passo 2 |
 
 **Mudar**
@@ -325,7 +325,12 @@ Depois, o **admin**: entre com o `ADMIN_EMAIL` e a `ADMIN_SENHA_INICIAL`, troque
 tela da conta e **apague o valor de `ADMIN_SENHA_INICIAL`** da stack (sem as duas variáveis, o
 boot não faz nada com o admin). Por fim, apague a chave antiga do Garage (4.3).
 
-**Confirme:** landing e `/health/ready` com 200; admin entrou com a senha nova.
+Com o admin logado, abra o **Painel** (`/admin`). Os cartões de cobrança e a tabela por plano devem
+aparecer. Sem token, `GET /api/admin/metricas` responde 401; se responder 404, a imagem no ar é
+anterior ao painel. Se aparecer o aviso de que as contas não responderam, confira
+`AUTH_INTERNAL_TOKEN`, que precisa ser igual na API e no auth-service.
+
+**Confirme:** landing e `/health/ready` com 200; admin entrou com a senha nova; o Painel abre.
 
 ### Depois do deploy: roteiro `e2e/` contra produção
 

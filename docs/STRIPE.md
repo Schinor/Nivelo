@@ -72,8 +72,33 @@ Data futura qualquer e CVC qualquer. O caminho completo, como dono de uma empres
 2. A tela volta com "Confirmando pagamento…" e passa para o Pro quando o webhook chegar.
 3. Em Developers → Webhooks, o evento aparece com resposta 200.
 4. **Gerenciar assinatura** abre o portal. Cancele: a empresa volta para o Free.
+5. No **Painel** do admin (`/admin`), o MRR de teste mostra R$ 29,90 enquanto a assinatura está
+   ativa e volta a R$ 0,00 depois do cancelamento.
 
 Se a tela ficar em "Confirmando pagamento…" até o aviso de demora, veja em Developers → Webhooks a
 resposta recebida: 400 é `STRIPE_WEBHOOK_SECRET` errado, 503 é variável faltando, e 500 está no log
 do `api`. Teste local:
 `stripe listen --forward-to localhost:8000/webhooks/stripe`.
+
+## 6. Se o checkout responder 503
+
+A resposta "Não foi possível falar com o meio de pagamento" quer dizer que o Stripe recusou a
+chamada ou não foi alcançado. "Pagamentos não configurados neste ambiente" é outra coisa: falta uma
+das variáveis `STRIPE_*`.
+
+Em **Containers → api → Logs**, procure `Stripe recusou a chamada`. A linha traz o tipo do erro, o
+status HTTP, o código, o campo recusado e a mensagem do Stripe.
+
+| No log | Causa provável | O que fazer |
+|---|---|---|
+| `campo=line_items[0][price]` ou `No such price` | O ID é de produto (`prod_`), ou o preço é de outra conta ou de outro modo | Copie o ID que começa com `price_`, com o painel em modo de teste, na conta da chave |
+| Mensagem sobre `recurring price` ou modo `subscription` | O preço foi criado como pagamento único | Crie um preço recorrente mensal e troque a variável |
+| `campo=success_url` ou `Not a valid URL` | `FRONTEND_URL` vazia ou sem `https://` | Use a URL pública completa |
+| `campo=customer` ou `No such customer` | A empresa guardou um cliente de outra conta do Stripe | Limpe o `stripe_customer_id` dessa empresa |
+| `AuthenticationError` | Chave errada, revogada ou colada com espaço | Copie a Secret key de teste de novo |
+| `PermissionError` | Chave restrita sem permissão | Use a Secret key padrão |
+| `APIConnectionError` | O container não alcança `api.stripe.com` | Verifique a saída de rede do host |
+| `IdempotencyError` | O nome ou o e-mail do dono mudou entre tentativas em menos de 24 h | Espere 24 h ou teste com outra empresa |
+
+Depois de corrigir uma variável, faça **Pull and redeploy**: o container só recebe o valor novo ao
+ser recriado.
