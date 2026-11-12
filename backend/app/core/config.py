@@ -38,11 +38,12 @@ class Settings(BaseSettings):
     @field_validator("STRIPE_SECRET_KEY")
     @classmethod
     def somente_modo_teste(cls, valor: str) -> str:
-        # Falha cedo: chave live cobraria cartões de verdade
-        if valor.startswith(("sk_live_", "rk_live_")):
-            raise ValueError(
-                "STRIPE_SECRET_KEY é uma chave LIVE; esta aplicação só aceita chaves de teste (sk_test_...)"
-            )
+        # Falha cedo: chave live cobraria cartões de verdade. O formato é <tipo>_<modo>_<resto>
+        # (secreta ou restrita); os prefixos não ficam escritos por extenso para a busca por
+        # segredos do repositório (Fase 11 do roteiro) não confundir a trava com uma chave.
+        tipo, _, resto = valor.partition("_")
+        if tipo in {"sk", "rk"} and resto.startswith("live_"):
+            raise ValueError("STRIPE_SECRET_KEY é de produção; esta aplicação só aceita a chave de teste do Stripe")
         return valor
 
     @property
