@@ -1,8 +1,9 @@
 # Entrega da Atividade 11 — SaaS completo
 
-> Situação em 09/11/2026 21:48 (horário de Brasília). Só está marcado o que foi conferido. Prazo: 13/11/2026.
+> Situação em 12/11/2026 (horário de Brasília). Só está marcado o que foi conferido. Prazo: 13/11/2026.
 >
-> **Bloqueio:** o checkout em produção respondeu 503. O diagnóstico está em [`docs/STRIPE.md`](STRIPE.md), seção 6. Os itens que dependem de pagamento só podem ser feitos depois disso.
+> O 503 do checkout foi resolvido em 12/11: `STRIPE_PRICE_*` estava com o ID do produto (`prod_`) no
+> lugar do ID do preço (`price_`). Diagnóstico e caso real em [`docs/STRIPE.md`](STRIPE.md), seção 6.
 
 ## Checklist
 
@@ -10,15 +11,15 @@
 |---|---|---|
 | Conta nova nasce no Free | ☐ | Print de `/assinatura` numa conta nova |
 | 2ª obra ativa recusada com 402 e a mensagem do limite | ☐ | Print da tela |
-| Checkout com o cartão 4242 concluído | ☐ | Bloqueado pelo 503 |
+| Checkout com o cartão 4242 concluído | ☐ | Print da tela de sucesso do Checkout |
 | Plano vira Pro **depois do webhook** | ☐ | Print do log com `assinatura.iniciada` antes de a tela atualizar |
 | O limite some (cria a 2ª obra) | ☐ | Print da 2ª obra criada |
 | Portal cancela, webhook chega e volta para o Free | ☐ | Print do portal e de `/assinatura` |
 | Dashboard do Stripe em modo de teste com a assinatura | ☐ | Print, sem chaves visíveis |
 | Webhook recebido em Developers → Webhooks | ☐ | Print com a resposta 200 |
 | Painel admin com usuários por plano, assinaturas ativas, MRR e eventos | ☐ | Print de `/admin`, com R$ 29,90 durante a assinatura. Exige o redeploy com o painel |
-| Busca por chaves do Stripe vazia (comando da Fase 11 do roteiro) | ☐ | Nenhum segredo real, mas o comando ainda acha os prefixos em `backend/app/core/config.py`, na trava que recusa chave de produção |
-| `.env.example` só com os nomes | ☐ | Nenhum valor real, mas há exemplos como `sua_senha_mailtrap` e padrões como `PORT=8000` |
+| Busca por chaves do Stripe vazia (comando da Fase 11 do roteiro) | ✅ | `git grep -nE "sk_(test\|live)_\|whsec_"` volta vazio. A trava de chave de produção não escreve mais os prefixos por extenso (`tests/unit/test_config_stripe.py`) |
+| `.env.example` só com os nomes | ✅ | Toda variável está como `NOME=`; os exemplos que não são segredo ficaram em comentário |
 
 ## O que já está comprovado por teste
 

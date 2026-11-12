@@ -19,7 +19,9 @@ Em **Product catalog → Add product**, com moeda BRL e cobrança recorrente men
 A imagem é enviada no campo **Image** do produto e aparece no Checkout. Use o PNG: os `.svg` da mesma
 pasta são a fonte editável, e o Stripe não os aceita como imagem de produto.
 
-Copie o ID do preço (começa com `price_`) do Pro e da Construtora, na página de cada produto.
+Copie o ID do **preço** do Pro e da Construtora: na página do produto, seção **Pricing**, abra o
+preço mensal e use o ID que começa com `price_`. O ID que aparece no topo da página do produto
+começa com `prod_` e **não serve**: com ele o checkout responde 503 (seção 6).
 
 ## 2. Portal do cliente
 
@@ -47,10 +49,9 @@ Depois de criar, copie o **Signing secret** do destino.
 |---|---|
 | `STRIPE_SECRET_KEY` | Developers → API keys → Secret key (a de teste) |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret do passo 3 |
-| `STRIPE_PRICE_PRO` | ID do preço do Pro |
-| `STRIPE_PRICE_CONSTRUTORA` | ID do preço da Construtora |
+| `STRIPE_PRICE_PRO` | ID do preço do Pro (`price_...`, nunca `prod_...`) |
+| `STRIPE_PRICE_CONSTRUTORA` | ID do preço da Construtora (`price_...`, nunca `prod_...`) |
 | `FRONTEND_URL` | `https://marcio-mazega-isw055.lapps.studio` |
-
 | `AUTH_INTERNAL_TOKEN` | `openssl rand -hex 32` (sem ele, a Minha Conta não carrega, o e-mail de inadimplência não sai e o painel admin fica sem usuários) |
 
 A variável antiga `STRIPE_PRICE_ID` não é mais usada e pode sair da stack. Sem qualquer uma das quatro
@@ -99,6 +100,11 @@ status HTTP, o código, o campo recusado e a mensagem do Stripe.
 | `PermissionError` | Chave restrita sem permissão | Use a Secret key padrão |
 | `APIConnectionError` | O container não alcança `api.stripe.com` | Verifique a saída de rede do host |
 | `IdempotencyError` | O nome ou o e-mail do dono mudou entre tentativas em menos de 24 h | Espere 24 h ou teste com outra empresa |
+
+Caso real (12/11/2026): o log mostrou
+`InvalidRequestError http=400 codigo=resource_missing campo=line_items[0][price]: No such price: 'prod_...'`.
+A variável do preço estava com o ID do produto. Com os IDs `price_` nas duas variáveis e o redeploy,
+o checkout passou a abrir.
 
 Depois de corrigir uma variável, faça **Pull and redeploy**: o container só recebe o valor novo ao
 ser recriado.
