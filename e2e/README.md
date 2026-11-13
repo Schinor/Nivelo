@@ -30,3 +30,17 @@ e2e/rodar.sh cliente --base https://<subdominio> --token '<token>' --senha '<a m
 
 Outras opções: `--saida`, `--nome-dono`, `--empresa`, `--nome-cliente`, `--obra`
 (`python navegar.py --help`). O `estado.json` que liga os dois passos fica na pasta de saída.
+
+## Assinatura em produção (prints da Atividade 11)
+
+Conta nova no Free → 2ª obra recusada (402) → checkout do Pro com o cartão 4242 → o webhook
+confirma → 2ª obra criada → painel do admin → portal cancela → volta para o Free → MRR cai
+R$ 29,90. Exige o Stripe em modo de teste e o portal com cancelamento **imediato**. A senha do
+admin vai num arquivo (dentro de `e2e/`, para o container enxergar), nunca no comando:
+
+```bash
+e2e/rodar.sh assinatura --base https://<subdominio> --saida prints/atividade-11 \
+  --email-admin <ADMIN_EMAIL> --senha-admin-arquivo prints/.senha-admin
+# a conta já assinou numa rodada que falhou no meio: continua do painel do admin
+e2e/rodar.sh assinatura --retomar --email-dono <e-mail da conta> --senha '<senha>' ...
+```
