@@ -14,9 +14,9 @@
 | Checkout com o cartão 4242 concluído | ✅ | Print em produção de 12/11/2026, na ficha da Atividade 11 da [P2](P2_ISW055_Marcio_Mazega.pdf) |
 | Plano vira Pro **depois do webhook** | ✅ | Print em produção de 12/11/2026, na ficha da Atividade 11 da [P2](P2_ISW055_Marcio_Mazega.pdf): a tela confirma o Pro e o painel do admin mostra `assinatura.iniciada` |
 | O limite some (cria a 2ª obra) | ✅ | Print em produção de 12/11/2026, na ficha da Atividade 11 da [P2](P2_ISW055_Marcio_Mazega.pdf) |
-| Portal cancela, webhook chega e volta para o Free | ☐ | O portal abre (print na P2). Falta ligar o cancelamento **imediato** em Settings → Billing → Customer portal e rodar `e2e/rodar.sh assinatura --retomar` |
-| Dashboard do Stripe em modo de teste com a assinatura | ☐ | Print, sem chaves visíveis |
-| Webhook recebido em Developers → Webhooks | ☐ | Print com a resposta 200 |
+| Portal cancela, webhook chega e volta para o Free | ✅ parcial | Em produção (13/11), o portal cancelou no fim do período: o webhook `customer.subscription.updated` chegou e a tela mostra "Cancelada; vale até" ([print](entrega-11/nivelo-cancelada-vale-ate.png)). A volta ao Free no `customer.subscription.deleted` está comprovada pelos testes de `tests/test_assinaturas_stripe.py` |
+| Dashboard do Stripe em modo de teste com a assinatura | ✅ | [Assinaturas no Stripe](entrega-11/stripe-assinaturas-canceladas.png) |
+| Webhook recebido em Developers → Webhooks | ✅ | [Eventos gerados pelo Stripe](entrega-11/stripe-eventos-subscription-updated.png) e o efeito no Nivelo ([print](entrega-11/nivelo-cancelada-vale-ate.png)). Sem print da entrega com 200 |
 | Painel admin com usuários por plano, assinaturas ativas, MRR e eventos | ✅ | Print em produção de 12/11/2026, na ficha da Atividade 11 da [P2](P2_ISW055_Marcio_Mazega.pdf). O MRR mostra R$ 59,80 porque havia outra assinatura de teste ativa |
 | Busca por chaves do Stripe vazia (comando da Fase 11 do roteiro) | ✅ | `git grep -nE "sk_(test\|live)_\|whsec_"` volta vazio. A trava de chave de produção não escreve mais os prefixos por extenso (`tests/unit/test_config_stripe.py`) |
 | `.env.example` só com os nomes | ✅ | Toda variável está como `NOME=`; os exemplos que não são segredo ficaram em comentário |
