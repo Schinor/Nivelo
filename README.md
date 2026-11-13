@@ -192,6 +192,7 @@ Decisões principais: [contextos](docs/adr/001-contextos-delimitados.md), [hexag
 | [`db/README.md`](db/README.md) | Migrações e SQL exportado |
 | [`docs/ENTREGA_ATIVIDADE_10.md`](docs/ENTREGA_ATIVIDADE_10.md) | Checklist da Atividade 10 |
 | [`docs/ENTREGA_ATIVIDADE_11.md`](docs/ENTREGA_ATIVIDADE_11.md) | Checklist da Atividade 11 |
+| [`docs/P2_ISW055_Marcio_Mazega.pdf`](docs/P2_ISW055_Marcio_Mazega.pdf) | P2: relatório consolidado da arquitetura e das atividades 7 a 11 |
 
 ## 12. Backlog
 
